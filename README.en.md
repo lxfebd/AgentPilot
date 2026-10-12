@@ -128,6 +128,12 @@ The development environment uses **Python 3.12+ / uv / Node.js 22 / Corepack + Y
 
 Report issues through [Issues](https://github.com/lxfebd/AgentPilot/issues) or contribute through [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls). When reporting, include the client version, OS, runtime type and reproduction steps, and remove credentials from logs.
 
+## Community and feedback
+
+Join the beta community for the latest releases and usage help. Report issues through [Issues](https://github.com/lxfebd/AgentPilot/issues) or contribute through [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls). If the project is useful to you, give it a [Star on GitHub](https://github.com/lxfebd/AgentPilot) to support it.
+
+> **Beta community**: scan the QR code or search the group number to join — see the pinned post in the repository [Discussions](https://github.com/lxfebd/AgentPilot/discussions). When reporting, include the client version, OS, runtime type and reproduction steps, and remove credentials from logs.
+
 ## License
 
 MIT. The project's brand, download entry points and community are defined by this repository.

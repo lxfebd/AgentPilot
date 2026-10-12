@@ -134,6 +134,12 @@ docker compose -f docker/docker-compose.postgres.yml up --build
 
 欢迎通过 [Issues](https://github.com/lxfebd/AgentPilot/issues) 反馈问题，或通过 [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls) 参与改进。报告问题时，请附上客户端版本、系统、Runtime 类型和复现步骤，并移除日志中的凭据。
 
+## 交流与反馈
+
+欢迎加入内测交流群获取最新版本与使用帮助，也欢迎通过 [Issues](https://github.com/lxfebd/AgentPilot/issues) 反馈问题、通过 [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls) 参与改进。如果项目对你有用，欢迎在 [GitHub](https://github.com/lxfebd/AgentPilot) 点个 Star，支持一下这个项目。
+
+> **内测交流群**：微信扫码或搜索群号加入，见仓库 [Discussions](https://github.com/lxfebd/AgentPilot/discussions) 置顶帖；报告问题时请附上客户端版本、系统、Runtime 类型和复现步骤，并移除日志中的凭据。
+
 ## 开源许可
 
 MIT。本项目的品牌、下载入口与社区以本项目仓库为准。

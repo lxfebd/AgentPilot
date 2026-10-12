@@ -13,7 +13,7 @@ import { BridgeStatusNotice } from './bridge-status.js'
 import { BridgeLogsPanel } from './bridge-logs-panel.js'
 
 const homeLinks = [
-  { label: '下载 AgentPilot 桌面端', url: 'https://www.agent-pilot.com', icon: Download },
+  { label: '下载 AgentPilot 桌面端', url: 'https://github.com/lxfebd/AgentPilot/releases/latest', icon: Download },
   { label: '加入内测交流群', url: 'https://github.com/lxfebd/AgentPilot#%E4%BA%A4%E6%B5%81%E4%B8%8E%E5%8F%8D%E9%A6%88', icon: MessageCircle },
   { label: '去 GitHub 点 Star', url: 'https://github.com/lxfebd/AgentPilot', icon: Star },
 ] as const

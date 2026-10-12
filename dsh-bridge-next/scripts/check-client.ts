@@ -326,7 +326,7 @@ export async function checkClient(source: string, packageId: string): Promise<vo
     assert.doesNotMatch(dialog()!.textContent!, /连接手机|继续设置|连接服务器|浏览器没有打开|登录 AgentPilot Cloud|OR/)
     assert.deepEqual(Array.from(dialog()!.querySelectorAll('button')).map(element => element.textContent).filter(Boolean), ['登录和连接', '设置', '运行日志', '打开 Web', '手机连接', '退出登录', '下载 AgentPilot 桌面端', '加入内测交流群', '去 GitHub 点 Star'])
     for (const [label, url] of [
-      ['下载 AgentPilot 桌面端', 'https://www.agent-pilot.com'],
+      ['下载 AgentPilot 桌面端', 'https://github.com/lxfebd/AgentPilot/releases/latest'],
       ['加入内测交流群', 'https://github.com/lxfebd/AgentPilot#%E4%BA%A4%E6%B5%81%E4%B8%8E%E5%8F%8D%E9%A6%88'],
       ['去 GitHub 点 Star', 'https://github.com/lxfebd/AgentPilot'],
     ]) {

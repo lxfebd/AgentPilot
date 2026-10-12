@@ -70,6 +70,61 @@
     animation: aa-page-enter 560ms cubic-bezier(.22, 1, .36, 1) both;
   }
 
+  /* 最后一页（准备就绪）：右下角放置"支持这个项目"与致谢标注。 */
+  .complete-slide-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 440px;
+  }
+
+  .complete-slide-support {
+    position: absolute;
+    right: 0;
+    bottom: -8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--background) 82%, transparent);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+  }
+
+  .complete-slide-support a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--foreground);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .complete-slide-support a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .complete-slide-support a[data-icon] svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .complete-slide-support-meta {
+    color: var(--muted-foreground);
+  }
+
+  .complete-slide-support-meta a {
+    color: var(--muted-foreground);
+    font-weight: 400;
+  }
+
+  .complete-slide-support-meta a:hover {
+    color: var(--foreground);
+  }
+
   .slide-page-welcome {
     animation-duration: 1000ms;
   }
@@ -265,6 +320,15 @@
   .slide-artwork { display: none; }
   .slide-title { font-size: clamp(40px, 6.8vw, 60px); }
   .slide-title-english { font-size: clamp(66px, 10vw, 92px); }
+  .complete-slide-support {
+    position: static;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 24px;
+    border: 0;
+    padding: 0;
+    background: none;
+  }
 }
 
 @media (max-width: 599px) {

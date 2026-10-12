@@ -78,7 +78,7 @@ test("the slide copy comes from translations, not from hardcoded strings", async
   const container = await render(t, { locale: "en" })
   await until(() => container.querySelector('[data-slide="phone"]'))
   assert.match(container.textContent, /Agents at work\./)
-  assert.match(container.textContent, /You, anywhere\./)
+  assert.match(container.textContent, /You, everywhere\./)
   assert.ok(button(container, "Connect phone"))
 })
 
