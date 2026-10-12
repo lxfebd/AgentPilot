@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
+    <!-- The auth prefs file is named after the SharedPreferences name in AuthSessionStore.
+         agent_pilot_auth is the legacy plaintext store being migrated away from;
+         agent_pilot_auth_v2 is the encrypted store. Neither may reach cloud backup. -->
     <exclude
         domain="sharedpref"
-        path="auth.xml" />
+        path="agent_pilot_auth.xml" />
+    <exclude
+        domain="sharedpref"
+        path="agent_pilot_auth_v2.xml" />
 </full-backup-content>
