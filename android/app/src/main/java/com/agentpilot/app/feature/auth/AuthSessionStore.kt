@@ -97,8 +97,8 @@ class AuthSessionStore(context: Context) : AuthSessionReader {
     }
 
     companion object {
-        private const val LEGACY_PREFERENCES_NAME = "agent_pilot_auth"
-        private const val PREFERENCES_NAME = "agent_pilot_auth_v2"
+        internal const val LEGACY_PREFERENCES_NAME = "agent_pilot_auth"
+        internal const val PREFERENCES_NAME = "agent_pilot_auth_v2"
 
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_ACCESS_TOKEN = "access_token"
@@ -109,7 +109,7 @@ class AuthSessionStore(context: Context) : AuthSessionReader {
         private const val KEY_REFRESH_EXPIRES_AT = "refresh_expires_at"
 
         /** All keys that must be copied over when migrating from the legacy plaintext store. */
-        private val LEGACY_KEYS = listOf(
+        internal val LEGACY_KEYS = listOf(
             KEY_SERVER_URL,
             KEY_ACCESS_TOKEN,
             KEY_TOKEN_TYPE,
