@@ -538,7 +538,7 @@
       "confirmDevice": "Scanned device",
       "confirming": "Confirming connection...",
       "connect": "Connect phone",
-      "downloadPrompt": "Download the AgentPilot mobile app from our website. Once it is installed, come back here and we will connect your phone to this computer with a QR code.",
+      "downloadPrompt": "Download the AgentPilot mobile app from GitHub Releases. Once it is installed, come back here and we will connect your phone to this computer with a QR code.",
       "openDownloadPage": "Open download page",
       "downloadUrlHint": "Or open {url} manually",
       "errorTitle": "Unable to continue",

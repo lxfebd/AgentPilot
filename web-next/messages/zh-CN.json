@@ -538,7 +538,7 @@
       "confirmDevice": "扫码设备",
       "confirming": "正在确认连接...",
       "connect": "连接手机",
-      "downloadPrompt": "请前往网站下载 AgentPilot 手机端。装好后回到这里继续，我们会用二维码把手机和这台电脑连接起来。",
+      "downloadPrompt": "请前往 GitHub Releases 下载 AgentPilot 手机端。装好后回到这里继续，我们会用二维码把手机和这台电脑连接起来。",
       "openDownloadPage": "前往下载页",
       "downloadUrlHint": "也可以手动打开 {url}",
       "errorTitle": "无法继续连接",

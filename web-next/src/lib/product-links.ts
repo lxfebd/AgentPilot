@@ -9,7 +9,7 @@ export const PRODUCT_LINKS: {
 } = {
   desktopDownloadUrl: '',
   landingPageUrl: '',
-  downloadPageUrl: 'https://agent-pilot.com/download',
+  downloadPageUrl: 'https://github.com/lxfebd/AgentPilot/releases/latest',
   androidDownloadUrl: 'https://github.com/lxfebd/AgentPilot/releases/latest',
   iosDownloadUrl: '',
   webAppHref: '#/',
