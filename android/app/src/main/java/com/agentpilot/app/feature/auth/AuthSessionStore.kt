@@ -180,18 +180,25 @@ private object SessionPreferences {
                 Context.MODE_PRIVATE,
             )
             val hasSession = legacy.all.isNotEmpty()
+            var copied = true
             if (hasSession) {
                 val editor = encrypted.edit()
                 for (key in AuthSessionStore.LEGACY_KEYS) {
                     val value = legacy.getString(key, null)
                     if (value != null) editor.putString(key, value)
                 }
-                editor.apply()
+                // commit() (not apply()) so the encrypted copy is durable before we
+                // delete the plaintext file; a crash in between must not lose the token.
+                copied = editor.commit()
             }
 
             // Drop the legacy file entirely (also removes server_url when no session existed).
-            context.deleteSharedPreferences(AuthSessionStore.LEGACY_PREFERENCES_NAME)
-            migrated = true
+            if (copied) {
+                context.deleteSharedPreferences(AuthSessionStore.LEGACY_PREFERENCES_NAME)
+                migrated = true
+            }
+            // If the copy failed, leave the plaintext store in place and let the next
+            // launch retry the migration rather than stranding the user signed out.
         }
     }
 }
