@@ -83,7 +83,7 @@ export interface BridgeConfig {
   maxCommandLimit?: number
   maxPendingInteractions?: number
   /**
-   * Working directory for the spawned `anywhere-cli start` subprocess.
+   * Working directory for the spawned `agentpilot-cli start` subprocess.
    * Defaults to `AgentPilot/connector`.
    */
   connectorCwd?: string
@@ -204,7 +204,7 @@ export class AgentPilotConnectorService extends TypertRemoteService implements L
       await endpoint.start()
 
       // Auto-start the connector when `autoStart` is enabled (default on). This
-      // re-spawns `anywhere-cli rpc` and re-reads the saved credential, so the
+      // re-spawns `agentpilot-cli rpc` and re-reads the saved credential, so the
       // paired device + running state survive a DSH restart without the user
       // having to click Start again.
       if (this.connectorState.environment.autoStart) {
@@ -1049,7 +1049,7 @@ function generatePairingCode(): string {
 }
 
 /**
- * Resolve the `anywhere-cli` Python project directory.
+ * Resolve the `agentpilot-cli` Python project directory.
  *
  * Resolution order:
  *   1. Sibling `../connector/` relative to `dsh-aa-gateway`

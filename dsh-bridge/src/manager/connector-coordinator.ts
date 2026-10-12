@@ -227,7 +227,7 @@ export class ConnectorCoordinator extends EventEmitter implements ConnectorHostA
   }
 
   /**
-   * Ensure the `anywhere-cli rpc` control plane is running and handshaken.
+   * Ensure the `agentpilot-cli rpc` control plane is running and handshaken.
    * Spawns it on first use and leaves an already-running process untouched.
    * The `rpc` subcommand serves the JSON-RPC control API over stdio (the
    * `start` subcommand does not — it only runs the connector daemon directly).
@@ -742,7 +742,7 @@ function errorMessage(error: unknown): string {
 
 // --- Runtime guards for `unknown` payloads -------------------------------
 
-/** Loose view of the `connector.getState` response from `anywhere-cli rpc`. */
+/** Loose view of the `connector.getState` response from `agentpilot-cli rpc`. */
 interface PythonConnectorState {
   status?: unknown
   running?: unknown
@@ -774,7 +774,7 @@ function isPythonPairing(value: unknown): value is PythonPairingPayload {
   return typeof candidate.status === 'string'
 }
 
-/** Map the `anywhere-cli rpc` state payload onto the plugin's runtime fields. */
+/** Map the `agentpilot-cli rpc` state payload onto the plugin's runtime fields. */
 function mapRuntimeFromPython(
   state: PythonConnectorState,
   configPath?: string,
@@ -839,7 +839,7 @@ function mapPairingStatus(status: unknown): PairingState['status'] {
 }
 
 /**
- * Map a `connector/log` notification from `anywhere-cli rpc` into the plugin's
+ * Map a `connector/log` notification from `agentpilot-cli rpc` into the plugin's
  * `ConnectorLog` shape. The Python loguru sink emits
  * `{ time: ISO string, level: "INFO", name, message }` — not the camelCase
  * `{ id, time: ms, level: 'info', logger }` shape the client expects, so the
