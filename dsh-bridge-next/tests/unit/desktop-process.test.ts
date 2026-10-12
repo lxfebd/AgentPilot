@@ -37,7 +37,7 @@ test('matches only the installed Desktop main process, including development arg
   }, 'linux'), false)
 
   assert.equal(matchesDesktopProcess({ executablePath: 'C:\\Program Files\\AgentPilot\\AgentPilot.exe', launchArgs: [], packaged: true }, {
-    executablePath: 'c:\\program files\\agents anywhere\\agents anywhere.exe',
+    executablePath: 'c:\\program files\\agentpilot\\agentpilot.exe',
     commandLine: '"C:\\Program Files\\AgentPilot\\AgentPilot.exe"',
   }, 'win32'), true)
   assert.equal(matchesDesktopProcess({ executablePath: '/home/user/AgentPilot.AppImage', launchArgs: [], packaged: true }, {
