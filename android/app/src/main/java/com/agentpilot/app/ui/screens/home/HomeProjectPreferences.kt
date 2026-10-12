@@ -1,0 +1,75 @@
+package com.agentpilot.app.ui.screens.home
+
+import android.content.SharedPreferences
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.agentpilot.app.feature.sessions.ProjectSessionStatusFilter
+import org.json.JSONArray
+
+internal class HomeProjectPreferences(private val storage: SharedPreferences, private val key: String) {
+    var expandedIds by mutableStateOf(storage.getStringSet("$key:ids", emptySet()).orEmpty().toSet())
+        private set
+    var projectsExpanded by mutableStateOf(storage.getBoolean("$key:section", true))
+        private set
+    var sessionStatus by mutableStateOf(
+        ProjectSessionStatusFilter.entries.firstOrNull { it.name == storage.getString("$key:status", null) }
+            ?: ProjectSessionStatusFilter.Active,
+    )
+        private set
+    var selectedDeviceId by mutableStateOf(storage.getString("$key:device", null)?.takeIf(String::isNotBlank))
+        private set
+    var selectedAgentRuntime by mutableStateOf(storage.getString("$key:agent", null)?.takeIf(String::isNotBlank))
+        private set
+
+    fun selectSessionStatus(status: ProjectSessionStatusFilter) {
+        sessionStatus = status
+        storage.edit().putString("$key:status", status.name).apply()
+    }
+
+    fun selectDevice(id: String?) {
+        selectedDeviceId = id
+        storage.edit().apply {
+            if (id == null) remove("$key:device") else putString("$key:device", id)
+        }.apply()
+    }
+
+    fun selectAgent(runtime: String?) {
+        selectedAgentRuntime = runtime
+        storage.edit().apply {
+            if (runtime == null) remove("$key:agent") else putString("$key:agent", runtime)
+        }.apply()
+    }
+
+    fun clearFilters() {
+        sessionStatus = ProjectSessionStatusFilter.Active
+        selectedDeviceId = null
+        selectedAgentRuntime = null
+        storage.edit().putString("$key:status", ProjectSessionStatusFilter.Active.name)
+            .remove("$key:device").remove("$key:agent").apply()
+    }
+
+    fun setProjectExpanded(id: String, expanded: Boolean) {
+        expandedIds = if (expanded) expandedIds + id else expandedIds - id
+        storage.edit().putStringSet("$key:ids", expandedIds).apply()
+    }
+
+    fun toggleSection() {
+        projectsExpanded = !projectsExpanded
+        storage.edit().putBoolean("$key:section", projectsExpanded).apply()
+    }
+}
+
+@Composable
+internal fun rememberHomeProjectPreferences(serverUrl: String, userId: String): HomeProjectPreferences {
+    val context = LocalContext.current
+    return remember(context, serverUrl, userId) {
+        HomeProjectPreferences(
+            context.getSharedPreferences("project_sidebar", 0),
+            JSONArray(listOf(serverUrl.trim().trimEnd('/'), userId)).toString(),
+        )
+    }
+}

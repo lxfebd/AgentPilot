@@ -1,0 +1,20 @@
+{
+  "cloud": {
+    "serverUrl": "https://web.agent-pilot.com",
+    "oauthWebOrigin": "https://web.agent-pilot.com"
+  },
+  "apiNamespace": "/api/v2",
+  "healthTimeoutMs": 10000,
+  "updates": {
+    "downloadUrl": "https://downloads.example.invalid/agent-pilot-desktop"
+  },
+  "oauth": {
+    "protocol": "agent-pilot-desktop",
+    "clientId": "agent-pilot-desktop",
+    "redirectUri": "agent-pilot-desktop://oauth/callback",
+    "route": "/desktop-oauth",
+    "scope": "profile",
+    "requestTtlMs": 600000,
+    "tokenTimeoutMs": 15000
+  }
+}

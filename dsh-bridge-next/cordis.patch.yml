@@ -1,0 +1,4 @@
+- insert:
+    - id: agent-pilot-bridge-next
+      name: '@agent-pilot/dsh-bridge-next'
+      config: {}
