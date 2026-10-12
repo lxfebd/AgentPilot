@@ -252,42 +252,32 @@ class ApiClient(
                     .build()
             }
 
-            val candidates = apiUrlCandidates(serverUrl, path)
-            candidates.forEachIndexed { index, url ->
-                val request = Request.Builder()
-                    .url(url)
-                    .header("Accept", "application/json")
-                    .header("ngrok-skip-browser-warning", "true")
-                    .method(method, resolvedRequestBody)
-                    .apply {
-                        if (!authorizationToken.isNullOrBlank()) {
-                            header("Authorization", "Bearer $authorizationToken")
-                        }
+            val request = Request.Builder()
+                .url(apiUrl(serverUrl, path))
+                .header("Accept", "application/json")
+                .header("ngrok-skip-browser-warning", "true")
+                .method(method, resolvedRequestBody)
+                .apply {
+                    if (!authorizationToken.isNullOrBlank()) {
+                        header("Authorization", "Bearer $authorizationToken")
                     }
-                    .build()
-
-                httpClient.newCall(request).execute().use { response ->
-                    val responseText = response.body?.string().orEmpty()
-                    val contentType = response.header("Content-Type").orEmpty()
-                    val canTryLegacy = index < candidates.lastIndex &&
-                        shouldTryLegacyApi(response.code, response.isSuccessful, contentType, responseText)
-                    if (canTryLegacy) return@forEachIndexed
-
-                    if (!response.isSuccessful) {
-                        notifyUnauthorized(response.code, authorizationToken)
-                        throw ApiException(
-                            message = parseErrorMessage(responseText) ?: defaultErrorMessage(response.code),
-                            statusCode = response.code,
-                            errorCode = parseErrorCode(responseText),
-                        )
-                    }
-
-                    val json = parseJsonResponse(responseText)
-                    rememberApiUrl(serverUrl, url)
-                    return json
                 }
+                .build()
+
+            httpClient.newCall(request).execute().use { response ->
+                val responseText = response.body?.string().orEmpty()
+
+                if (!response.isSuccessful) {
+                    notifyUnauthorized(response.code, authorizationToken)
+                    throw ApiException(
+                        message = parseErrorMessage(responseText) ?: defaultErrorMessage(response.code),
+                        statusCode = response.code,
+                        errorCode = parseErrorCode(responseText),
+                    )
+                }
+
+                return parseJsonResponse(responseText)
             }
-            throw ApiException("The server returned an invalid response.")
         } catch (exc: ApiException) {
             throw exc
         } catch (exc: IllegalArgumentException) {
@@ -350,21 +340,6 @@ class ApiClient(
         }
     }
 
-    private fun shouldTryLegacyApi(
-        statusCode: Int,
-        successful: Boolean,
-        contentType: String,
-        responseText: String,
-    ): Boolean {
-        if (statusCode == 405) return true
-        if (contentType.isJsonContentType()) return false
-        if (statusCode == 404) return true
-        val looksLikeHtml = contentType.contains("text/html", ignoreCase = true) ||
-            responseText.trimStart().startsWith("<!DOCTYPE", ignoreCase = true) ||
-            responseText.trimStart().startsWith("<html", ignoreCase = true)
-        return successful && looksLikeHtml
-    }
-
     private fun defaultErrorMessage(statusCode: Int): String {
         return when (statusCode) {
             401 -> "Unauthorized request."
@@ -375,11 +350,6 @@ class ApiClient(
 
     private fun String.httpQuoted(): String {
         return replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "").replace("\n", "")
-    }
-
-    private fun String.isJsonContentType(): Boolean {
-        return contains("application/json", ignoreCase = true) ||
-            contains("+json", ignoreCase = true)
     }
 }
 

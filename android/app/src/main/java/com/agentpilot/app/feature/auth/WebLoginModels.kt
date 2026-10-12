@@ -1,7 +1,6 @@
 package com.agentpilot.app.feature.auth
 
 import com.agentpilot.app.api.normalizeServerOrigin
-import com.agentpilot.app.api.usesLegacyApiRoute
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -110,12 +109,10 @@ internal fun webLoginApiOriginBridgeScript(webOrigin: String): String {
         "Web login URL must be an HTTP(S) origin."
     }
     // Web requests use the login site's API proxy; native requests use serverUrl.
-    val legacyApiRoute = usesLegacyApiRoute(origin)
     return """
          (() => {
            const webOrigin = ${JSONObject.quote(origin)};
            const apiNamespace = "/api/v2";
-           const legacyApiRoute = $legacyApiRoute;
            const viewportHeightProperty = "--agent-pilot-android-viewport-height";
            const installViewportHeightFix = () => {
              const root = document.documentElement;
@@ -157,10 +154,7 @@ internal fun webLoginApiOriginBridgeScript(webOrigin: String): String {
             try {
               const url = new URL(String(value), window.location.href);
               if (url.pathname !== apiNamespace && !url.pathname.startsWith(apiNamespace + "/")) return value;
-              const pathname = legacyApiRoute
-                ? (url.pathname.substring(apiNamespace.length) || "/")
-                : url.pathname;
-              return webOrigin + pathname + url.search + url.hash;
+              return webOrigin + url.pathname + url.search + url.hash;
             } catch (_) {
               return value;
             }
