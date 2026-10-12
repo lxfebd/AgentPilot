@@ -123,7 +123,7 @@ class DevicesController(
             ?: return Result.failure(IllegalStateException("Sign in again to claim this pair code."))
         val cleanCode = code.trim().uppercase()
         if (cleanCode.isBlank()) {
-            return Result.failure(IllegalArgumentException("Enter the code shown by uvx anywhere-cli pair."))
+            return Result.failure(IllegalArgumentException("Enter the code shown by uvx agentpilot-cli pair."))
         }
 
         return withContext(Dispatchers.IO) {

@@ -43,14 +43,6 @@ struct APIClient {
         try await request("/auth/config")
     }
 
-    func login(email: String, password: String) async throws -> AuthResponse {
-        try await request(
-            "/auth/login",
-            method: "POST",
-            body: ["email": email.trimmingCharacters(in: .whitespacesAndNewlines), "password": password],
-        )
-    }
-
     /// Public, unauthenticated; returns nil when the server has no enabled announcement.
     func announcement() async throws -> PublicAnnouncement? {
         let response: PublicAnnouncementResponse = try await request("/announcement")

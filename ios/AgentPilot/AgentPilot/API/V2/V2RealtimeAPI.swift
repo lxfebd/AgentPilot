@@ -57,12 +57,18 @@ struct V2RealtimeAPI: V2RealtimeAPIProtocol {
         sessionId: V2SessionID,
         ticket: String
     ) throws -> AsyncThrowingStream<V2SessionEvent, Error> {
-        let path = "/api/v2/sessions/\(sessionId.v2URLPathComponentEncoded)/ws"
+        // Paths go through the same v2APIPath builder as the HTTP transport
+        // so the namespace stays defined in exactly one place.
+        let path = v2APIPath("/sessions/\(sessionId.v2URLPathComponentEncoded)/ws")
         return try decodedMessages(path: path, ticket: ticket, as: V2SessionEvent.self)
     }
 
     func dashboardSnapshots(ticket: String) throws -> AsyncThrowingStream<V2DashboardSnapshot, Error> {
-        try decodedMessages(path: "/api/v2/dashboard/ws", ticket: ticket, as: V2DashboardSnapshot.self)
+        try decodedMessages(
+            path: v2APIPath("/dashboard/ws"),
+            ticket: ticket,
+            as: V2DashboardSnapshot.self
+        )
     }
 
     private func decodedMessages<Value: Decodable>(
