@@ -30,9 +30,9 @@ export class RuntimeConfiguration {
   }
 
   async validate(selections: Selections, initial = false): Promise<void> {
-    if (initial && !selections.model) throw new BridgeError('INVALID_PARAMS', 'Choose a model in AA before creating a DSH session.')
+    if (initial && !selections.model) throw new BridgeError('INVALID_PARAMS', 'Choose a model in AgentPilot before creating a DSH session.')
     if (initial && this.ctx.get('permissionPresets') && !selections.permission) {
-      throw new BridgeError('INVALID_PARAMS', 'Choose permissions in AA before creating a DSH session.')
+      throw new BridgeError('INVALID_PARAMS', 'Choose permissions in AgentPilot before creating a DSH session.')
     }
     if (selections.model) {
       if (!this.canSelectModel) this.controller()
@@ -53,11 +53,11 @@ export class RuntimeConfiguration {
   }
 
   async validatePreset(id: unknown): Promise<string> {
-    if (typeof id !== 'string' || !id || id.length > 256) throw new BridgeError('INVALID_PARAMS', 'Choose a default Agent mode in the AA Runtime configuration.')
+    if (typeof id !== 'string' || !id || id.length > 256) throw new BridgeError('INVALID_PARAMS', 'Choose a default Agent mode in the AgentPilot Runtime configuration.')
     const presets = this.ctx.get('agentPresets')
     if (!presets) throw new BridgeError('UNSUPPORTED_OPERATION', 'DSH Agent presets are unavailable.')
     const preset = (await presets.list()).find(preset => preset.id === id)
-    if (!preset || preset.broken) throw new BridgeError('INVALID_PARAMS', 'The configured Agent mode is missing or cannot be loaded. Choose another mode in AA Runtime configuration.')
+    if (!preset || preset.broken) throw new BridgeError('INVALID_PARAMS', 'The configured Agent mode is missing or cannot be loaded. Choose another mode in AgentPilot Runtime configuration.')
     return preset.id
   }
 

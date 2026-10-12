@@ -37,7 +37,7 @@ export function OAuthNewUserScreen() {
   }
 
   const normalizedEmail = email.trim().toLowerCase()
-  const fallback = normalizedEmail.slice(0, 2).toUpperCase() || "AA"
+  const fallback = normalizedEmail.slice(0, 2).toUpperCase() || "AP"
 
   return (
     <AuthShell>

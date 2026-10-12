@@ -94,10 +94,10 @@ export class RuntimeCommands {
     const command = typeof params.command === 'string' ? params.command : ''
     const fail = (code: string, message: string): CommandResult => ({ command, ok: false, code, message, result: {} })
     if (!command || parseCommand(`/${command}`)?.name !== command) return fail('invalid_command', 'Use the native command name from the catalog.')
-    if (command !== 'compact') return fail('unknown_command', 'AA supports only /compact for DSH.')
+    if (command !== 'compact') return fail('unknown_command', 'AgentPilot supports only /compact for DSH.')
     const args = params.args === undefined ? [] : params.args
     if (!Array.isArray(args) || args.some(arg => typeof arg !== 'string')) return fail('invalid_command', 'Command arguments must be strings.')
-    if (params.attachments !== undefined && (!Array.isArray(params.attachments) || params.attachments.length)) return fail('command_attachments_unsupported', 'AA command attachments are unavailable. Keep attachments in the draft.')
+    if (params.attachments !== undefined && (!Array.isArray(params.attachments) || params.attachments.length)) return fail('command_attachments_unsupported', 'AgentPilot command attachments are unavailable. Keep attachments in the draft.')
     let line: string
     if (params.raw !== undefined && params.raw !== null) {
       if (typeof params.raw !== 'string') return fail('invalid_command', 'The raw command must be a string.')

@@ -32,7 +32,7 @@ export function OAuthLinkExistingScreen() {
 
   const email = oauthPending.email
   const provider = oauthProviderLabel ?? "OAuth"
-  const fallback = email.slice(0, 2).toUpperCase() || "AA"
+  const fallback = email.slice(0, 2).toUpperCase() || "AP"
 
   if (!confirmed) {
     return (
