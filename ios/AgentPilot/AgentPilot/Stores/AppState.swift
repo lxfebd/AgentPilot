@@ -165,60 +165,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    func login(serverURL: URL, email: String, password: String) async {
-        authError = nil
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            let client = APIClient(serverURL: serverURL)
-            let auth = try await client.login(email: email, password: password)
-            let profile = try await client.me(token: auth.accessToken)
-            try Task.checkCancellation()
-            try saveSession(serverURL: serverURL, token: auth.accessToken)
-            self.serverURL = serverURL
-            me = profile
-            route = .signedIn
-            await refreshDashboard()
-            startDashboardUpdates()
-        } catch {
-            authError = error.localizedDescription
-        }
-    }
-
-    func verifyPasswordLogin(serverURL: URL, email: String, password: String) async -> AuthResponse? {
-        authError = nil
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            let client = APIClient(serverURL: serverURL)
-            return try await client.login(email: email, password: password)
-        } catch {
-            authError = error.localizedDescription
-            return nil
-        }
-    }
-
-    func completePasswordLogin(serverURL: URL, auth: AuthResponse, showSignedInRoute: Bool = true) async {
-        authError = nil
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            let client = APIClient(serverURL: serverURL)
-            let profile = try await client.me(token: auth.accessToken)
-            try Task.checkCancellation()
-            try saveSession(serverURL: serverURL, token: auth.accessToken)
-            self.serverURL = serverURL
-            me = profile
-            if showSignedInRoute {
-                route = .signedIn
-                await refreshDashboard()
-                startDashboardUpdates()
-            }
-        } catch {
-            authError = error.localizedDescription
-        }
-    }
-
     func completeOAuthLogin(serverURL: URL, token: OAuthTokenResponse, showSignedInRoute: Bool = true) async {
         authError = nil
         isWorking = true
