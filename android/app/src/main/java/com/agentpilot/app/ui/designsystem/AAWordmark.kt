@@ -24,7 +24,7 @@ fun AAWordmark(
     textAlign: TextAlign? = null,
 ) {
     Text(
-        text = "DeepSeek Harness",
+        text = "AgentPilot",
         modifier = modifier,
         color = color,
         fontSize = fontSize,
