@@ -19,11 +19,11 @@ fun devicePairingCommand(serverUrl: String): String {
             uri.host + if (uri.port >= 0 && uri.port != 443) ":${uri.port}" else ""
         } else serverUrl
     }.getOrDefault(serverUrl)
-    return "uvx anywhere-cli pair ${quotePairingArgument(address)}"
+    return "uvx agentpilot-cli pair ${quotePairingArgument(address)}"
 }
 
 fun deviceTokenCommand(credential: DeviceSetupCredential): String = listOf(
-    "uvx anywhere-cli start",
+    "uvx agentpilot-cli start",
     "--server-url ${quotePairingArgument(credential.serverUrl)}",
     "--connector-id ${quotePairingArgument(credential.device.id)}",
     "--connector-token ${quotePairingArgument(credential.connectorToken)}",

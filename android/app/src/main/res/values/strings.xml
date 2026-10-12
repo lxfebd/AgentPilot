@@ -248,7 +248,7 @@
     <string name="device_setup_download_label">Download link</string>
     <string name="device_setup_command_title">Start with command</string>
     <string name="device_setup_command_description">Run this command in the terminal on %1$s. The device will come online automatically.</string>
-    <string name="device_setup_linux_session_warning">Keep this terminal session alive. If you close the terminal, the anywhere-cli process will exit and the Linux device will go offline. The simplest way to keep it running is to run the pairing command inside screen:</string>
+    <string name="device_setup_linux_session_warning">Keep this terminal session alive. If you close the terminal, the agentpilot-cli process will exit and the Linux device will go offline. The simplest way to keep it running is to run the pairing command inside screen:</string>
     <string name="device_setup_linux_detach_hint">After the Connector comes online, press Ctrl-A, then D to leave without closing the session. To return to this session later, run:</string>
     <string name="device_setup_copy_value">Copy</string>
     <string name="device_setup_pair_title">Prepare pairing</string>

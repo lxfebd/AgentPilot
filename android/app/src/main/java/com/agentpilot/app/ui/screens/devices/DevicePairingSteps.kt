@@ -83,9 +83,9 @@ internal fun DevicePairingStepContent(
                 val command = deviceTokenCommand(it)
                 PairingCodeBlock(command, onCopyError)
                 PairingBodyText(stringResource(R.string.device_pairing_linux_session_warning))
-                PairingCodeBlock("screen -S anywhere\n$command", onCopyError)
+                PairingCodeBlock("screen -S agentpilot\n$command", onCopyError)
                 PairingBodyText(stringResource(R.string.device_pairing_linux_detach_hint))
-                PairingCodeBlock("screen -r anywhere", onCopyError)
+                PairingCodeBlock("screen -r agentpilot", onCopyError)
             }
             if (waitingOnline) PairingWaitingIndicator(stringResource(R.string.device_pairing_waiting_online))
         }
