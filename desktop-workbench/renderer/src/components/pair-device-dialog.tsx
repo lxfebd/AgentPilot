@@ -365,10 +365,10 @@ export function PairDeviceDialog({
   }
 
   const pairServer = pairServerAddress(serverUrl)
-  const pairCommand = `uvx anywhere-cli pair ${shellQuote(pairServer)}`
+  const pairCommand = `uvx agentpilot-cli pair ${shellQuote(pairServer)}`
   const tokenCommand = connectorId && connectorToken
     ? [
-      "uvx anywhere-cli start",
+      "uvx agentpilot-cli start",
       `--server-url ${shellQuote(serverUrl)}`,
       `--connector-id ${shellQuote(connectorId)}`,
       `--connector-token ${shellQuote(connectorToken)}`,
@@ -548,9 +548,9 @@ export function PairDeviceDialog({
                 <div className="flex flex-col gap-3 py-2">
                   <CodeBlock code={tokenCommand} copyLabel={t("copyCommand")} />
                   <p className="pt-2 text-sm text-muted-foreground">{t("linuxSessionWarning")}</p>
-                  <CodeBlock code={`screen -S anywhere\n${tokenCommand}`} copyLabel={t("copyCommand")} />
+                  <CodeBlock code={`screen -S agentpilot\n${tokenCommand}`} copyLabel={t("copyCommand")} />
                   <p className="pt-2 text-sm text-muted-foreground">{t("linuxDetachHint")}</p>
-                  <CodeBlock code="screen -r anywhere" copyLabel={t("copyCommand")} />
+                  <CodeBlock code="screen -r agentpilot" copyLabel={t("copyCommand")} />
                   {waitingOnline ? <PollingIndicator label={t("waitingOnline")} /> : null}
                 </div>
                 <DialogFooter>

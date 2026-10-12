@@ -247,7 +247,7 @@ export class ConnectorCoordinator extends EventEmitter implements ConnectorHostA
 
     const spec: CommandSpec = {
       command: resolution.uvPath,
-      args: ['run', '--directory', this.cwd, 'anywhere-cli', 'rpc', '--config', this.configPath],
+      args: ['run', '--directory', this.cwd, 'agentpilot-cli', 'rpc', '--config', this.configPath],
       env: buildConnectorEnv(this.snapshot.environment),
       cwd: this.cwd,
     }

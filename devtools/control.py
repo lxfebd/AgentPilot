@@ -496,6 +496,7 @@ def stop_connector() -> None:
         and (
             "connector.cli start" in _process_command(pid)
             or "anywhere-cli start" in _process_command(pid)
+            or "agentpilot-cli start" in _process_command(pid)
         )
     }
     candidate_groups = _process_group_ids(candidates)

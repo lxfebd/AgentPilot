@@ -444,7 +444,7 @@ start_service web "${GREEN}" "${WEB_DIR}" \
   corepack yarn exec next dev --hostname "${WEB_HOST}" --port "${WEB_PORT}"
 
 if [[ "${WITH_CONNECTOR}" == true ]]; then
-  CONNECTOR_COMMAND=(uv run anywhere-cli start --config "${CONNECTOR_CONFIG}")
+  CONNECTOR_COMMAND=(uv run agentpilot-cli start --config "${CONNECTOR_CONFIG}")
   if [[ -n "${AGENT_CONNECTOR_ID:-}" && -n "${AGENT_CONNECTOR_TOKEN:-}" ]]; then
     CONNECTOR_COMMAND+=(
       --server-url "${LOCAL_SERVER_URL}"

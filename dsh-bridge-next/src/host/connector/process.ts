@@ -148,7 +148,7 @@ export class SourceConnector implements ConnectorProcess {
     signal.throwIfAborted()
     const child = this.launch(command, [
       'run', '--directory', projectDir,
-      'anywhere-cli', 'rpc', '--config', configPath,
+      'agentpilot-cli', 'rpc', '--config', configPath,
     ], {
       cwd: projectDir,
       windowsHide: true,

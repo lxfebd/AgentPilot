@@ -1,4 +1,4 @@
-# Anywhere CLI
+# AgentPilot CLI
 
 > v2 Connector. Use the source from the same release line as your Server. The
 > Python package version is independent of the 2.0.0 product version.
@@ -18,7 +18,7 @@ connector/
   core/              Connector config, JSON-RPC, runtime owner, runtime config storage
   local/             Local filesystem, shell, and terminal backends
   _reference/        Old adapter implementations retained only as migration references
-  cli.py             anywhere-cli CLI
+  cli.py             agentpilot-cli CLI
   control.py         Local desktop/control JSON-RPC entrypoint
 tests/          Connector tests
 pyproject.toml  Connector dependencies and console script
@@ -37,7 +37,7 @@ uv sync
 Start with explicit credentials from the web pairing flow:
 
 ```bash
-uv run anywhere-cli start \
+uv run agentpilot-cli start \
   --server-url http://127.0.0.1:8000 \
   --connector-id conn_xxx \
   --connector-token cxt_xxx
@@ -46,12 +46,12 @@ uv run anywhere-cli start \
 Or save the config locally and start without arguments:
 
 ```bash
-uv run anywhere-cli configure \
+uv run agentpilot-cli configure \
   --server-url http://127.0.0.1:8000 \
   --connector-id conn_xxx \
   --connector-token cxt_xxx
 
-uv run anywhere-cli start
+uv run agentpilot-cli start
 ```
 
 The default config path is `~/.agent-pilot/connector.json`. Override it with

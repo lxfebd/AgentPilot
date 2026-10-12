@@ -59,7 +59,7 @@ async function fixture(mode = 'normal', settings: ConnectorSettings = DEFAULT_CO
   }, (command, args, options) => {
     assert.equal(args[0], 'run')
     assert.equal(args[1], '--directory')
-    assert.equal(args[3], 'anywhere-cli')
+    assert.equal(args[3], 'agentpilot-cli')
     assert.equal(args[4], 'rpc')
     assert.equal(args[5], '--config')
     // 打包内的负载只是只读输入：uv 在插件数据目录里的副本上工作。

@@ -122,13 +122,14 @@ def test_corrupt_or_newer_records_fail_closed(value):
 
 
 @pytest.mark.parametrize(("executable", "arguments", "expected"), [
-    ("/venv/bin/python3.12", ["python", "/venv/bin/anywhere-cli", "rpc"], True),
+    ("/venv/bin/python3.12", ["python", "/venv/bin/agentpilot-cli", "rpc"], True),
     ("/usr/bin/python3", ["python", "-u", "-m", "connector.cli", "start"], True),
     ("C:\\Python\\python.exe", ["python", "C:\\venv\\Scripts\\agent-connector.exe", "rpc"], True),
-    ("/bin/electron", ["electron", "anywhere-cli", "rpc"], False),
-    ("/bin/uv", ["uv", "run", "anywhere-cli", "rpc"], False),
-    ("/bin/python", ["python", "other.py", "anywhere-cli"], False),
-    ("/bin/python", ["python", "-c", "print('anywhere-cli')"], False),
+    ("/venv/bin/python3.12", ["python", "/venv/bin/anywhere-cli", "rpc"], True),
+    ("/bin/electron", ["electron", "agentpilot-cli", "rpc"], False),
+    ("/bin/uv", ["uv", "run", "agentpilot-cli", "rpc"], False),
+    ("/bin/python", ["python", "other.py", "agentpilot-cli"], False),
+    ("/bin/python", ["python", "-c", "print('agentpilot-cli')"], False),
 ])
 def test_process_check_recognizes_connector_entry_points_only(executable, arguments, expected):
     assert runtime_owner._connector_command(executable, arguments) is expected

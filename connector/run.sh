@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -eu
 
-exec uv run anywhere-cli start
+exec uv run agentpilot-cli start

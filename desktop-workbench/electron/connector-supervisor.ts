@@ -573,13 +573,13 @@ export class ConnectorSupervisor {
     const pythonArgs = python ? ["--python", python] : [];
     return {
       executable: uv,
-      args: ["run", "--project", projectDir, ...pythonArgs, "anywhere-cli", "rpc", "--config", this.options.configPath],
+      args: ["run", "--project", projectDir, ...pythonArgs, "agentpilot-cli", "rpc", "--config", this.options.configPath],
       description: `${uv} run --project ${projectDir}${python ? ` --python ${python}` : ""}`,
     };
   }
 
   private resolveDirectConnectorCli(): string {
-    const executableName = process.platform === "win32" ? "anywhere-cli.exe" : "anywhere-cli";
+    const executableName = process.platform === "win32" ? "agentpilot-cli.exe" : "agentpilot-cli";
     const candidates = [
       process.env.WORKBENCH_CONNECTOR_CLI,
       this.options.packaged

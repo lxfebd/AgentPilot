@@ -41,7 +41,7 @@ test("first pre-login provisioning receives the initialized mirror and honors sa
     // Windows process-tree termination is not a Connector launch.
     if (command === "taskkill.exe") return spawn(command, args, options);
     assert.equal(command, process.execPath);
-    assert.deepEqual(args.slice(0, 5), ["run", "--project", root, "anywhere-cli", "rpc"]);
+    assert.deepEqual(args.slice(0, 5), ["run", "--project", root, "agentpilot-cli", "rpc"]);
     return spawn(process.execPath, [script, captured], options);
   });
   for (const [choice, expected] of [
@@ -174,7 +174,7 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
     assert.equal(launches[0]?.command, bundledUv, "development must run the uv that packaging bundles");
     assert.deepEqual(
       [...(launches[0]?.args ?? [])],
-      ["run", "--project", root, "anywhere-cli", "rpc", "--config", path.join(root, "connector.json")],
+      ["run", "--project", root, "agentpilot-cli", "rpc", "--config", path.join(root, "connector.json")],
     );
   } finally { await supervisor.shutdown(); }
 });
@@ -239,7 +239,7 @@ require('node:readline').createInterface({ input: process.stdin }).on('line', li
     assert.equal(await provisions(null), true, "a missing environment is built first");
     assert.deepEqual(
       [...(launches[0] ?? [])],
-      ["run", "--project", root, "--python", bundledPython, "anywhere-cli", "rpc", "--config", configPath],
+      ["run", "--project", root, "--python", bundledPython, "agentpilot-cli", "rpc", "--config", configPath],
     );
     assert.equal(supervisor.publicState().resolvedPythonPath, bundledPython);
     assert.equal(

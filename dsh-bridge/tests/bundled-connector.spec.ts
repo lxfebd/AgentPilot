@@ -1,6 +1,6 @@
 /**
- * Verifies the `anywhere-cli` source under `AgentPilot/connector/` is
- * well-formed: `pyproject.toml` exists, declares the `anywhere-cli` console
+ * Verifies the `agentpilot-cli` source under `AgentPilot/connector/` is
+ * well-formed: `pyproject.toml` exists, declares the `agentpilot-cli` console
  * script, and the entry point module loads through Node's parser without
  * syntax errors. The integration test that actually spawns the subprocess
  * is gated on a real `uv` install and lives outside the default test run.
@@ -23,10 +23,10 @@ describe('Anywhere connector source', () => {
     expect(existsSync(join(CONNECTOR_ROOT, 'connector', 'control.py'))).toBe(true)
   })
 
-  it('declares the anywhere-cli entry point in pyproject.toml', () => {
+  it('declares the agentpilot-cli entry point in pyproject.toml', () => {
     const pyproject = readFileSync(join(CONNECTOR_ROOT, 'pyproject.toml'), 'utf8')
-    expect(pyproject).toMatch(/^\[project\.scripts\]\s*\nanywhere-cli\s*=/m)
-    expect(pyproject).toContain('anywhere-cli = "connector.cli:main"')
+    expect(pyproject).toMatch(/^\[project\.scripts\]\s*\nagentpilot-cli\s*=/m)
+    expect(pyproject).toContain('agentpilot-cli = "connector.cli:main"')
   })
 
   it('starts with Python >= 3.12 to align with the plugin runtime', () => {
@@ -41,10 +41,10 @@ describe('Anywhere connector source', () => {
 // test run hermetic.
 const runIntegration = process.env.RUN_CONNECTOR_INTEGRATION === '1'
 
-describe.skipIf(!runIntegration)('Anywhere connector uv run', () => {
-  it('spawns anywhere-cli start and receives a stdout line', async () => {
+describe.skipIf(!runIntegration)('AgentPilot connector uv run', () => {
+  it('spawns agentpilot-cli start and receives a stdout line', async () => {
     const { spawn } = await import('node:child_process')
-    const proc = spawn('uv', ['run', 'anywhere-cli', '--help'], {
+    const proc = spawn('uv', ['run', 'agentpilot-cli', '--help'], {
       cwd: CONNECTOR_ROOT,
       env: { ...process.env, AA_TEST_FAST_EXIT: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],

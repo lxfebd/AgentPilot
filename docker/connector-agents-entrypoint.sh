@@ -154,10 +154,10 @@ cd "${AGENT_CONNECTOR_WORKDIR:-/workspace}"
 cmd="$(connector_args)"
 if [ "$cmd" = "start" ]; then
   log "starting connector with token credentials"
-  exec sudo -E -H -u agent /opt/anywhere-cli-venv/bin/anywhere-cli start
+  exec sudo -E -H -u agent /opt/agentpilot-cli-venv/bin/agentpilot-cli start
 fi
 
 log "starting connector pairing flow"
-exec sudo -E -H -u agent /opt/anywhere-cli-venv/bin/anywhere-cli pair \
+exec sudo -E -H -u agent /opt/agentpilot-cli-venv/bin/agentpilot-cli pair \
   "${AGENT_SERVER_URL}" \
   ${AGENT_CONNECTOR_PAIR_NO_START:+--no-start}

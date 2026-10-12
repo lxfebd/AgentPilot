@@ -77,7 +77,7 @@ class CliError(RuntimeError):
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="anywhere-cli", description="Agent Server Codex connector CLI"
+        prog="agentpilot-cli", description="AgentPilot local connector CLI"
     )
     subparsers = parser.add_subparsers(
         dest="command", metavar="{start,pair,configure,rpc}"
@@ -254,7 +254,7 @@ async def _resolve_server_url_for_pair(
         return await resolve_pair_server_url(
             value,
             timeout=timeout,
-            missing_message="missing server address. Usage: anywhere-cli pair <server>",
+            missing_message="missing server address. Usage: agentpilot-cli pair <server>",
         )
     except ValueError as exc:
         raise CliError(str(exc)) from exc

@@ -1,5 +1,5 @@
 [project]
-name = "anywhere-cli"
+name = "agentpilot-cli"
 version = "2.1.0"
 description = "Local runtime connector for AgentPilot"
 readme = "README.md"
@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-anywhere-cli = "connector.cli:main"
+agentpilot-cli = "connector.cli:main"
 agent-connector = "connector.cli:main"
 
 [build-system]

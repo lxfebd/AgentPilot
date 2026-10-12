@@ -41,7 +41,7 @@ Python Connector 统一维护启动互斥、运行记录和本机 Connector ID �
 ## Python 的启动判断
 
 1. 在同一文件事务中读取运行记录、检查占用、发布本次运行记录。`pid` 必须是实际 Python Connector 进程的 PID，不使用 Electron、DSH Host 或 uv 父进程的 PID。
-2. 检查记录中的 PID 是否存在，进程启动时间是否匹配，以及可执行文件和启动参数是否对应 Connector 入口。支持 `anywhere-cli`、`agent-connector` 和 `python -m connector.cli`。PID 已被其他进程复用、进程已经退出或是僵尸进程时不构成占用；无法检查权限时报告错误。
+2. 检查记录中的 PID 是否存在，进程启动时间是否匹配，以及可执行文件和启动参数是否对应 Connector 入口。支持 `agentpilot-cli`、`agent-connector`、`anywhere-cli`（兼容旧版）和 `python -m connector.cli`。PID 已被其他进程复用、进程已经退出或是僵尸进程时不构成占用；无法检查权限时报告错误。
 3. 存在另一个有效 Connector 时拒绝启动。没有有效占用才写入当前 PID、启动来源与启动时间。没有基于应用存活、文件年龄或定时心跳的第二套占用判断。
 4. 接受带配置的启动时，在同一事务中追加 Connector ID；已有 ID 不重复追加、不改顺序。CLI 启动和旧绑定重连也会补登记缺失 ID。共享文件发布失败时不启动后端连接。
 5. 互斥跟随 Connector 进程。`connector.stop` 停止后端连接，但 RPC 进程还在时仍占用；正常进程关闭时 Python 只清除自己的 `runtime`。异常退出留下的记录在下次启动时根据实际进程状态判断，ID 历史与安装信息保留。
@@ -50,7 +50,7 @@ Python Connector 统一维护启动互斥、运行记录和本机 Connector ID �
 
 ## RPC 冲突与入口处理
 
-`anywhere-cli rpc` 先建立控制通道。`connector.acquireOwnership` 用于无配置时的启动预检；`connector.saveConfig`、配对和启动也由 Python 检查占用。Host 不自行检查 PID 或写入运行记录。
+`agentpilot-cli rpc` 先建立控制通道。`connector.acquireOwnership` 用于无配置时的启动预检；`connector.saveConfig`、配对和启动也由 Python 检查占用。Host 不自行检查 PID 或写入运行记录。
 
 ```json
 {

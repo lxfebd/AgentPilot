@@ -10,7 +10,7 @@ import { materializeConnectorProject } from '../../src/host/connector/project.js
 async function packagedPayload(root: string, cli = 'print("connector")\n'): Promise<string> {
   const source = join(root, 'bundled-connector')
   await mkdir(join(source, 'connector'), { recursive: true })
-  await writeFile(join(source, 'pyproject.toml'), '[project]\nname = "anywhere-cli"\n')
+  await writeFile(join(source, 'pyproject.toml'), '[project]\nname = "agentpilot-cli"\n')
   await writeFile(join(source, 'connector', 'cli.py'), cli)
   return source
 }

@@ -13,7 +13,7 @@ token. Native shell concerns — window, tray, updates, notifications, OAuth and
 file dialogs — stay in Main over IPC.
 
 ```text
-Renderer -> /desktop-api (same origin) -> Electron Main -> loopback HTTP+SSE -> Desktop backend -> anywhere-cli rpc -> Server
+Renderer -> /desktop-api (same origin) -> Electron Main -> loopback HTTP+SSE -> Desktop backend -> agentpilot-cli rpc -> Server
 Renderer -> narrow preload IPC --------------------------------------------------> Electron Main (window, updates, OAuth, dialogs)
 ```
 
@@ -137,7 +137,7 @@ needed:
 
 ```bash
 WORKBENCH_CONNECTOR_DIR=/absolute/path/to/connector yarn dev
-WORKBENCH_CONNECTOR_CLI=/absolute/path/to/anywhere-cli yarn dev
+WORKBENCH_CONNECTOR_CLI=/absolute/path/to/agentpilot-cli yarn dev
 WORKBENCH_UV_BUNDLE_DIR=/absolute/path/to/uv-bundle yarn dev
 WORKBENCH_PYTHON_BUNDLE_DIR=/absolute/path/to/python-bundle yarn dev
 ```
@@ -339,7 +339,7 @@ Quit terminates it. The next start can replace records left by a crashed process
 - Successful local connection, reconnection, CLI pairing and pair-code completion
   refresh the device list without opening an Agent quick-setup dialog.
 - Electron Main persists the returned `connectorId` and `connectorToken`, then
-  sends them to `anywhere-cli rpc` through `connector.saveConfig`.
+  sends them to `agentpilot-cli rpc` through `connector.saveConfig`.
 - Closing the window on macOS keeps the app and Connector running in the
   background. Explicit Quit stops the runtime and terminates the full process
   tree.
