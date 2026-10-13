@@ -1,7 +1,9 @@
 export const onboarding = {
   agents: ["Codex", "Claude Code", "DSH"],
   downloadsUrl: "https://github.com/lxfebd/AgentPilot/releases",
-  learnMoreUrl: "https://agent-pilot.com",
+  // Open-source build: no operator website. Deployments may point this at their
+  // own docs page; keep it empty to hide the link.
+  learnMoreUrl: "",
 } as const
 
 export const steps = [

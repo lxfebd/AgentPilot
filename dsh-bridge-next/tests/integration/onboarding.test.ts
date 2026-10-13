@@ -505,21 +505,43 @@ test('repeated begin shares preparation, and disposal during preparation cannot 
   } finally { await h.close() }
 })
 
-test('self-hosted and cloud login use separate targets and persist only the normalized backend', async () => {
+test('self-hosted and configured-default login use separate targets and persist only the normalized backend', async () => {
   const h = await fixture()
   try {
     const local = await h.manager.begin({ target: 'server', serverUrl: ' http://127.0.0.1:8000/api/v2/ ' })
     assert.equal(new URL(local.url).origin, 'http://127.0.0.1:5174')
     assert.equal(new URL(local.url).hash.startsWith('#/plugin-oauth?'), true)
     assert.deepEqual(await readJson(join(h.root, 'settings.json')), { apiBaseUrl: 'http://127.0.0.1:8000' })
+    // The open-source build bundles no cloud address: the "cloud" target means
+    // the deployment's configured default server, which the fixture sets.
     const cloud = await h.manager.begin({ target: 'cloud' })
-    assert.equal(new URL(cloud.url).origin, CLOUD_API_BASE_URL)
-    assert.deepEqual(await readJson(join(h.root, 'settings.json')), { apiBaseUrl: CLOUD_API_BASE_URL })
-    assert.deepEqual((await h.manager.inspect()).settings, { apiBaseUrl: CLOUD_API_BASE_URL })
-    assert.deepEqual(h.checkedServers, ['http://127.0.0.1:8000', CLOUD_API_BASE_URL])
+    assert.equal(new URL(cloud.url).origin, h.api.baseUrl)
+    assert.deepEqual(await readJson(join(h.root, 'settings.json')), { apiBaseUrl: h.api.baseUrl })
+    assert.deepEqual((await h.manager.inspect()).settings, { apiBaseUrl: h.api.baseUrl })
+    assert.deepEqual(h.checkedServers, ['http://127.0.0.1:8000', h.api.baseUrl])
     assert.equal(h.api.exchanges, 0)
     assert.equal(h.connector.starts, 0)
   } finally { await h.close() }
+})
+
+test('a cloud login without a configured default server is refused and leaves a blank-safe snapshot', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'aa-no-cloud-'))
+  const manager = new OnboardingManager({
+    stateRoot: root, connectorSourceDir: root, uvPath: 'uv', apiBaseUrl: CLOUD_API_BASE_URL,
+  }, {
+    api: base => new FakeApi(base), connector: new FakeConnector(),
+    detect: async () => ({ status: 'absent', message: 'not registered' }),
+    checkServer: async () => { throw new Error('must not be reached') },
+  })
+  try {
+    assert.equal(CLOUD_API_BASE_URL, '', 'The open-source build must ship no cloud default')
+    await assert.rejects(manager.begin({ target: 'cloud' }), /尚未配置云端服务/)
+    const snapshot = await manager.inspect()
+    assert.equal(snapshot.cloudAvailable, false)
+    // A blank backend must not crash the snapshot: no Web target is derived.
+    assert.equal(snapshot.webAppUrl, '')
+    assert.deepEqual(snapshot.settings, { apiBaseUrl: '' })
+  } finally { await manager.dispose(); await rm(root, { recursive: true, force: true }) }
 })
 
 test('invalid or unavailable login targets preserve the connected account and backend', async () => {
@@ -560,7 +582,7 @@ test('legacy Web settings are removed on load while the saved account continues 
   } finally { await h.close() }
 })
 
-test('an existing local account without settings survives the new cloud default', async () => {
+test('an existing local account without settings survives an unconfigured cloud default', async () => {
   const root = await mkdtemp(join(tmpdir(), 'aa-legacy-account-'))
   const api = new FakeApi('http://127.0.0.1:8000')
   const account = await api.exchange()

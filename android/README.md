@@ -21,8 +21,10 @@ Native Android client for AgentPilot.
 
 Download the Android APK from the [release download table](../README.md#下载与入口).
 The client supports Android 8.0+ (API 26), sessions, devices, runtime configuration,
-approvals, files and terminals through the v2 API. Cloud is the default service;
-a self-hosted address can be selected in the login flow.
+approvals, files and terminals through the v2 API. No server is bundled: enter
+your own service address in the login flow. A build can pin a default address
+with the `agentPilot.officialServerUrl` Gradle property (or `local.properties`),
+which also enables the official-cloud entry.
 
 ## Build from the command line
 

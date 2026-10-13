@@ -112,6 +112,8 @@ export type DesktopServerConnection = {
   serverUrl: string
   apiNamespace: string
   oauthWebOrigin: string
+  /** False when the build ships no default cloud server; the UI then offers only the self-hosted entry. */
+  cloudAvailable: boolean
 }
 
 export type DesktopOnboardingOpen = {

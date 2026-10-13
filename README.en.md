@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.agent-pilot.com/en"><img src="docs/images/readme-hero-en.webp" alt="AgentPilot: an agent workbench across your devices. Supports Codex, Claude Code and DeepSeek Harness, with more agents coming soon." width="100%"></a>
+  <a href="https://github.com/lxfebd/AgentPilot"><img src="docs/images/readme-hero-en.webp" alt="AgentPilot: an agent workbench across your devices. Supports Codex, Claude Code and DeepSeek Harness, with more agents coming soon." width="100%"></a>
 </p>
 
 <p align="center">
@@ -8,9 +8,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.agent-pilot.com/en">Website</a> ·
   <a href="#downloads-and-access">Download</a> ·
-  <a href="https://web.agent-pilot.com">Open Web</a> ·
+  <a href="docs/getting-started.md#connect-a-self-hosted-service">Self-host and open Web</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="README.md">简体中文</a>
 </p>
@@ -25,7 +24,7 @@
 
 ## Downloads and access
 
-Install the desktop client on your work machine, then access it from your phone, tablet or Web. Use the Connector CLI to connect Linux and headless servers. Each client can connect to Cloud or a self-hosted service.
+Install the desktop client on your work machine, then access it from your phone, tablet or Web. Use the Connector CLI to connect Linux and headless servers. Each client connects to the service instance you deploy yourself.
 
 | Platform | Get the client |
 | --- | --- |
@@ -33,7 +32,7 @@ Install the desktop client on your work machine, then access it from your phone,
 | **Windows** | [GitHub Releases · x64 installer](https://github.com/lxfebd/AgentPilot/releases) |
 | **Android** | [GitHub Releases · APK](https://github.com/lxfebd/AgentPilot/releases) |
 | **iOS / iPadOS** | [App Store](https://apps.apple.com/cn/app/agent-pilot) · [TestFlight](https://testflight.apple.com/join/AgentPilot) |
-| **Web** | [Open Web](https://web.agent-pilot.com) |
+| **Web** | Deploy your own service, then open its address (see [Sign in](docs/getting-started.md#connect-a-self-hosted-service)) |
 | **Linux / headless** | [Run the Connector CLI](connector/README.md) |
 
 > After the first official release, the installer links above will point to the corresponding GitHub Release. `main` is the current development branch, so new source fixes may not be included in the installers yet.
@@ -78,7 +77,7 @@ Check progress and answer your agent from your phone, open a workspace on your t
 
 ## First steps
 
-1. **Sign in to a service.** Install a client or open Web, sign in to Cloud, or enter your self-hosted service address.
+1. **Sign in to a service.** Install a client or open Web, then enter your service address and sign in.
 2. **Connect a work machine.** Desktop bundles a managed Connector; servers and headless environments use the [Connector CLI](connector/README.md).
 3. **Prepare agents and projects.** Configure the runtime, account and working directory on the work machine, then create or open a session.
 4. **Access from other devices.** Sign in to the same service and account from your phone, tablet or another computer to reach your devices and tasks.
@@ -87,7 +86,7 @@ See [installation and first use](docs/getting-started.md) for detailed pairing s
 
 ## Where tasks run and self-hosting
 
-Agents use the work machine's workspace and permissions through the Connector. Connect to Cloud, or deploy AgentPilot on your own server.
+Agents use the work machine's workspace and permissions through the Connector. Deploy the AgentPilot service on your own server and point each client at that address.
 
 ```mermaid
 flowchart LR

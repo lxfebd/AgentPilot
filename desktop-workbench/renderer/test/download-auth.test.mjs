@@ -27,6 +27,6 @@ test("self-hosted downloads use the Desktop proxy and never authorize another se
   assert.equal(shouldAuthorizeDownloadUrl("aa-workbench://web/api/v2/files/1"), true)
   assert.equal(shouldAuthorizeDownloadUrl("aa-workbench://other/api/v2/files/1"), false)
   assert.equal(shouldAuthorizeDownloadUrl("https://self.example/api/v2/files/1"), true)
-  assert.equal(shouldAuthorizeDownloadUrl("https://web.agent-pilot.com/api/v2/files/1"), false)
+  assert.equal(shouldAuthorizeDownloadUrl("https://cloud.example.test/api/v2/files/1"), false)
   assert.equal(shouldAuthorizeDownloadUrl("//storage.example/files/1"), false)
 })

@@ -14,6 +14,9 @@ final class AppState: ObservableObject {
 
     @Published private(set) var route: Route = .loading
     @Published private(set) var serverURL: URL?
+    /// Deployment-specific desktop-app download page. Empty in the open-source
+    /// build (nil hides the download button); set it in a personal build config.
+    @Published private(set) var desktopDownloadURL: URL? = nil
     @Published private(set) var me: AuthMe? {
         didSet {
             accountAvatarSource = AccountAvatarImageSource.parse(me?.avatar)

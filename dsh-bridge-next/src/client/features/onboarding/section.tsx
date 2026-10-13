@@ -31,6 +31,10 @@ export function OnboardingSection({ t, host, state: panel }: { t: Translate; hos
   }
 
   const detected = snapshot?.desktop.status
+  const cloudAvailable = snapshot?.cloudAvailable ?? true
+  // Self-hosted-only builds (no bundled default server) present the server form
+  // directly; the cloud entry only appears when a deployment configures one.
+  const showServerForm = showServer || !cloudAvailable
   const unavailable = busy || detected !== 'absent'
   const primaryBusy = busy && loginTarget !== 'server'
   const serverBusy = busy && loginTarget === 'server'
@@ -44,7 +48,7 @@ export function OnboardingSection({ t, host, state: panel }: { t: Translate; hos
           : snapshot?.stage === 'authorizing' ? t('已打开登录页面，完成登录后将自动返回。')
             : connecting || snapshot?.stage === 'error' ? snapshot?.message : null)
   return <section className={css.section} aria-busy={busy}>
-    <Button
+    {cloudAvailable ? <Button
       variant="primary"
       className={css.loginButton}
       icon={primaryBusy ? <StateDot state="ongoing" /> : <Cloud size={16} />}
@@ -52,12 +56,12 @@ export function OnboardingSection({ t, host, state: panel }: { t: Translate; hos
       onClick={() => begin('cloud')}
     >
       {primaryBusy ? t('正在连接…') : t('登录 AgentPilot Cloud')}
-    </Button>
-    {showServer ? <form id={serverFormId} className={css.form} onSubmit={(event) => {
+    </Button> : null}
+    {showServerForm ? <form id={serverFormId} className={css.form} onSubmit={(event) => {
       event.preventDefault()
       if (serverUrl.trim() && !unavailable) begin('server')
     }}>
-      <p className={css.separator} aria-hidden="true">OR</p>
+      {cloudAvailable ? <p className={css.separator} aria-hidden="true">OR</p> : null}
       <div className={css.fields}>
         <label className={css.field} htmlFor={`${serverFormId}-url`}>{t('连接到你自己的 AgentPilot 服务实例')}</label>
         <Input

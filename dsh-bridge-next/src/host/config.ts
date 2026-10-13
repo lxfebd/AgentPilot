@@ -2,7 +2,7 @@ import { userInfo } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import z from '@deepseek-ai/schemastery'
-import { CLOUD_API_BASE_URL, type ConnectionSettings } from '../contracts/index.js'
+import type { ConnectionSettings } from '../contracts/index.js'
 import { normalizeServerOrigin } from './account/server.js'
 
 export interface Config {
@@ -15,7 +15,9 @@ export interface Config {
 
 export const Config: z<Config> = z.object({
   dshHome: z.string(),
-  apiBaseUrl: z.string().default(CLOUD_API_BASE_URL),
+  // No bundled cloud in the open-source build; blank means "self-hosted only".
+  // Deployments can pin a default via plugin config to re-enable the cloud button.
+  apiBaseUrl: z.string().default(''),
   stateRoot: z.string(),
   connectorSourceDir: z.string(),
   uvPath: z.string(),
@@ -48,7 +50,7 @@ export function resolveConfig(config: Config): ResolvedConfig {
     stateRoot: root,
     ...(config.stateRoot === undefined ? { legacyStateRoot: join(userInfo().homedir, '.agentpilot', 'dsh-bridge-next') } : {}),
     connectorSourceDir,
-    apiBaseUrl: normalizeServerOrigin(config.apiBaseUrl ?? CLOUD_API_BASE_URL),
+    apiBaseUrl: config.apiBaseUrl?.trim() ? normalizeServerOrigin(config.apiBaseUrl) : '',
     uvPath: config.uvPath ?? process.env['UV_PATH'] ?? 'uv',
   }
 }

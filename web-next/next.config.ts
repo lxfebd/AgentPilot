@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const apiTarget = process.env.AGENT_PILOT_API ?? "http://127.0.0.1:8000";
+const apiTarget = (process.env.AGENT_PILOT_API ?? "http://127.0.0.1:8000").trim();
 const apiNamespace = process.env.AGENT_PILOT_API_NAMESPACE ?? "/api/v2";
 const proxyClientMaxBodySize = 100 * 1024 * 1024;
 const staticExport = process.env.NEXT_OUTPUT === "export";
@@ -31,7 +31,8 @@ const nextConfig: NextConfig = {
     // Full timeline sync uses HTTP ingest through this same-origin proxy.
     proxyClientMaxBodySize,
   },
-  ...(staticExport
+  // Without an API target there is nothing to proxy: skip same-origin rewrites.
+  ...(staticExport || !apiTarget
     ? {}
     : {
         async rewrites() {

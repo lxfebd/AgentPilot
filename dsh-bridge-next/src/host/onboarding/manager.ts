@@ -200,7 +200,12 @@ export class OnboardingManager {
     await this.initialize()
     if (this.disposed) throw new Error('插件已关闭。')
     if (input && input.target !== 'cloud' && input.target !== 'server') throw new Error('请选择云端或自建服务器。')
-    const next = this.validateSettings({ apiBaseUrl: input?.target === 'cloud' ? CLOUD_API_BASE_URL
+    // Open-source builds ship without a bundled cloud; the "cloud" target only
+    // exists when a deployment configures a default server. Blank means the
+    // plugin is self-hosted only — the UI then hides the cloud entry.
+    const cloudUrl = (this.config.apiBaseUrl ?? '').trim() || CLOUD_API_BASE_URL
+    if (input?.target === 'cloud' && !cloudUrl) throw new Error('尚未配置云端服务，请使用自建服务器地址登录。')
+    const next = this.validateSettings({ apiBaseUrl: input?.target === 'cloud' ? cloudUrl
       : input?.target === 'server' ? input.serverUrl : this.settings.apiBaseUrl })
     await this.requireStandalone()
     await (this.dependencies.checkServer ?? checkServer)(next.apiBaseUrl)
@@ -622,10 +627,12 @@ export class OnboardingManager {
   }
 
   private snapshot(): OnboardingSnapshot {
+    const apiBaseUrl = this.settings.apiBaseUrl
     return {
       desktop: this.desktop, settings: { ...this.settings }, stage: this.stage, message: this.message,
+      cloudAvailable: Boolean((this.config.apiBaseUrl ?? '').trim() || CLOUD_API_BASE_URL),
       account: this.account ? publicProfile(this.account) : null,
-      webAppUrl: resolveWebAppUrl(this.settings.apiBaseUrl),
+      webAppUrl: apiBaseUrl ? resolveWebAppUrl(apiBaseUrl) : '',
       connectorId: this.binding?.connectorId ?? null, connectorRunning: this.connector.running, flowId: this.flow?.id ?? null,
       deviceRecovery: this.recovery ? { ...this.recovery } : null,
       connector: {

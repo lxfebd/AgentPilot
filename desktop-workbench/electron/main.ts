@@ -702,6 +702,12 @@ function registerIpcHandlers(): void {
         env: process.env,
         development: !app.isPackaged,
       });
+      if (!server.serverUrl) {
+        throw new DesktopServerError(
+          "invalidServer",
+          "尚未配置服务器地址，请先填写你的服务器地址后再登录。",
+        );
+      }
       await checkDesktopServer(server, (url, init) => net.fetch(String(url), init));
       const request = createDesktopOAuthRequest(server.oauthWebOrigin);
       desktopOAuthResult = null;

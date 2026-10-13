@@ -9,7 +9,9 @@ export const PRODUCT_LINKS: {
 } = {
   desktopDownloadUrl: '',
   landingPageUrl: '',
-  downloadPageUrl: 'https://agent-pilot.com/download',
+  // Deployment-specific; open-source builds leave these empty so the UI shows
+  // them as unavailable instead of pointing at a specific operator's site.
+  downloadPageUrl: '',
   androidDownloadUrl: 'https://github.com/lxfebd/AgentPilot/releases/latest',
   iosDownloadUrl: '',
   webAppHref: '#/',

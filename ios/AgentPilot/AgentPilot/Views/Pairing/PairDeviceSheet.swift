@@ -152,8 +152,11 @@ struct PairDeviceSheet: View {
             Label(String(localized: "AgentPilot Desktop"), appSymbol: "desktopcomputer").font(.title2.bold())
             Text(String(localized: "在电脑上安装桌面应用，使用以下服务器地址登录当前账号。连接后，可以在设备管理中添加 Agent。"))
             Text(appState.serverURL?.absoluteString ?? "").font(.callout.monospaced()).textSelection(.enabled)
-            AppGlassButton(String(localized: "下载桌面应用"), style: .prominent) {
-                openURL(URL(string: "https://agent-pilot.com/")!)
+            // Desktop app download page is deployment-specific; open the configured page when present.
+            if let desktopURL = appState.desktopDownloadURL, !desktopURL.isEmpty {
+                AppGlassButton(String(localized: "下载桌面应用"), style: .prominent) {
+                    openURL(desktopURL)
+                }
             }
         }
     }

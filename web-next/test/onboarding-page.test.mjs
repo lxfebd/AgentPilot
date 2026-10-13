@@ -104,7 +104,8 @@ test('onboarding embeds one-click Agent configuration and can continue without c
   assert.ok(container.querySelector('[data-slide="complete"]'))
   assert.match(container.textContent, /You are\nall set\./)
   assert.equal([...container.querySelectorAll('a')].find(a => a.textContent.includes('下载桌面程序')).getAttribute('href'), 'https://github.com/lxfebd/AgentPilot/releases')
-  assert.equal([...container.querySelectorAll('a')].find(a => a.textContent.includes('了解更多')).getAttribute('href'), 'https://agent-pilot.com')
+  // The open-source build ships no operator site, so the learn-more link is hidden.
+  assert.equal([...container.querySelectorAll('a')].some(a => a.textContent.includes('了解更多')), false)
   assert.equal(document.querySelector('[role="dialog"]'), null)
   await click(container, '立刻体验')
   assert.equal(window.location.hash, '#/')

@@ -55,20 +55,24 @@ yarn dev
 ```
 
 `yarn dev` starts the bundled `renderer` Next app on the first available local port from `5184`, waits for it, then opens Electron.
-By default, the embedded web app talks to `https://web.agent-pilot.com`.
+No default server is bundled: point the app at your own server with `WORKBENCH_API_ORIGIN` or by entering its address on the login page.
 The desktop shell uses the `/api/v2` API namespace by default.
 
 ## Login and server configuration
 
-The login page offers **AgentPilot Cloud** and an expandable self-hosted
-server form. Both check `GET /api/v2/health` and require `status: "ok"` before
-opening sign-in. HTTP errors, invalid responses, and a 10-second timeout stay on
-the login page so the address can be corrected and retried.
+The login page offers an expandable self-hosted server form. It checks
+`GET /api/v2/health` and requires `status: "ok"` before opening sign-in. HTTP
+errors, invalid responses, and a 10-second timeout stay on the login page so the
+address can be corrected and retried. A deployment that pins a default server
+also gets an additional **AgentPilot Cloud** button; open-source builds leave it
+hidden.
 
-`config.json` is the shared source for the official Cloud backend/Web origins,
-API namespace, health timeout, and Desktop OAuth client settings. The build and
-development launchers read the same file. The OAuth protocol must also match the
-registered scheme in `package.json` and the server's first-party client registry.
+`config.json` is the shared source for an optional default backend/Web origin,
+API namespace, health timeout, and Desktop OAuth client settings. Leave
+`cloud.serverUrl` and `cloud.oauthWebOrigin` empty to ship a self-hosted-only
+build. The build and development launchers read the same file. The OAuth protocol
+must also match the registered scheme in `package.json` and the server's
+first-party client registry.
 
 Like iOS, Desktop assumes a self-hosted server exposes its Web app at the same
 origin. It opens `WEB_ORIGIN/#/desktop-oauth` with `response_type=code`, the
@@ -81,8 +85,9 @@ The packaged app uses the system browser. Development uses a separate Web
 window with the same OAuth flow, intercepting the callback without installing
 an OS protocol handler. After sign-in succeeds, the server is remembered in
 `desktop-server.json` in Electron's user-data directory; API requests, downloads,
-and WebSockets follow that server. Cloud sign-in always selects the official
-Cloud address, regardless of a previously entered self-hosted address.
+and WebSockets follow that server. The optional Cloud button, when a deployment
+configures one, always selects that configured address, regardless of a
+previously entered self-hosted address.
 
 For separate API/Web deployments, set `WORKBENCH_API_ORIGIN` and
 `WORKBENCH_OAUTH_WEB_ORIGIN` to the matching pair, then enter that API origin in

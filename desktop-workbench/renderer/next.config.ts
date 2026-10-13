@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "node:path";
 import desktopConfig from "../config.json";
 
-const apiTarget = process.env.AGENT_PILOT_API ?? desktopConfig.cloud.serverUrl;
+const apiTarget = (process.env.AGENT_PILOT_API ?? desktopConfig.cloud.serverUrl ?? "").trim();
 const apiNamespace = process.env.AGENT_PILOT_API_NAMESPACE ?? desktopConfig.apiNamespace;
 const proxyClientMaxBodySize = 100 * 1024 * 1024;
 const staticExport = process.env.NEXT_OUTPUT === "export";
@@ -36,7 +36,9 @@ const nextConfig: NextConfig = {
     // Full timeline sync uses HTTP ingest through this same-origin proxy.
     proxyClientMaxBodySize,
   },
-  ...(staticExport
+  // With no configured default server there is nothing to proxy: skip the
+  // same-origin rewrites instead of self-referencing them.
+  ...(staticExport || !apiTarget
     ? {}
     : {
         async rewrites() {

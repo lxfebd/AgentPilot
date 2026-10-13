@@ -14,17 +14,22 @@ test("accepts server origins and API base URLs without silently accepting a page
   }
 });
 
-test("Cloud uses central config, while a configured local server can have a separate Web origin", () => {
+test("without a bundled cloud server, an env-configured server becomes the connection", () => {
   const env = {
     WORKBENCH_API_ORIGIN: "http://127.0.0.1:8000",
     WORKBENCH_API_NAMESPACE: "",
     WORKBENCH_OAUTH_WEB_ORIGIN: "http://localhost:5174",
   };
+  // No default cloud is bundled: resolveDesktopServer() with no input and no
+  // env yields an empty connection, not a crash or a hardcoded address.
+  assert.deepEqual(resolveDesktopServer(), {
+    serverUrl: "", apiNamespace: "", oauthWebOrigin: "", cloudAvailable: false,
+  });
   assert.deepEqual(resolveDesktopServer(undefined, { env, development: true }), {
-    ...config.cloud, apiNamespace: config.apiNamespace,
+    serverUrl: "http://127.0.0.1:8000", apiNamespace: "", oauthWebOrigin: "http://localhost:5174", cloudAvailable: true,
   });
   assert.deepEqual(resolveDesktopServer("http://127.0.0.1:8000", { env, development: true }), {
-    serverUrl: "http://127.0.0.1:8000", apiNamespace: "", oauthWebOrigin: "http://localhost:5174",
+    serverUrl: "http://127.0.0.1:8000", apiNamespace: "", oauthWebOrigin: "http://localhost:5174", cloudAvailable: true,
   });
   assert.equal(resolveDesktopServer("https://self.example", { env }).oauthWebOrigin, "https://self.example");
   assert.equal(resolveDesktopServer("http://127.0.0.1:8000", { development: true }).oauthWebOrigin, "http://127.0.0.1:5174");

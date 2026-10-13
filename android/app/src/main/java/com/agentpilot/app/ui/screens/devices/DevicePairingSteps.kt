@@ -119,10 +119,13 @@ internal fun DevicePairingStepActions(
     onComplete: () -> Unit,
     onCreate: () -> Unit,
     onClaim: () -> Unit,
+    downloadAvailable: Boolean = true,
 ) {
     when (step) {
         DevicePairingStep.DesktopInstall -> {
-            PairingActionButton(stringResource(R.string.device_pairing_download), onDownload, secondary = true, icon = Lucide.ExternalLink)
+            if (downloadAvailable) {
+                PairingActionButton(stringResource(R.string.device_pairing_download), onDownload, secondary = true, icon = Lucide.ExternalLink)
+            }
             PairingActionButton(stringResource(R.string.common_done), onComplete)
         }
         DevicePairingStep.CliConfirm -> {

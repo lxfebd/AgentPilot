@@ -104,9 +104,10 @@ test("skipping records completion for a user launch and opens the app", async (t
     await delay(10)
   })
   await until(() => container.querySelector('[data-slide="complete"]'))
-  // The desktop app never offers to download itself.
+  // The desktop app never offers to download itself. The open-source build
+  // ships no operator site either, so the learn-more link stays hidden.
   assert.equal([...container.querySelectorAll("a")].some((item) => item.textContent.includes("下载桌面程序")), false)
-  assert.equal([...container.querySelectorAll("a")].find((item) => item.textContent.includes("了解更多")).getAttribute("href"), "https://agent-pilot.com")
+  assert.equal([...container.querySelectorAll("a")].some((item) => item.textContent.includes("了解更多")), false)
   await act(async () => { button(container, "立刻体验").click(); await delay(10) })
   await until(() => completed.length === 1)
   assert.deepEqual(completed, ["desktop"])

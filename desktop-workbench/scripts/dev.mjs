@@ -11,7 +11,7 @@ const rendererPackage = "agent-pilot-desktop-renderer";
 const explicitWebUrl = process.env.WORKBENCH_WEB_URL?.trim();
 const explicitWebPort = parsePort(process.env.WORKBENCH_WEB_PORT);
 const desktopConfig = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
-const apiOrigin = process.env.WORKBENCH_API_ORIGIN?.trim() || process.env.AGENT_PILOT_API?.trim() || desktopConfig.cloud.serverUrl;
+const apiOrigin = (process.env.WORKBENCH_API_ORIGIN?.trim() || process.env.AGENT_PILOT_API?.trim() || desktopConfig.cloud.serverUrl || "").trim();
 const apiNamespace = process.env.WORKBENCH_API_NAMESPACE ?? process.env.AGENT_PILOT_API_NAMESPACE ?? desktopConfig.apiNamespace;
 const usesShell = process.platform === "win32";
 const host = "127.0.0.1";
@@ -28,7 +28,12 @@ if (!explicitWebUrl) {
   const port = explicitWebPort ?? await findAvailablePort(5184);
   devUrl = `http://${host}:${port}`;
   console.log(`Starting desktop renderer at ${devUrl}`);
-  console.log(`Using AgentPilot API at ${apiOrigin}${apiNamespace || ""}`);
+  if (apiOrigin) {
+    console.log(`Using AgentPilot API at ${apiOrigin}${apiNamespace || ""}`);
+  } else {
+    console.log("No default AgentPilot API configured; enter your server address in the app,");
+    console.log("or set WORKBENCH_API_ORIGIN (for example http://127.0.0.1:8000) to proxy locally.");
+  }
   webProcess = spawn(yarnCommand, ["workspace", rendererPackage, "exec", "next", "dev", "--hostname", host, "--port", String(port)], {
     cwd: root,
     stdio: "inherit",

@@ -41,7 +41,8 @@ export function AccountPanel({ t, host, state, snapshot, account }: {
   const avatar = account.avatar && account.avatar !== failedAvatar ? account.avatar : null
   // Client HMR can arrive before the Host reloads. The backend address exists
   // in older snapshots, so this action remains usable throughout development.
-  const webAppUrl = snapshot.webAppUrl || resolveWebAppUrl(snapshot.settings.apiBaseUrl)
+  // Self-hosted-only builds with no configured server have no Web target yet.
+  const webAppUrl = snapshot.webAppUrl || (snapshot.settings.apiBaseUrl ? resolveWebAppUrl(snapshot.settings.apiBaseUrl) : '')
 
   return <section className={css.panel} aria-busy={state.busy}>
     <div className={css.profile} aria-label={t('账号信息')}>
@@ -82,13 +83,13 @@ export function AccountPanel({ t, host, state, snapshot, account }: {
       {onboardingUrl && snapshot.stage === 'ready' && !recovery ? <a className={css.detail} href={onboardingUrl} target="_blank" rel="noreferrer">{t('浏览器没有打开？点击继续配置')}</a> : null}
     </div>
     <div className={css.actions}>
-      <Button
+      {webAppUrl ? <Button
         variant="primary"
         className={css.button}
         icon={<Globe size={16} strokeWidth={1.5} />}
         disabled={state.busy}
         onClick={() => window.open(webAppUrl, '_blank', 'noopener,noreferrer')}
-      >{t('打开 Web')}</Button>
+      >{t('打开 Web')}</Button> : null}
       <MobileConnection t={t} host={host} disabled={state.busy || Boolean(state.readError)} />
       <Button variant="ghost" className={css.button} disabled={state.busy} onClick={() => void state.run(async () => {
         setLoggingOut(true)

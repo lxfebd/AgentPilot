@@ -12,7 +12,10 @@ struct ManualLoginView: View {
     @State private var alertMessage: String?
     @State private var alertTitle = String(localized: "Sign In Failed")
 
-    static let cloudServer = "https://web.agent-pilot.com"
+    // No bundled cloud in the open-source build: sign in only to a server you
+    // host yourself (public HTTPS, private server, or a tunnel to your machine).
+    // Set this in a personal build config if you want a preselected default.
+    static let cloudServer = ""
 
     var onDashboardRequested: () -> Void = {}
 
@@ -20,13 +23,15 @@ struct ManualLoginView: View {
         NavigationStack(path: $path) {
             AuthScreen(title: String(localized: "Manual Login"), onCancel: close) {
                 VStack(spacing: 16) {
-                    AuthPrimaryButton(
-                        title: String(localized: "Connect to Anywhere Cloud"),
-                        systemImage: "cloud",
-                        isLoading: isSigningIn,
-                        disabled: isSigningIn,
-                    ) {
-                        startSignIn(server: Self.cloudServer)
+                    if !Self.cloudServer.isEmpty {
+                        AuthPrimaryButton(
+                            title: String(localized: "Connect to Anywhere Cloud"),
+                            systemImage: "cloud",
+                            isLoading: isSigningIn,
+                            disabled: isSigningIn,
+                        ) {
+                            startSignIn(server: Self.cloudServer)
+                        }
                     }
 
                     AuthGlassButton(String(localized: "Connect to your self-hosted instance"), systemImage: "server.rack") {

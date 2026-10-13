@@ -1,12 +1,12 @@
 {
   "cloud": {
-    "serverUrl": "https://web.agent-pilot.com",
-    "oauthWebOrigin": "https://web.agent-pilot.com"
+    "serverUrl": "",
+    "oauthWebOrigin": ""
   },
   "apiNamespace": "/api/v2",
   "healthTimeoutMs": 10000,
   "updates": {
-    "downloadUrl": "https://downloads.example.invalid/agent-pilot-desktop"
+    "downloadUrl": ""
   },
   "oauth": {
     "protocol": "agent-pilot-desktop",

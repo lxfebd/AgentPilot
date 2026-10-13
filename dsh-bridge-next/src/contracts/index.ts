@@ -6,7 +6,10 @@ import type { ConnectorLogPage, ConnectorLogQuery, BridgeLogSnapshot } from './l
 // The Connector bridge protocol stays in contracts/dsh-bridge.
 export const HOST_NAMESPACE = 'agentPilotOnboarding'
 export const OAUTH_CLIENT_ID = 'agent-pilot-dsh-plugin'
-export const CLOUD_API_BASE_URL = 'https://web.agent-pilot.com'
+// No bundled cloud in the open-source build: the plugin connects to a server
+// the user points it at (self-hosted / LAN / tunnel). `cloud` targets a
+// preconfigured default that deployments can set via plugin config.
+export const CLOUD_API_BASE_URL = ''
 
 export type DesktopDetection =
   | { status: 'absent'; message: string }
@@ -48,6 +51,8 @@ export interface OnboardingSnapshot {
   ownership?: { status: 'owned' | 'conflict' | 'error'; message?: string | undefined } | null
   desktop: DesktopDetection
   settings: ConnectionSettings
+  /** False when the build ships no default server: only self-hosted entry is offered. */
+  cloudAvailable: boolean
   stage: FlowStage
   message: string
   account: AccountProfile | null

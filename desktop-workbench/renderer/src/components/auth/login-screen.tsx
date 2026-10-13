@@ -8,6 +8,7 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "@/com
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { AuthShell } from "./auth-shell"
 import { useAuth } from "./auth-context"
+import { cloudLoginAvailable } from "@/features/desktop/server-connection"
 import { useTranslations } from "next-intl"
 
 export function LoginScreen() {
@@ -23,11 +24,16 @@ export function LoginScreen() {
   const [serverUrl, setServerUrl] = useState("")
   const [loginTarget, setLoginTarget] = useState<"cloud" | "server">("cloud")
   const busy = oauthStatus === "opening"
+  // Open-source builds ship without a default cloud server: the self-hosted
+  // form is then the primary entry and no cloud button is shown.
+  const cloudAvailable = cloudLoginAvailable()
 
   const startLogin = async (target: "cloud" | "server") => {
     setLoginTarget(target)
     await startDesktopOAuth(target === "server" ? serverUrl : undefined)
   }
+
+  const showServerForm = showServer || !cloudAvailable
 
   return (
     <AuthShell>
@@ -39,13 +45,15 @@ export function LoginScreen() {
       </div>
 
       <div className="flex flex-col gap-7">
-        <LoginAction
-          loading={busy && loginTarget === "cloud"}
-          disabled={busy || !desktopOAuthAvailable}
-          startLogin={() => startLogin("cloud")}
-        />
+        {cloudAvailable ? (
+          <LoginAction
+            loading={busy && loginTarget === "cloud"}
+            disabled={busy || !desktopOAuthAvailable}
+            startLogin={() => startLogin("cloud")}
+          />
+        ) : null}
 
-        {showServer ? (
+        {showServerForm ? (
           <form
             id="desktop-server-login"
             className="flex flex-col gap-8 pt-3"
@@ -54,7 +62,7 @@ export function LoginScreen() {
               if (serverUrl.trim() && !busy && desktopOAuthAvailable) void startLogin("server")
             }}
           >
-            <FieldSeparator>OR</FieldSeparator>
+            {cloudAvailable ? <FieldSeparator>OR</FieldSeparator> : null}
             <FieldGroup className="gap-4">
               <Field data-invalid={Boolean(error && loginTarget === "server")} data-disabled={busy}>
                 <FieldLabel htmlFor="desktop-server-url">{t("login.selfHosted")}</FieldLabel>

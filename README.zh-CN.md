@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.agent-pilot.com"><img src="docs/images/readme-hero-zh.webp" alt="AgentPilot：跨设备的开源 Agent 工作台。支持 Codex、Claude Code 和 DeepSeek Harness，更多 Agent 即将支持。" width="100%"></a>
+  <a href="https://github.com/lxfebd/AgentPilot"><img src="docs/images/readme-hero-zh.webp" alt="AgentPilot：跨设备的开源 Agent 工作台。支持 Codex、Claude Code 和 DeepSeek Harness，更多 Agent 即将支持。" width="100%"></a>
 </p>
 
 <p align="center">
@@ -8,9 +8,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.agent-pilot.com">官网</a> ·
   <a href="#下载与入口">下载客户端</a> ·
-  <a href="https://web.agent-pilot.com">打开 Web</a> ·
+  <a href="docs/getting-started.md#连接自托管服务">部署并打开 Web</a> ·
   <a href="docs/README.md">使用文档</a> ·
   <a href="README.en.md">English</a>
 </p>
@@ -25,7 +24,7 @@
 
 ## 下载与入口
 
-在工作设备上安装桌面客户端，再通过手机、平板或 Web 访问。Linux 和无图形界面的服务器可使用 Connector CLI 接入。各客户端均可连接 Cloud 或自托管服务。
+在工作设备上安装桌面客户端，再通过手机、平板或 Web 访问。Linux 和无图形界面的服务器可使用 Connector CLI 接入。各客户端连接你自己部署的服务实例。
 
 | 平台 | 获取客户端 |
 | --- | --- |
@@ -33,7 +32,7 @@
 | **Windows** | [GitHub Releases · x64 安装包](https://github.com/lxfebd/AgentPilot/releases) |
 | **Android** | [GitHub Releases · APK](https://github.com/lxfebd/AgentPilot/releases) |
 | **iOS / iPadOS** | [App Store](https://apps.apple.com/cn/app/agent-pilot) · [TestFlight](https://testflight.apple.com/join/AgentPilot) |
-| **Web** | [立即打开 Web](https://web.agent-pilot.com) |
+| **Web** | 部署自己的服务后打开对应地址（见[登录服务](docs/getting-started.md#连接自托管服务)） |
 | **Linux / headless** | [运行 Connector CLI](connector/README.md) |
 
 > 正式发布后，上面的安装包链接会指向对应 Release；当前 `main` 是开发主线，源码中的新修复不一定已进入安装包。
@@ -80,7 +79,7 @@ Runtime 是工作设备上运行和连接 Agent 的组件。模型账号和调�
 
 ## 首次使用
 
-1. **登录服务。** 安装客户端或打开 Web，登录 Cloud，或填写自托管服务地址。
+1. **登录服务。** 安装客户端或打开 Web，填写你的服务地址并登录。
 2. **连接工作设备。** Desktop 集成本机 Connector；服务器与无图形环境使用 [Connector CLI](connector/README.md)。
 3. **准备 Agent 和项目。** 在工作设备上配置 Runtime、账号与工作目录，创建或打开会话。
 4. **从其他设备访问。** 在手机、平板或另一台电脑登录同一服务和账号，访问自己的设备与任务。
@@ -89,7 +88,7 @@ Runtime 是工作设备上运行和连接 Agent 的组件。模型账号和调�
 
 ## 执行位置与自托管
 
-Agent 使用 Connector 所在机器的工作区与权限。可以连接 Cloud，也可以在自己的服务器上部署 AgentPilot 服务。
+Agent 使用 Connector 所在机器的工作区与权限。服务部署在你自己的服务器上，客户端填入该地址即可。
 
 ```mermaid
 flowchart LR

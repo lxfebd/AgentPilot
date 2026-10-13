@@ -8,7 +8,7 @@
 
 - 在其他设备上查看 DSH 会话与运行进度，发送消息或继续已有会话。
 - 根据 DSH 和当前会话的能力选择模型、权限与 Agent 模式，发送文字、图片或普通文件，回复输入请求与单次操作审批。
-- 使用 AgentPilot Cloud 或自己的服务实例；在插件中查看连接状态、管理本机 Connector 和桥接日志。
+- 使用自己的服务实例；在插件中查看连接状态、管理本机 Connector 和桥接日志。
 - 如果 AgentPilot Desktop 正在运行，转到该应用完成连接；否则可以直接在插件中登录并连接本机设备。AgentPilot Desktop 和 DSH Desktop 是两个不同的应用。
 
 ## 在 DSH Desktop 中启用
@@ -17,7 +17,7 @@ DSH Desktop 已集成此插件，**不需要另行下载或执行 npm 安装命�
 
 ![DSH Desktop 中的 AgentPilot 连接面板，显示账号和 Connector 运行状态](docs/images/remote-control-desktop.webp)
 
-首次使用时选择 AgentPilot Cloud，或输入自己部署的服务端地址，然后在浏览器中完成登录和授权。按照页面引导添加 Agent，并按需连接手机。若插件检测到 AgentPilot Desktop 正在运行，会引导你到该应用继续设置，避免两个应用同时管理同一台工作设备的连接。
+首次使用时输入自己部署的服务端地址，然后在浏览器中完成登录和授权。若这份部署通过插件配置 `apiBaseUrl` 固定了默认服务地址，插件会额外显示「登录 AgentPilot Cloud」入口；未配置时只保留自建入口。按照页面引导添加 Agent，并按需连接手机。若插件检测到 AgentPilot Desktop 正在运行，会引导你到该应用继续设置，避免两个应用同时管理同一台工作设备的连接。
 
 插件随 DSH Desktop 一同打包和更新；请通过 Desktop 的发布渠道升级，不要对内置插件叠加独立 npm 安装。
 

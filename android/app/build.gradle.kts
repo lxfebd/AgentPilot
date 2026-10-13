@@ -6,10 +6,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-val officialServerUrl = "https://web.agent-pilot.com"
+// Open-source build ships without a bundled official server: users self-host /
+// connect to their own instance from the login screen. Inject your own default
+// via gradle property agentPilot.serverUrl (or android/local.properties, gitignored).
 val localSettings = Properties().apply {
     rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
 }
+val officialServerUrl = providers.gradleProperty("agentPilot.officialServerUrl")
+    .orElse(localSettings.getProperty("agentPilot.officialServerUrl", ""))
+    .get()
 val debugServerUrl = providers.gradleProperty("agentPilot.serverUrl")
     .orElse(localSettings.getProperty("agentPilot.serverUrl", officialServerUrl))
     .get()
@@ -27,8 +32,8 @@ android {
         applicationId = "com.agentpilot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 16
-        versionName = "2.1.0"
+        versionCode = 17
+        versionName = "2.1.1"
         buildConfigField("String", "OFFICIAL_SERVER_URL", officialServerUrl.asBuildConfigString())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -20,7 +20,7 @@ export function CompleteSlide({ onExperience, showDownload = true }: {
           {showDownload
             ? <Button variant="outline" size="lg" asChild><a href={onboarding.downloadsUrl} target="_blank" rel="noreferrer"><DownloadIcon data-icon="inline-start" />下载桌面程序</a></Button>
             : null}
-          <Button variant="ghost" size="lg" asChild><a href={onboarding.learnMoreUrl} target="_blank" rel="noreferrer">了解更多<ArrowUpRightIcon data-icon="inline-end" /></a></Button>
+          {onboarding.learnMoreUrl ? <Button variant="ghost" size="lg" asChild><a href={onboarding.learnMoreUrl} target="_blank" rel="noreferrer">了解更多<ArrowUpRightIcon data-icon="inline-end" /></a></Button> : null}
         </>}
       />
       <footer className="complete-slide-support" aria-label="支持这个项目">

@@ -80,6 +80,7 @@ export async function checkClient(source: string, packageId: string): Promise<vo
     let snapshot: OnboardingSnapshot = {
       desktop: { status: 'absent', message: '未找到 Desktop 安装记录。' },
       settings: { apiBaseUrl: 'http://127.0.0.1:8000' },
+      cloudAvailable: true,
       webAppUrl: 'http://127.0.0.1:5174/#/',
       stage: 'idle', message: '登录后连接这台电脑。', account: null,
       connectorId: null, connectorRunning: false, flowId: null,

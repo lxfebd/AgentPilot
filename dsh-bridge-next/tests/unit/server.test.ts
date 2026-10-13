@@ -8,7 +8,7 @@ import { checkServer, normalizeServerOrigin, resolveOAuthWebOrigin } from '../..
 test('server input follows Desktop normalization and derives OAuth without a stored Web URL', () => {
   assert.equal(normalizeServerOrigin(' example.com/api/v2/ '), 'https://example.com')
   assert.equal(normalizeServerOrigin('http://192.168.1.10:8000'), 'http://192.168.1.10:8000')
-  assert.equal(resolveOAuthWebOrigin('https://web.agent-pilot.com'), 'https://web.agent-pilot.com')
+  assert.equal(resolveOAuthWebOrigin('https://cloud.example.test'), 'https://cloud.example.test')
   assert.equal(resolveOAuthWebOrigin('https://own.example/api/v2'), 'https://own.example')
   for (const hostname of ['localhost', '127.0.0.1', '[::1]']) {
     assert.equal(resolveOAuthWebOrigin(`http://${hostname}:8000`), `http://${hostname}:5174`)

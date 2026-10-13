@@ -18,9 +18,12 @@ class AppUpdatesApi(private val client: ApiClient = ApiClient()) {
         val comparison = compareUpdateVersions(latestVersion, currentVersionName)
             ?: throw ApiException("Server health response has no valid version.")
         if (comparison <= 0) return null
+        // The APK channel is derived from the signed-in server so self-hosted and
+        // tunnel deployments serve their own updates (server hosts <origin>/apk/latest.apk).
+        val downloadUrl = AppConfig.updateDownloadUrl(serverUrl) ?: return null
         return AndroidAppRelease(
             versionName = latestVersion,
-            downloadUrl = AppConfig.UPDATE_DOWNLOAD_URL,
+            downloadUrl = downloadUrl,
         )
     }
 }

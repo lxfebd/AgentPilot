@@ -4,15 +4,26 @@ import com.agentpilot.app.BuildConfig
 import com.agentpilot.app.api.normalizeServerOrigin
 
 object AppConfig {
-    // Debug builds can override the backend in android/local.properties.
+    // Official server is not bundled with the open-source build. Users connect to
+    // their own server (self-hosted / LAN / tunnel) from the login screen.
+    // Personal builds can inject a default via android/local.properties
+    // (agentPilot.serverUrl=https://your-server.example) — that file is gitignored.
     val OFFICIAL_SERVER_URL: String = BuildConfig.OFFICIAL_SERVER_URL
-    const val DESKTOP_DOWNLOAD_URL = "https://agent-pilot.com/download"
-    // Self-hosted update channel: serves the APK over HTTPS from the operator's VPS.
-    // 固定别名 latest.apk：随版本号变的硬编码 URL 会让旧版更新时下载到旧文件（自更新循环）。
-    // 每次发布把最新 APK 同步为服务器上的 latest.apk 即可，此常量不再随版本改动。
-    const val UPDATE_DOWNLOAD_URL = "https://example.com/apk/latest.apk"
+    // Desktop app download is configured by each deployment; blank hides the button.
+    const val DESKTOP_DOWNLOAD_URL = ""
+
+    /**
+     * APK update channel for a server the user is signed in to.
+     * Derived from the logged-in server origin, so self-hosted / tunnel users
+     * get updates from their own deployment without hardcoding any host.
+     */
+    fun updateDownloadUrl(serverUrl: String): String? {
+        val origin = normalizeServerOrigin(serverUrl) ?: return null
+        return "$origin/apk/latest.apk"
+    }
 
     fun isOfficialServer(serverUrl: String): Boolean {
+        if (OFFICIAL_SERVER_URL.isBlank()) return false
         val officialOrigin = normalizeServerOrigin(OFFICIAL_SERVER_URL) ?: return false
         return normalizeServerOrigin(serverUrl) == officialOrigin
     }

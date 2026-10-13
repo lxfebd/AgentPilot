@@ -5,6 +5,8 @@ export type DesktopServerConnection = {
   serverUrl: string;
   apiNamespace: string;
   oauthWebOrigin: string;
+  /** False when this build ships no default cloud server (open-source default). */
+  cloudAvailable?: boolean;
 };
 
 export type DesktopLoginErrorCode = "invalidServer" | "serverUnavailable" | "invalidHealth" | "serverTimeout" | "oauth";
@@ -37,14 +39,27 @@ export function resolveDesktopServer(
   value = config.cloud.serverUrl,
   options: { env?: NodeJS.ProcessEnv; development?: boolean } = {},
 ): DesktopServerConnection {
-  const serverUrl = normalizeServerOrigin(value);
   const env = options.env ?? {};
-  const configuredOrigin = env.WORKBENCH_API_ORIGIN?.trim() || env.AGENT_PILOT_API?.trim();
-  const usesConfiguredServer = configuredOrigin && normalizeServerOrigin(configuredOrigin) === serverUrl;
+  const envOrigin = env.WORKBENCH_API_ORIGIN?.trim() || env.AGENT_PILOT_API?.trim();
+  const raw = (value ?? "").trim() || envOrigin || "";
+  if (!raw) {
+    // Open-source builds ship without a default server. The app must still
+    // start: return an empty connection. The login UI then offers only the
+    // self-hosted entry, and nothing provisions until the user connects.
+    return { serverUrl: "", apiNamespace: "", oauthWebOrigin: "", cloudAvailable: false };
+  }
+  const serverUrl = normalizeServerOrigin(raw);
+  const configuredOrigin = envOrigin;
+  const usesConfiguredServer = Boolean(configuredOrigin && normalizeServerOrigin(configuredOrigin) === serverUrl);
   const namespace = usesConfiguredServer
     ? env.WORKBENCH_API_NAMESPACE ?? env.AGENT_PILOT_API_NAMESPACE ?? config.apiNamespace
     : config.apiNamespace;
-  let oauthWebOrigin = serverUrl === config.cloud.serverUrl ? config.cloud.oauthWebOrigin : serverUrl;
+  const cloudConfigured = Boolean(config.cloud.serverUrl?.trim() && config.cloud.oauthWebOrigin?.trim());
+  let oauthWebOrigin = serverUrl === config.cloud.serverUrl && cloudConfigured
+    ? (() => {
+      try { return normalizeServerOrigin(config.cloud.oauthWebOrigin ?? "") } catch { return serverUrl }
+    })()
+    : serverUrl;
   const explicitWebOrigin = usesConfiguredServer && env.WORKBENCH_OAUTH_WEB_ORIGIN?.trim();
   if (explicitWebOrigin) {
     oauthWebOrigin = normalizeServerOrigin(explicitWebOrigin);
@@ -59,6 +74,7 @@ export function resolveDesktopServer(
     serverUrl,
     apiNamespace: namespace.trim().replace(/^\/+|\/+$/g, "").replace(/^(.+)$/, "/$1"),
     oauthWebOrigin,
+    cloudAvailable: cloudConfigured || Boolean(envOrigin),
   };
 }
 
@@ -102,6 +118,7 @@ export class DesktopServerStore {
           serverUrl: normalizeServerOrigin(stored.serverUrl),
           apiNamespace: stored.apiNamespace.replace(/^\/+|\/+$/g, "").replace(/^(.+)$/, "/$1"),
           oauthWebOrigin: normalizeServerOrigin(stored.oauthWebOrigin),
+          cloudAvailable: stored.cloudAvailable ?? fallback.cloudAvailable ?? false,
         };
         this.saved = true;
       } else {

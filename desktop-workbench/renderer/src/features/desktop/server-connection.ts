@@ -12,6 +12,11 @@ export function getDesktopServerConnection(): DesktopServerConnection | null {
   return connection
 }
 
+/** True when the running build offers a bundled default cloud server. */
+export function cloudLoginAvailable(): boolean {
+  return Boolean(connection?.cloudAvailable)
+}
+
 export function desktopApiProxyBase(): string {
   return connection ? DESKTOP_API_PROXY_ORIGIN : ""
 }

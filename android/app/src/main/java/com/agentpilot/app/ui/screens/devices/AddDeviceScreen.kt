@@ -203,6 +203,7 @@ fun AddDeviceScreen(
                     DevicePairingStepActions(
                         step = step, name = name, code = pairCode, busy = busy, onStep = ::showStep,
                         onCreate = ::createCredential, onClaim = ::claimPairCode, onComplete = onComplete,
+                        downloadAvailable = AppConfig.DESKTOP_DOWNLOAD_URL.isNotBlank(),
                         onDownload = {
                             runCatching { uriHandler.openUri(AppConfig.DESKTOP_DOWNLOAD_URL) }
                                 .onFailure { showError(context.getString(R.string.device_pairing_open_download_failed)) }
