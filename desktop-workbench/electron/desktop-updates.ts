@@ -20,6 +20,27 @@ type Options = {
   downloadTimeoutMs?: number;
 };
 
+/**
+ * The installer URL an update can actually be delivered from.
+ *
+ * A self-hosted Server is usually newer than the Desktop build, but that says
+ * nothing about a Desktop installer being available: `downloadUrl` is empty on
+ * a default configuration.  Offering an update with nowhere to get it produces
+ * a dialog whose only outcome is an error, so the same check gates the offer
+ * and the download - the two can never disagree about what is installable.
+ */
+function usableDownloadUrl(raw: string): URL | null {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || url.hostname.endsWith(".invalid") || url.username || url.password) {
+      return null;
+    }
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export class DesktopUpdateService {
   private state: DesktopUpdateState;
   private serverKey = "";
@@ -29,9 +50,11 @@ export class DesktopUpdateService {
   private healthAbort: AbortController | null = null;
   private downloadAbort: AbortController | null = null;
   private installerPath: string | null = null;
+  private readonly downloadTarget: URL | null;
 
   constructor(private readonly options: Options) {
     this.state = this.initialState();
+    this.downloadTarget = usableDownloadUrl(options.downloadUrl);
   }
 
   getState(): DesktopUpdateState { return { ...this.state }; }
@@ -77,7 +100,9 @@ export class DesktopUpdateService {
         const comparison = compareUpdateVersions(latestVersion, this.options.serverVersion);
         if (comparison === null) throw new Error("Unsupported version format.");
         if (generation !== this.generation) return this.getState();
-        const available = comparison > 0;
+        // Without an installer there is nothing to act on, so no badge and no
+        // dialog: a newer Server alone is not an update this app can deliver.
+        const available = comparison > 0 && this.downloadTarget !== null;
         const ignoredVersion = this.readIgnored()[key];
         const ignored = available && typeof ignoredVersion === "string" && compareUpdateVersions(ignoredVersion, latestVersion) === 0;
         this.publish({ checking: false, latestVersion, available, ignored, dialogOpen: available && !ignored, error: null });
@@ -114,10 +139,7 @@ export class DesktopUpdateService {
   download(): Promise<DesktopUpdateState> {
     if (this.downloadPromise) return this.downloadPromise;
     if (!this.state.available) return Promise.resolve(this.getState());
-    try {
-      const url = new URL(this.options.downloadUrl);
-      if (url.protocol !== "https:" || url.hostname.endsWith(".invalid") || url.username || url.password) throw new Error();
-    } catch {
+    if (this.downloadTarget === null) {
       this.publish({ dialogOpen: true, error: "downloadNotConfigured" });
       return Promise.resolve(this.getState());
     }

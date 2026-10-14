@@ -121,11 +121,19 @@ test("partial downloads are removed and can be retried without closing the dialo
   assert.equal((await h.service.download()).phase, "downloaded");
 });
 
-test("HTML download responses and placeholder URLs are not opened as installers", async (t) => {
+test("a placeholder or missing download URL offers no update at all", async (t) => {
   const placeholder = harness(t, { downloadUrl: "https://downloads.example.invalid/desktop" });
-  await placeholder.service.check(server);
-  assert.equal((await placeholder.service.download()).error, "downloadNotConfigured");
+  const checked = await placeholder.service.check(server);
+  assert.equal(checked.available, false, "an update with nowhere to get it is not an offer");
+  assert.equal(checked.dialogOpen, false);
+  assert.equal(checked.latestVersion, "0.1.7.2", "the newer Server is still reported, just not as something to install");
+  assert.equal((await placeholder.service.download()).error, null);
   assert.equal(placeholder.requests.length, 1);
+
+  // The shipped default: no download URL configured.
+  const unset = harness(t, { downloadUrl: "" });
+  assert.equal((await unset.service.check(server)).available, false);
+
   const html = harness(t, { fetcher: async (input) => String(input).endsWith("/health") ? healthy() : new Response("<html>not an installer</html>", { headers: { "content-type": "text/html" } }) });
   await html.service.check(server);
   assert.equal((await html.service.download()).error, "downloadFailed");

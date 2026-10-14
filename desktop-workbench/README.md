@@ -214,6 +214,12 @@ subprocess. Add `--arm64`, `--x64` or `--universal` (macOS) to select the
 architecture, or `--dir` for an unpacked build. `dist:mac` must run on macOS and
 `dist:win` on Windows.
 
+`build/icon.ico` is the Windows tray icon, the installer icon and an
+`extraResources` entry, and no build step produces it — it is committed. To
+regenerate it from the product's own app icon: `python scripts/write-app-icon.py`
+(Pillow). The Web favicon is not a suitable source: it is a black silhouette on
+transparency and vanishes on a dark taskbar.
+
 | Environment | Effect |
 | --- | --- |
 | `MAC_CERT_P12_BASE64` + `MACOS_SIGN_IDENTITY` + `CSC_KEY_PASSWORD` | macOS signing from a Base64 PKCS#12, mapped to `CSC_LINK`/`CSC_NAME` |
@@ -266,17 +272,22 @@ build exists; Desktop and Server PATCH versions may otherwise differ (see
 [versioning](../docs/versioning.md)). No dedicated release API is used.
 
 A Desktop built against an older Server opens an update dialog with **Ignore this version** and
-**Update now**. Outside clicks and Escape do not dismiss it; there is no close
+**Update now** — but only when an installer can actually be delivered. Outside
+clicks and Escape do not dismiss it; there is no close
 icon. Ignoring persists the exact server version in
 `<Electron userData>/updates/state.json`, scoped to the server. A newer server
 version prompts again. The download icon beside the account avatar remains
-visible whenever the Server is ahead of the build baseline, including after ignoring a version.
+visible whenever an update is offered, including after ignoring a version.
 
 Set `updates.downloadUrl` in `config.json` to the fixed HTTPS installer address
-before distribution. The `.invalid` URL is an explicit placeholder and does not
-download an installer. Downloads stream into `<Electron userData>/updates/downloads`
-with progress, remove incomplete files on failure/quit, and open the completed
-installer with the OS. Installing the new app remains an installer operation.
+before distribution. An empty value or the `.invalid` placeholder means there is
+no installer to offer: the Server being ahead alone does not raise the badge or
+the dialog, because the only outcome of that dialog would be an error. A
+self-hosted Server that is simply newer than the Desktop build is therefore not
+reported as an update this app cannot deliver. Downloads stream into
+`<Electron userData>/updates/downloads` with progress, remove incomplete files
+on failure/quit, and open the completed installer with the OS. Installing the
+new app remains an installer operation.
 
 ## Shared local machine record
 
