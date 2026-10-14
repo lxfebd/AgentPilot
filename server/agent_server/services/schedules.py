@@ -49,6 +49,8 @@ def _iso(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
+
+
 def compute_next_run(
     kind: str,
     *,
@@ -117,6 +119,9 @@ class ScheduleService:
 
     async def create(self, user_id: str, payload: ScheduleCreateRequest) -> ScheduleView:
         await self._validate_target(user_id, payload.sessionId)
+        await self._validate_new_session_target(
+            user_id, payload.sessionId, payload.projectId, payload.connectorId
+        )
         now = datetime.now(UTC)
         next_run_at = compute_next_run(
             payload.scheduleKind,
@@ -175,6 +180,9 @@ class ScheduleService:
             "enabled": current["enabled"] if payload.enabled is None else (1 if payload.enabled else 0),
         }
         await self._validate_target(user_id, merged["session_id"])
+        await self._validate_new_session_target(
+            user_id, merged["session_id"], merged["project_id"], merged["connector_id"]
+        )
         next_run_at = compute_next_run(
             merged["schedule_kind"],
             run_at=merged["run_at"],
@@ -210,3 +218,44 @@ class ScheduleService:
             await self._store.get_session(session_id, user_id=user_id)
         except KeyError as error:
             raise ValueError("sessionId does not reference one of your sessions.") from error
+
+    async def _validate_new_session_target(
+        self,
+        user_id: str,
+        session_id: str | None,
+        project_id: str | None,
+        connector_id: str | None,
+    ) -> None:
+        """Validate the new-session target before it is stored.
+
+        Without this check a schedule can be created pointing at a project or
+        connector the user does not own (or that does not exist).  The create
+        call succeeds, and the failure only surfaces later inside
+        ``ScheduleExecutor._fire`` — by which time the user has long stopped
+        looking at the form.  Validating here turns that into an immediate 400.
+
+        A schedule must have exactly one target: an existing `sessionId`, or a
+        `projectId` + `connectorId` pair for a new session.  Having neither
+        means the schedule can never fire, so it is rejected too.
+        """
+
+        if session_id is not None:
+            return
+        if project_id is None and connector_id is None:
+            raise ValueError(
+                "a schedule needs either sessionId or projectId+connectorId."
+            )
+        if project_id is None or connector_id is None:
+            raise ValueError(
+                "projectId and connectorId must be provided together for a new-session target."
+            )
+        try:
+            await self._store.get_project(project_id, user_id=user_id)
+        except KeyError as error:
+            raise ValueError("projectId does not reference one of your projects.") from error
+        try:
+            connector = await self._store.get_connector(connector_id)
+        except KeyError as error:
+            raise ValueError("connectorId does not reference a known connector.") from error
+        if connector.userId != user_id:
+            raise ValueError("connectorId does not reference one of your connectors.")

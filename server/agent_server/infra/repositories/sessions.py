@@ -1852,13 +1852,18 @@ class SessionRepositoryMixin:
 
 
     async def _lock_in_derived_title(self, session_id: str, title: str) -> None:
-        # Guard against races: only fill when DB title is still empty.
+        # Guard against races: only fill when DB title is still empty. The
+        # emptiness test must match `_session_from_row` exactly (blank strings
+        # count as empty), otherwise a whitespace-only title can never be
+        # locked in and every later read re-derives it.
+        # `func.trim(...) == ""` is portable across SQLite and PostgreSQL and
+        # covers NULL, empty, and whitespace-only titles in one predicate.
         async with self._engine.begin() as conn:
             await conn.execute(
                 sessions_t.update()
                 .where(
                     sessions_t.c.id == session_id,
-                    sessions_t.c.title.is_(None) | (sessions_t.c.title == ""),
+                    func.coalesce(func.trim(sessions_t.c.title), "") == "",
                 )
                 .values(title=title)
             )
