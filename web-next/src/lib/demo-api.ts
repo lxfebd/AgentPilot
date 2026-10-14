@@ -296,7 +296,7 @@ let mockInstanceSettings: InstanceSettings = {
 
 const mockServiceInfo: ServiceInfo = {
   endpoint: "https://agentpilot.example.com",
-  version: "2.1.0",
+  version: "2.2.0",
   database: "PostgreSQL",
   databasePath: "postgres:5432/agent_pilot",
   startedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
