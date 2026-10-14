@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import stat
 from pathlib import Path
+
+import pytest
 
 from loadtests.connector_ws.generate_data import (
     atomic_write_private,
@@ -28,6 +31,11 @@ def test_atomic_manifest_is_private_and_valid(tmp_path: Path) -> None:
     atomic_write_private(path, document)
 
     assert json.loads(path.read_text(encoding="utf-8")) == document
+    if os.name != "posix":
+        # Windows st_mode does not model POSIX permissions: a writable file is
+        # reported as 0o666 no matter what os.chmod was asked for, so the mode
+        # assertion can only be checked where the loadtest actually runs.
+        pytest.skip("POSIX permission bits are not modeled on this platform")
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 

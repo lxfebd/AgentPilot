@@ -435,6 +435,13 @@ class RedisCoordinator:
         lock_key = self.key("lock", name)
         token = secrets.token_urlsafe(32)
         started_at = time.monotonic()
+        # Durations are measured on perf_counter, not on the deadline clock.
+        # On Windows time.monotonic() is GetTickCount64 with a 15.625 ms step,
+        # so a lock cycle of a few milliseconds measures as exactly 0.0 and the
+        # wait/hold metrics (and the slow-lock warning) silently read zero.
+        # monotonic stays the clock for the acquire deadline: it is not
+        # adjustable, which is what a deadline needs.
+        started_perf = time.perf_counter()
         deadline = started_at + timeout_seconds
         effective_lease_seconds = lease_seconds or timeout_seconds
         ttl_ms = max(1, math.ceil(effective_lease_seconds * 1000))
@@ -443,8 +450,8 @@ class RedisCoordinator:
                 self.stats.timeouts += 1
                 raise TimeoutError(f"timed out acquiring distributed lock: {name}")
             await asyncio.sleep(min(0.1, max(0, deadline - time.monotonic())))
-        acquired_at = time.monotonic()
-        self._record_lock_wait(acquired_at - started_at, name)
+        acquired_perf = time.perf_counter()
+        self._record_lock_wait(acquired_perf - started_perf, name)
         renewal_error: BaseException | None = None
         owner_task = asyncio.current_task()
         critical_section_active = True
@@ -496,7 +503,7 @@ class RedisCoordinator:
             except Exception as exc:  # noqa: BLE001 - report renewal cause first
                 release_error = exc
             finally:
-                self._record_lock_hold(time.monotonic() - acquired_at, name)
+                self._record_lock_hold(time.perf_counter() - acquired_perf, name)
                 self._held_lock_tokens.reset(held_locks_token)
         if renewal_error is not None:
             raise RuntimeError(
