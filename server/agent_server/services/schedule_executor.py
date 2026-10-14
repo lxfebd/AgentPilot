@@ -16,6 +16,7 @@ from agent_server.services.schedules import (
     ScheduleService,
     compute_next_run,
 )
+from agent_server.services.session_run import SessionRunNotFoundError
 
 # A due schedule that keeps failing (connector offline, session busy, …) is
 # retried every tick; give up after this many seconds so one broken row does
@@ -55,11 +56,35 @@ class ScheduleExecutor:
                 await self._fire(row, now)
             except asyncio.CancelledError:
                 raise
+            except SessionRunNotFoundError as error:
+                # The target itself is gone (session deleted, project removed,
+                # connector forgotten).  Nothing a later tick can fix, so the
+                # schedule is switched off instead of burning a retry window
+                # every cycle forever.  `enabled` is an existing API field, so
+                # every client already renders the row as off.
+                await self._disable_missing_target(row, now, error)
             except Exception as error:  # noqa: BLE001 - isolate row failures
                 logger.warning(
                     "schedule {} failed: {}", row.get("id"), error
                 )
                 await self._give_up_if_stale(row, now)
+
+    async def _disable_missing_target(
+        self, row: dict[str, Any], now: str, error: Exception
+    ) -> None:
+        await self._store.schedules.update(
+            row["id"],
+            None,
+            enabled=0,
+            next_run_at=None,
+            updated_at=now,
+        )
+        logger.warning(
+            "schedule {} ({}) disabled: target no longer exists ({})",
+            row.get("id"),
+            row.get("title"),
+            error,
+        )
 
     async def _fire(self, row: dict[str, Any], now: str) -> None:
         user_id = row["user_id"]
@@ -73,7 +98,9 @@ class ScheduleExecutor:
             )
         else:
             if not row["project_id"] or not row["connector_id"]:
-                raise ValueError(
+                # Rows created before target validation existed.  The target
+                # can never be resolved, so treat it like a deleted one.
+                raise SessionRunNotFoundError(
                     "schedule needs either sessionId or projectId+connectorId"
                 )
             payload = SessionCreateAndStartRequest(

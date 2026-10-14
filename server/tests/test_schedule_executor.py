@@ -1,6 +1,12 @@
 import asyncio
 
+import pytest
+
 from agent_server.services.schedule_executor import ScheduleExecutor
+from agent_server.services.session_run import (
+    SessionRunConflictError,
+    SessionRunNotFoundError,
+)
 
 
 class FakeSchedulesRepo:
@@ -89,3 +95,56 @@ def test_once_schedule_advance_clears_next_run() -> None:
     _, values = repo.updates[0]
     assert values["next_run_at"] is None  # dropped from the due scan forever
     assert values["last_run_at"] == "2026-10-12T03:00:00Z"
+
+
+def _executor_failing_with(repo, error: Exception) -> ScheduleExecutor:
+    executor = ScheduleExecutor(FakeStore(repo), rpc=None, device_runtimes=None)
+
+    async def _fire(row, now):
+        raise error
+
+    executor._fire = _fire
+    return executor
+
+
+def test_tick_disables_schedule_whose_target_is_gone() -> None:
+    # A deleted session / project / connector can never succeed on a later
+    # tick, so the row is switched off instead of retrying every cycle forever.
+    row = _row("sch_e", kind="daily", next_run_at="2026-10-12T02:59:00Z")
+    repo = FakeSchedulesRepo([row])
+    executor = _executor_failing_with(repo, SessionRunNotFoundError("session not found"))
+    asyncio.run(executor.tick())
+
+    assert len(repo.updates) == 1  # disabled once, never advanced as a run
+    schedule_id, values = repo.updates[0]
+    assert schedule_id == "sch_e"
+    assert values["enabled"] == 0
+    assert values["next_run_at"] is None  # leaves the due scan
+    assert "last_run_at" not in values  # a failed run never counts as a run
+
+
+def test_tick_keeps_retrying_transient_failure() -> None:
+    # The permanent path must not swallow ordinary conflicts (connector offline,
+    # session busy): those stay on the existing retry / grace behaviour.
+    row = _row("sch_f", kind="daily", next_run_at="2026-10-12T02:59:00Z")
+    repo = FakeSchedulesRepo([row])
+    executor = _executor_failing_with(repo, SessionRunConflictError("connector is offline"))
+    asyncio.run(executor.tick())
+
+    assert len(repo.updates) == 1  # stale -> advanced by the grace path
+    _, values = repo.updates[0]
+    assert values["next_run_at"] is not None
+    assert "enabled" not in values  # still enabled, still scheduled
+
+
+def test_fire_without_any_target_is_a_missing_target() -> None:
+    # Rows written before target validation existed: report them as a missing
+    # target so tick() disables them instead of retrying forever.
+    row = _row("sch_g", next_run_at="2026-10-12T02:00:00Z")
+    row["session_id"] = None
+    repo = FakeSchedulesRepo([row])
+    executor = ScheduleExecutor(FakeStore(repo), rpc=None, device_runtimes=None)
+
+    with pytest.raises(SessionRunNotFoundError):
+        asyncio.run(executor._fire(row, "2026-10-12T03:00:00Z"))
+    assert repo.updates == []

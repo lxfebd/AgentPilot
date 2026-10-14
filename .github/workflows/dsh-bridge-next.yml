@@ -195,6 +195,8 @@ jobs:
           tests/test_auth.py
           tests/test_derived_title_lock_in.py
           tests/test_schedule_target_validation.py
+          tests/test_schedules.py
+          tests/test_schedule_executor.py
           tests/test_shared_setup_tokens.py
           tests/test_attachment_mime_policy.py
           tests/test_static_path_safety.py
