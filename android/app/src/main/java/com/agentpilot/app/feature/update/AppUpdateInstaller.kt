@@ -1,42 +1,41 @@
 package com.agentpilot.app.feature.update
 
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.os.Build
+import androidx.core.content.FileProvider
 import java.io.File
 
+/**
+ * Installs a downloaded APK update.
+ *
+ * Uses ACTION_VIEW with the system package installer — this is the most reliable
+ * method across all Android ROMs (including MIUI / EMUI / ColorOS which often
+ * silently block the PackageInstaller.Session API).  The system installer shows
+ * the standard install-confirmation dialog and handles the "Install unknown apps"
+ * permission prompt automatically.
+ */
 object AppUpdateInstaller {
     fun install(context: Context, apk: File) {
-        val installer = context.packageManager.packageInstaller
-        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
-            setAppPackageName(context.packageName)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
-            }
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.attachments",
+            apk,
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        val sessionId = installer.createSession(params)
-        installer.openSession(sessionId).use { session ->
-            apk.inputStream().use { input ->
-                session.openWrite("app-update.apk", 0, apk.length()).use { output ->
-                    input.copyTo(output)
-                    session.fsync(output)
-                }
-            }
-            val callback = Intent(context, AppUpdateInstallReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                sessionId,
-                callback,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-            )
-            session.commit(pendingIntent.intentSender)
-        }
+        context.startActivity(intent)
     }
 }
 
+/**
+ * Legacy receiver kept for backward compatibility with in-flight sessions
+ * that were started before the ACTION_VIEW migration.
+ */
 class AppUpdateInstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {

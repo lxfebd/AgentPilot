@@ -14,6 +14,12 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
+/** Accepted QR payload types; the legacy one is kept for pre-rebrand generators. */
+private val MOBILE_LOGIN_QR_TYPES = setOf(
+    "agent-pilot.mobile-login",
+    "agents-anywhere.mobile-login",
+)
+
 class AuthController(
     private val api: AuthApi,
     private val sessionStore: AuthSessionStore,
@@ -251,29 +257,48 @@ class AuthController(
         }
     }
 
-    private fun parseMobileLoginQrPayload(qrValue: String): MobileLoginQrPayload? {
-        return runCatching {
-            val json = JSONObject(qrValue)
-            if (json.optString("type") != "agent-pilot.mobile-login") return null
-            val serverUrl = json.optString("serverUrl")
-                .ifBlank { json.optString("webUrl") }
-                .let { normalizeServerUrl(it) }
-                ?: return null
-            val userId = json.optString("userId").takeIf { it.isNotBlank() } ?: return null
-            val loginToken = json.optString("loginToken").takeIf { it.isNotBlank() } ?: return null
-            MobileLoginQrPayload(
-                serverUrl = serverUrl,
-                userId = userId,
-                loginToken = loginToken,
-                expiresAt = json.optString("expiresAt").takeIf { it.isNotBlank() },
-            )
-        }.getOrNull()
+    // Visible for unit tests: QR parsing is pure JSON logic that must be
+    // verifiable without a camera, a network, or an Android context.
+    internal fun parseMobileLoginQrPayload(qrValue: String): MobileLoginQrPayload? {
+        return parseMobileLoginQrPayloadInternal(qrValue)
     }
 
     private fun normalizeServerUrl(serverUrl: String): String? {
         return normalizeServerOrigin(serverUrl)
     }
 
+}
+
+/**
+ * Parse a mobile-login QR payload.
+ *
+ * Desktop/Web QR generators may still emit the pre-rebrand type
+ * (`agents-anywhere.mobile-login`) while their bundles are being rolled out.
+ * Both payloads carry the same fields, so accept either.  Any other shape is
+ * rejected, because a payload we cannot fully understand must not be used to
+ * pick the server the app signs in to.
+ *
+ * Kept as a top-level function (rather than a method) so it can be unit tested
+ * without constructing an [AuthController], which needs a Context-backed
+ * session store.
+ */
+internal fun parseMobileLoginQrPayloadInternal(qrValue: String): MobileLoginQrPayload? {
+    return runCatching {
+        val json = JSONObject(qrValue)
+        if (json.optString("type") !in MOBILE_LOGIN_QR_TYPES) return null
+        val serverUrl = json.optString("serverUrl")
+            .ifBlank { json.optString("webUrl") }
+            .let { normalizeServerOrigin(it) }
+            ?: return null
+        val userId = json.optString("userId").takeIf { it.isNotBlank() } ?: return null
+        val loginToken = json.optString("loginToken").takeIf { it.isNotBlank() } ?: return null
+        MobileLoginQrPayload(
+            serverUrl = serverUrl,
+            userId = userId,
+            loginToken = loginToken,
+            expiresAt = json.optString("expiresAt").takeIf { it.isNotBlank() },
+        )
+    }.getOrNull()
 }
 
 internal fun completeWebLoginSession(
