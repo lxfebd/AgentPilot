@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/releases/2.1.0.md"><img src="https://img.shields.io/badge/release-2.1.0-222222?style=flat" alt="Release 2.1.0"></a>
+  <a href="docs/releases/2.1.x.md"><img src="https://img.shields.io/badge/release-2.1.x-222222?style=flat" alt="Release 2.1.x"></a>
   <a href="#开源许可"><img src="https://img.shields.io/badge/license-MIT-222222?style=flat" alt="MIT"></a>
   <a href="docker/README.md"><img src="https://img.shields.io/badge/self--hosted-Docker-222222?style=flat" alt="Self-host with Docker"></a>
 </p>
@@ -46,7 +46,7 @@
 - iOS / iPadOS：在 App Store 下载安装；也可以通过 TestFlight 安装测试版，以邀请页显示的可用状态为准。
 - Linux / headless：运行 Connector 接入工作设备，通过其他客户端操作。
 
-各端 PATCH 版本独立发布，数据库 schema revision 单独编号，见[版本号规则](docs/versioning.md)。发布范围见 [2.1.0 发布说明](docs/releases/2.1.0.md)。
+各端 PATCH 版本独立发布，数据库 schema revision 单独编号，见[版本号规则](docs/versioning.md)。发布范围见 [2.1.0 发布说明](docs/releases/2.1.0.md) 与 [2.1.x 发布说明](docs/releases/2.1.x.md)。
 
 </details>
 

@@ -51,6 +51,7 @@ jobs:
       server: ${{ steps.paths.outputs.server }}
       web: ${{ steps.paths.outputs.web }}
       desktop: ${{ steps.paths.outputs.desktop }}
+      android: ${{ steps.paths.outputs.android }}
     steps:
       - name: Check out repository history
         uses: actions/checkout@v4
@@ -67,6 +68,7 @@ jobs:
           server=false
           web=false
           desktop=false
+          android=false
 
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
             plugin=true
@@ -74,6 +76,7 @@ jobs:
             server=true
             web=true
             desktop=true
+            android=true
           else
             if [[ -z "$BASE_SHA" ]] || ! git cat-file -e "${BASE_SHA}^{commit}"; then
               echo "::error::Cannot find the base commit for path selection"
@@ -88,17 +91,19 @@ jobs:
                   server=true
                   web=true
                   desktop=true
+                  android=true
                   ;;
                 dsh-bridge-next/*) plugin=true ;;
                 connector/*) connector=true ;;
                 server/*) server=true ;;
                 web-next/*) web=true ;;
                 desktop-workbench/*) desktop=true ;;
+                android/*) android=true ;;
               esac
             done < "$RUNNER_TEMP/changed-paths"
           fi
 
-          for scope in plugin connector server web desktop; do
+          for scope in plugin connector server web desktop android; do
             echo "$scope=${!scope}" >> "$GITHUB_OUTPUT"
             echo "$scope: ${!scope}"
           done
@@ -188,6 +193,8 @@ jobs:
           tests/test_announcements.py
           tests/test_architecture_boundaries.py
           tests/test_auth.py
+          tests/test_derived_title_lock_in.py
+          tests/test_schedule_target_validation.py
           tests/test_shared_setup_tokens.py
           tests/test_attachment_mime_policy.py
           tests/test_static_path_safety.py
@@ -267,3 +274,28 @@ jobs:
           corepack yarn renderer:typecheck
           corepack yarn workspace agent-pilot-desktop-renderer protocol:check
           corepack yarn test:main
+
+  android:
+    name: Android unit tests
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      # `android/local.properties` is gitignored and only points a developer
+      # machine at its SDK.  GitHub's ubuntu-latest image ships the Android SDK
+      # with ANDROID_HOME already set, so unit tests resolve a SDK from the
+      # runner environment.  This job covers JVM unit tests only — it does not
+      # run instrumented tests, sign an APK, or install anything on a device.
+      - name: Run unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --console=plain

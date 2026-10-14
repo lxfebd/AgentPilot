@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/releases/2.1.0.md"><img src="https://img.shields.io/badge/release-2.1.0-222222?style=flat" alt="Release 2.1.0"></a>
+  <a href="docs/releases/2.1.x.md"><img src="https://img.shields.io/badge/release-2.1.x-222222?style=flat" alt="Release 2.1.x"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT-222222?style=flat" alt="MIT"></a>
   <a href="docker/README.md"><img src="https://img.shields.io/badge/self--hosted-Docker-222222?style=flat" alt="Self-host with Docker"></a>
 </p>
@@ -46,7 +46,7 @@ Install the desktop client on your work machine, then access it from your phone,
 - iOS / iPadOS: download from the App Store, or install the beta through TestFlight; beta availability is shown on the invitation page.
 - Linux / headless: run the Connector on the work machine and control it from another client.
 
-Each client and service releases PATCH versions independently, and database schema revisions are numbered separately; see the [versioning rules](docs/versioning.md). See the [2.1.0 release notes](docs/releases/2.1.0.md) for release scope.
+Each client and service releases PATCH versions independently, and database schema revisions are numbered separately; see the [versioning rules](docs/versioning.md). See the [2.1.0 release notes](docs/releases/2.1.0.md) and the [2.1.x release notes](docs/releases/2.1.x.md) for release scope.
 
 </details>
 

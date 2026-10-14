@@ -41,7 +41,7 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 - 本地联调用 `./local-up.sh`（Server + Web，可加 `--with-connector`）或 `./desktop-local-up.sh`。**不要**使用 `--reset-data`，除非用户明确要求，因为它会删除本地数据库。
 - Server 测试不能连接生产数据库，也不要把生产 URL 带进测试进程。
 - Headless 检查通过，不等于真实安装、OAuth 回调或远程 Runtime 会话已经验证。汇报时要说明哪些验证没有做。
-- CI 目前只覆盖 DSH 插件及其关联组件（`.github/workflows/dsh-bridge-next.yml`），其他端要靠本地检查。
+- CI（`.github/workflows/dsh-bridge-next.yml`）按改动路径触发，覆盖 DSH 插件、Connector、Server、Web、Desktop 与 Android 单测；iOS 与真实安装 / OAuth 回调 / 远程 Runtime 会话仍要靠本地检查。
 
 ## 跨端修改的规则
 
