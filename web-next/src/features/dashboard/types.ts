@@ -366,6 +366,77 @@ export type TakeoverResponse = {
   serverTime: string;
 };
 
+/** Schedule trigger shape. `weekly` additionally requires `weekday`. */
+export type ScheduleKind = "once" | "daily" | "weekly";
+
+export type ScheduleView = {
+  id: string;
+  title: string;
+  prompt: string;
+  scheduleKind: ScheduleKind;
+  /** UTC ISO-8601; only set for `once`. */
+  runAt: string | null;
+  /** `HH:MM` interpreted in `timezone`; only set for `daily`/`weekly`. */
+  runTime: string | null;
+  /** 0 = Monday … 6 = Sunday; only set for `weekly`. */
+  weekday: number | null;
+  timezone: string;
+  enabled: boolean;
+  sessionId: string | null;
+  projectId: string | null;
+  connectorId: string | null;
+  runtime: string | null;
+  cwd: string | null;
+  /** UTC ISO-8601 of the next trigger, or null once a `once` schedule has run. */
+  nextRunAt: string | null;
+  lastRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ScheduleListResponse = {
+  schedules: ScheduleView[];
+  serverTime: string;
+};
+
+/** Create / patch / delete all answer with the affected schedule. */
+export type ScheduleResponse = {
+  schedule: ScheduleView;
+  serverTime: string;
+};
+
+export type ScheduleCreateRequest = {
+  title: string;
+  prompt: string;
+  scheduleKind: ScheduleKind;
+  sessionId?: string | null;
+  projectId?: string | null;
+  connectorId?: string | null;
+  runtime?: string;
+  cwd?: string | null;
+  runAt?: string | null;
+  runTime?: string | null;
+  weekday?: number | null;
+  timezone?: string;
+  enabled?: boolean;
+};
+
+export type SchedulePatchRequest = {
+  title?: string;
+  prompt?: string;
+  scheduleKind?: ScheduleKind;
+  sessionId?: string | null;
+  projectId?: string | null;
+  connectorId?: string | null;
+  runtime?: string;
+  cwd?: string | null;
+  runAt?: string | null;
+  runTime?: string | null;
+  weekday?: number | null;
+  timezone?: string;
+  enabled?: boolean;
+};
+
 export type TimelineType =
   | "message"
   | "tool"

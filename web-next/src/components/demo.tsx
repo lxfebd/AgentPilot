@@ -17,6 +17,7 @@ import { TeamPage } from "@/components/pages/team-page"
 import { ServicePage } from "@/components/pages/service-page"
 import { DevicePage } from "@/components/pages/device-page"
 import { MobileConnectionsPage } from "@/components/pages/mobile-connections-page"
+import { SchedulesPage } from "@/components/pages/schedules-page"
 import { WorkspaceProvider, useWorkspace } from "@/components/workspace-context"
 import { LoadingState } from "@/components/loading-state"
 import { PairDeviceDialog } from "@/components/pair-device-dialog"
@@ -284,6 +285,7 @@ function WorkspaceMain() {
     effectivePage === "team" ? <TeamPage /> :
     effectivePage === "service" ? <ServicePage /> :
     effectivePage === "mobile-connections" ? <MobileConnectionsPage /> :
+    effectivePage === "schedules" ? <SchedulesPage /> :
     effectivePage === "session" ? <SessionView /> :
     effectivePage === "device" ? <DevicePage /> :
     <TaskComposer />
