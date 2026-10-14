@@ -390,6 +390,15 @@ export type ScheduleView = {
   /** UTC ISO-8601 of the next trigger, or null once a `once` schedule has run. */
   nextRunAt: string | null;
   lastRunAt: string | null;
+  /**
+   * Why the most recent scheduled run failed, e.g. "connector is offline".
+   * Null when there is no failure. The server clears it on a successful run
+   * and whenever the schedule is edited. A schedule the server switched off
+   * because its target no longer exists also carries the reason here.
+   */
+  lastError: string | null;
+  /** UTC ISO-8601 instant of that failed attempt, or null. */
+  lastErrorAt: string | null;
   createdAt: string;
   updatedAt: string;
 };

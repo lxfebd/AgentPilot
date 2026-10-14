@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CalendarClock, Plus, RefreshCw, Trash2 } from "lucide-react"
+import { CalendarClock, Plus, RefreshCw, Trash2, TriangleAlert } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
@@ -52,6 +52,7 @@ import {
   WEEKDAY_KEYS,
   browserTimezone,
   buildScheduleCreateRequest,
+  describeScheduleFailure,
   describeScheduleTrigger,
   isScheduleKind,
   normalizeRunTime,
@@ -59,6 +60,7 @@ import {
   scheduleNextRunLabel,
   validateScheduleDraft,
   type ScheduleDraft,
+  type ScheduleFailureLabels,
   type ScheduleSummaryLabels,
   type ScheduleTargetDraft,
   type ScheduleValidationResult,
@@ -68,6 +70,20 @@ const KIND_KEYS: Record<ScheduleKind, string> = {
   once: "kindOnce",
   daily: "kindDaily",
   weekly: "kindWeekly",
+}
+
+/**
+ * Templates for a failed run. `t()` is called without values on purpose: the
+ * `{time}` / `{reason}` placeholders are filled by `describeScheduleFailure`,
+ * which owns when a timestamp can be shown (same as `summaryWeekly` above).
+ */
+function failureLabels(t: ReturnType<typeof useTranslations>): ScheduleFailureLabels {
+  return {
+    failed: t("errorFailed"),
+    failedAt: t("errorFailedAt"),
+    disabled: t("errorDisabled"),
+    disabledAt: t("errorDisabledAt"),
+  }
 }
 
 type TargetMode = ScheduleTargetDraft["mode"]
@@ -259,6 +275,8 @@ function ScheduleRow({
   const t = useTranslations("pages.schedules")
   const summary = describeScheduleTrigger(schedule, summaryLabels)
   const nextRun = scheduleNextRunLabel(schedule, t("nextRunNone"))
+  // null whenever the schedule has no recorded failure, so the row is unchanged.
+  const failure = describeScheduleFailure(schedule, failureLabels(t))
   const targetLabel = schedule.sessionId
     ? t("targetExistingSession")
     : schedule.projectId
@@ -273,6 +291,12 @@ function ScheduleRow({
         <p className="truncate text-xs text-muted-foreground">
           {t("nextRun", { time: nextRun })} · {targetLabel}
         </p>
+        {failure ? (
+          <p className="flex items-start gap-1.5 text-xs text-destructive">
+            <TriangleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+            <span className="min-w-0 break-words">{failure.text}</span>
+          </p>
+        ) : null}
       </div>
       <Badge variant="outline" className="shrink-0 font-normal">
         {t(KIND_KEYS[schedule.scheduleKind] ?? "kindDaily")}

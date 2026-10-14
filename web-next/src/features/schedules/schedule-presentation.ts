@@ -165,6 +165,21 @@ function pad(value: number): string {
 }
 
 /**
+ * Format a UTC instant for display as `2026-10-20 09:00` in `timezone`. Returns
+ * null when the instant is missing, unparseable, or the timezone is unknown.
+ * Every timestamp a row shows goes through here, so a failure time reads the
+ * same way as the next run it failed to produce.
+ */
+export function formatZonedInstant(
+  instant: string | null | undefined,
+  timezone: string,
+): string | null {
+  const moment = zonedMoment(instant, timezone)
+  if (!moment) return null
+  return `${formatDateInput(moment)} ${formatTimeInput(moment)}`
+}
+
+/**
  * Format `nextRunAt` for display: `2026-10-20 09:00`. Returns null when the
  * instant is missing, unparseable, or the timezone is unknown.
  */
@@ -172,9 +187,7 @@ export function formatNextRunAt(
   nextRunAt: string | null | undefined,
   timezone: string,
 ): string | null {
-  const moment = zonedMoment(nextRunAt, timezone)
-  if (!moment) return null
-  return `${formatDateInput(moment)} ${formatTimeInput(moment)}`
+  return formatZonedInstant(nextRunAt, timezone)
 }
 
 /**
@@ -234,6 +247,71 @@ export function scheduleNextRunLabel(
   emptyLabel: string,
 ): string {
   return formatNextRunAt(schedule.nextRunAt, schedule.timezone) ?? emptyLabel
+}
+
+/**
+ * A failed scheduled run, ready to show on its row.
+ *
+ * The server clears `lastError` / `lastErrorAt` on a successful run and on every
+ * edit, so whatever is shown is the current state and never a stale failure.
+ * A schedule whose target (session, project or connector) no longer exists is
+ * switched off by the server as well: `enabled` is false and `lastError` says
+ * why, so that case reads as "turned off: …" instead of "last run failed: …".
+ *
+ * The caller supplies the translated templates, as with `describeScheduleTrigger`,
+ * so this module stays free of UI copy.
+ */
+export type ScheduleFailureLabels = {
+  /** Failure with a readable time — e.g. "Last run failed at {time}: {reason}" */
+  failedAt: string
+  /** Failure whose time is missing or unparseable — "Last run failed: {reason}" */
+  failed: string
+  /** Switched off by the server, time known — "Turned off at {time}: {reason}" */
+  disabledAt: string
+  /** Switched off by the server, time unknown — "Turned off: {reason}" */
+  disabled: string
+}
+
+export type ScheduleFailure = {
+  /** One line: the reason, plus when it happened whenever that can be shown. */
+  text: string
+  /** True when the schedule is off too, i.e. the failure explains why it stopped. */
+  switchedOff: boolean
+}
+
+/**
+ * `null` when there is nothing to say: no `lastError`, or one that is only
+ * whitespace. A missing or unparseable `lastErrorAt`, and an unknown timezone,
+ * both degrade to the reason alone rather than hiding the failure.
+ */
+export function describeScheduleFailure(
+  schedule: Pick<ScheduleView, "lastError" | "lastErrorAt" | "enabled" | "timezone">,
+  labels: ScheduleFailureLabels,
+): ScheduleFailure | null {
+  const reason = typeof schedule.lastError === "string" ? schedule.lastError.trim() : ""
+  if (!reason) return null
+
+  const time = formatZonedInstant(schedule.lastErrorAt, schedule.timezone)
+  const switchedOff = schedule.enabled === false
+  const template = switchedOff
+    ? (time ? labels.disabledAt : labels.disabled)
+    : (time ? labels.failedAt : labels.failed)
+
+  return { text: fillFailureTemplate(template, time, reason), switchedOff }
+}
+
+/**
+ * Fill `{time}` / `{reason}`. The replacements are functions so a reason handed
+ * over by the server cannot be reinterpreted as a replacement pattern (`$&`).
+ */
+function fillFailureTemplate(
+  template: string,
+  time: string | null,
+  reason: string,
+): string {
+  return template
+    .replace(/\{time\}/g, () => time ?? "")
+    .replace(/\{reason\}/g, () => reason)
 }
 
 // ── Create-form validation ──────────────────────────────────────

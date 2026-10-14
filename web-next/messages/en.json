@@ -1629,6 +1629,10 @@
       "selectConnector": "Select a device",
       "nextRun": "Next run: {time}",
       "nextRunNone": "no upcoming run",
+      "errorFailed": "Last run failed: {reason}",
+      "errorFailedAt": "Last run failed at {time}: {reason}",
+      "errorDisabled": "Turned off: {reason}",
+      "errorDisabledAt": "Turned off at {time}: {reason}",
       "enableToggle": "Enable or disable {title}"
     },
     "team": {

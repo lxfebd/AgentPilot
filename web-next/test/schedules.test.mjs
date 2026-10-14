@@ -6,8 +6,10 @@ import {
   WEEKDAY_KEYS,
   browserTimezone,
   buildScheduleCreateRequest,
+  describeScheduleFailure,
   describeScheduleTrigger,
   formatNextRunAt,
+  formatZonedInstant,
   isRunTime,
   isScheduleKind,
   isValidTimezone,
@@ -39,6 +41,17 @@ const FIELD_LABELS = {
   runTimeRequired: "Enter a time as HH:MM.",
   weekdayRequired: "Pick a weekday.",
   timezoneInvalid: "Enter a valid IANA timezone name.",
+}
+
+/**
+ * Templates exactly as `pages.schedules` defines them: `t()` hands over the
+ * placeholders and `describeScheduleFailure` fills them in.
+ */
+const FAILURE_LABELS = {
+  failed: "Last run failed: {reason}",
+  failedAt: "Last run failed at {time}: {reason}",
+  disabled: "Turned off: {reason}",
+  disabledAt: "Turned off at {time}: {reason}",
 }
 
 function draft(overrides = {}) {
@@ -202,6 +215,114 @@ test("an out-of-range weekday degrades instead of crashing the row", () => {
   }
   // A weekday outside 0–6 has no name, so the row falls back to bare time.
   assert.equal(describeScheduleTrigger(schedule, LABELS), "08:00 (UTC)")
+})
+
+// ── last-run failures ───────────────────────────────────────────
+
+test("a schedule with no lastError adds nothing to the row", () => {
+  for (const lastError of [null, undefined, "", "   "]) {
+    assert.equal(
+      describeScheduleFailure(
+        { lastError, lastErrorAt: "2026-10-14T01:30:00Z", enabled: true, timezone: SHANGHAI },
+        FAILURE_LABELS,
+      ),
+      null,
+      `expected ${JSON.stringify(lastError)} to render nothing`,
+    )
+  }
+  // A disabled schedule that simply is disabled has no failure to explain.
+  assert.equal(
+    describeScheduleFailure(
+      { lastError: null, lastErrorAt: null, enabled: false, timezone: SHANGHAI },
+      FAILURE_LABELS,
+    ),
+    null,
+  )
+})
+
+test("a failed run shows the reason plus the time in the schedule's own timezone", () => {
+  // 01:30 UTC is 09:30 in Asia/Shanghai and 18:30 the previous day in LA.
+  const schedule = {
+    lastError: "connector is offline",
+    lastErrorAt: "2026-10-14T01:30:00Z",
+    enabled: true,
+    timezone: SHANGHAI,
+  }
+  assert.deepEqual(describeScheduleFailure(schedule, FAILURE_LABELS), {
+    text: "Last run failed at 2026-10-14 09:30: connector is offline",
+    switchedOff: false,
+  })
+  assert.equal(
+    describeScheduleFailure({ ...schedule, timezone: "America/Los_Angeles" }, FAILURE_LABELS).text,
+    "Last run failed at 2026-10-13 18:30: connector is offline",
+  )
+  assert.equal(
+    describeScheduleFailure({ ...schedule, timezone: "UTC" }, FAILURE_LABELS).text,
+    "Last run failed at 2026-10-14 01:30: connector is offline",
+  )
+})
+
+test("a failure whose time is missing, unparseable, or in an unknown zone still shows the reason", () => {
+  const base = { lastError: "connector is offline", enabled: true, timezone: SHANGHAI }
+  for (const lastErrorAt of [null, undefined, "", "not-a-date"]) {
+    assert.equal(
+      describeScheduleFailure({ ...base, lastErrorAt }, FAILURE_LABELS).text,
+      "Last run failed: connector is offline",
+      `expected ${JSON.stringify(lastErrorAt)} to fall back to the reason alone`,
+    )
+  }
+  // An unknown zone must not hide the failure; it only drops the timestamp.
+  assert.equal(
+    describeScheduleFailure(
+      { ...base, lastErrorAt: "2026-10-14T01:30:00Z", timezone: "Not/AZone" },
+      FAILURE_LABELS,
+    ).text,
+    "Last run failed: connector is offline",
+  )
+})
+
+test("a schedule the server switched off reads as off plus the reason it stopped", () => {
+  const schedule = {
+    lastError: "target no longer exists: session not found",
+    lastErrorAt: "2026-10-14T16:00:00Z",
+    enabled: false,
+    timezone: SHANGHAI,
+  }
+  assert.deepEqual(describeScheduleFailure(schedule, FAILURE_LABELS), {
+    // 16:00 UTC is 00:00 the next day in Asia/Shanghai.
+    text: "Turned off at 2026-10-15 00:00: target no longer exists: session not found",
+    switchedOff: true,
+  })
+  // Without a usable instant the row still says it was turned off, and why.
+  assert.deepEqual(describeScheduleFailure({ ...schedule, lastErrorAt: null }, FAILURE_LABELS), {
+    text: "Turned off: target no longer exists: session not found",
+    switchedOff: true,
+  })
+})
+
+test("a server-supplied reason is inserted verbatim, not as a replacement pattern", () => {
+  const failure = describeScheduleFailure(
+    {
+      lastError: "kept $& and {time} literally",
+      lastErrorAt: "2026-10-14T01:30:00Z",
+      enabled: true,
+      timezone: "UTC",
+    },
+    FAILURE_LABELS,
+  )
+  assert.equal(failure.text, "Last run failed at 2026-10-14 01:30: kept $& and {time} literally")
+})
+
+test("formatZonedInstant renders any instant the way nextRunAt is rendered", () => {
+  assert.equal(formatZonedInstant("2026-10-14T01:30:00Z", SHANGHAI), "2026-10-14 09:30")
+  assert.equal(formatZonedInstant("2026-10-14T01:30:00Z", "UTC"), "2026-10-14 01:30")
+  assert.equal(formatZonedInstant(null, SHANGHAI), null)
+  assert.equal(formatZonedInstant("2026-10-14T01:30:00Z", "Not/AZone"), null)
+  // The next-run helper is the same formatting, so the two cannot drift apart.
+  assert.equal(
+    formatNextRunAt("2026-10-14T01:30:00Z", SHANGHAI),
+    formatZonedInstant("2026-10-14T01:30:00Z", SHANGHAI),
+  )
 })
 
 // ── local validation ────────────────────────────────────────────

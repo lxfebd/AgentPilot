@@ -1629,6 +1629,10 @@
       "selectConnector": "选择设备",
       "nextRun": "下次运行：{time}",
       "nextRunNone": "暂无运行计划",
+      "errorFailed": "上次运行失败：{reason}",
+      "errorFailedAt": "上次运行失败（{time}）：{reason}",
+      "errorDisabled": "已自动停用：{reason}",
+      "errorDisabledAt": "已于 {time} 自动停用：{reason}",
       "enableToggle": "启用或停用 {title}"
     },
     "team": {
