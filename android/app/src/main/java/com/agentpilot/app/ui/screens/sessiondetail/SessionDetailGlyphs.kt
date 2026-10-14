@@ -108,6 +108,21 @@ internal fun XGlyph(color: Color, sizeDp: Int = 24) = DetailGlyph(sizeDp = sizeD
     drawLine(color, Offset(size.width * 0.76f, size.height * 0.24f), Offset(size.width * 0.24f, size.height * 0.76f), strokeWidth = stroke, cap = StrokeCap.Round)
 }
 
+/** Small chip glyph shown before the active model label in the composer. */
+@Composable
+internal fun ModelGlyph(color: Color) = DetailGlyph(sizeDp = 14, color = color) {
+    val stroke = 1.8.dp.toPx()
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.18f, size.height * 0.22f),
+        size = androidx.compose.ui.geometry.Size(size.width * 0.64f, size.height * 0.56f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx(), 2.dp.toPx()),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
+    )
+    drawLine(color, Offset(size.width * 0.18f, size.height * 0.42f), Offset(size.width * 0.82f, size.height * 0.42f), strokeWidth = stroke, cap = StrokeCap.Round)
+    drawLine(color, Offset(size.width * 0.50f, size.height * 0.42f), Offset(size.width * 0.50f, size.height * 0.78f), strokeWidth = stroke, cap = StrokeCap.Round)
+}
+
 @Composable
 private fun DetailGlyph(
     sizeDp: Int = 20,

@@ -1415,6 +1415,8 @@ fun SessionDetailScreen(
     }
     val attachmentsReady = attachments.all { it.uploadState == AttachmentUploadState.Uploaded }
     // Only drafts naming a catalog command run as commands; paths and prose stay messages.
+    // Prepared sessions have no runtime Agent yet, so command parsing stays off
+    // until a session exists; the first message then creates it.
     val slashIntent = if (isPreparedSession) null else SlashIntent.parse(draft)?.takeIf { it.isCommandLike }
     val exactCommand = slashIntent
         ?.takeIf { it.command.isNotEmpty() }
@@ -1898,6 +1900,10 @@ fun SessionDetailScreen(
                                     showInterrupt = showInterrupt,
                                     interrupting = state.interrupting,
                                     placeholder = placeholder,
+                                    modelLabel = modelSelection?.let { selectionId ->
+                                        modelOptions.firstOrNull { it.selectionId == selectionId }?.modelLabel
+                                    },
+                                    onOpenModelSettings = if (modelOptions.isNotEmpty()) { { openRuntimeSettings() } } else null,
                                     attachments = if (takeoverEnabled) attachments else emptyList(),
                                     onToggleTakeover = {
                                         if (!isPreparedSession) takeoverConfirm = !takeoverEnabled

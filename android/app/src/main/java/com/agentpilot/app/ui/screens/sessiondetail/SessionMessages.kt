@@ -631,6 +631,16 @@ internal fun groupTimelineMessages(
     val pendingReconnects = mutableListOf<TimelineMessage>()
     val pendingAgentCalls = mutableListOf<TimelineMessage>()
     var pendingAgentParentId: String? = null
+    // Consecutive compaction markers collapse into one separator; keep the last
+    // marker so an in-flight "compacting…" resolves to the terminal state.
+    val pendingCompacts = mutableListOf<TimelineMessage>()
+
+    fun flushCompacts() {
+        if (pendingCompacts.isNotEmpty()) {
+            result += TimelineRenderItem.Single(pendingCompacts.last())
+            pendingCompacts.clear()
+        }
+    }
 
     fun flushTools() {
         when (pendingTools.size) {
@@ -662,6 +672,15 @@ internal fun groupTimelineMessages(
     }
 
     for (message in messages) {
+        val compact = message.contentKind == "compact" || message.title == "compact"
+        if (compact && message.sourceItemId !in interactionTargetIds) {
+            flushAgentCalls()
+            flushReconnects()
+            flushTools()
+            pendingCompacts += message
+            continue
+        }
+        flushCompacts()
         val agentParentId = message.agentCall
             ?.parentItemId
             ?.takeIf(String::isNotBlank)
@@ -691,6 +710,7 @@ internal fun groupTimelineMessages(
     flushAgentCalls()
     flushReconnects()
     flushTools()
+    flushCompacts()
     return result
 }
 

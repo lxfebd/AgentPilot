@@ -32,8 +32,8 @@ android {
         applicationId = "com.agentpilot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 17
-        versionName = "2.1.1"
+        versionCode = 19
+        versionName = "2.1.3"
         buildConfigField("String", "OFFICIAL_SERVER_URL", officialServerUrl.asBuildConfigString())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

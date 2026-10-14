@@ -51,7 +51,7 @@ private data class ModelOptionGroup(
     val options: List<RuntimeSelectionOption>,
 )
 
-private val RuntimeSelectionOption.modelLabel: String
+internal val RuntimeSelectionOption.modelLabel: String
     get() = label.substringBefore(" · ").ifBlank { label }
 
 private val RuntimeSelectionOption.effortLabel: String?

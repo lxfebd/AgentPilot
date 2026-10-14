@@ -99,6 +99,8 @@ internal fun MessageComposer(
     showInterrupt: Boolean,
     interrupting: Boolean,
     placeholder: String,
+    modelLabel: String? = null,
+    onOpenModelSettings: (() -> Unit)? = null,
     attachments: List<PendingAttachment>,
     onToggleTakeover: () -> Unit,
     onPickPhoto: () -> Unit,
@@ -198,6 +200,31 @@ internal fun MessageComposer(
                     }
                 },
             )
+            if (modelLabel != null && modelLabel.isNotBlank()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (onOpenModelSettings != null) {
+                                Modifier.noRippleClickable(onClick = onOpenModelSettings)
+                            } else {
+                                Modifier
+                            },
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ModelGlyph(muted)
+                    Text(
+                        text = modelLabel,
+                        color = muted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             ComposerActions(
                 darkMode = darkMode,
                 takeoverEnabled = takeoverEnabled,
