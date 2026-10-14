@@ -131,10 +131,83 @@ def test_tick_keeps_retrying_transient_failure() -> None:
     executor = _executor_failing_with(repo, SessionRunConflictError("connector is offline"))
     asyncio.run(executor.tick())
 
-    assert len(repo.updates) == 1  # stale -> advanced by the grace path
+    # Two writes: the failure is recorded, then the grace path advances it.
+    assert len(repo.updates) == 2
+    recorded = repo.updates[0][1]
+    assert recorded["last_error"] == "connector is offline"
+    assert recorded["last_error_at"]
+    advanced = repo.updates[1][1]
+    assert advanced["next_run_at"] is not None
+    assert "enabled" not in advanced  # still enabled, still scheduled
+
+
+def test_failure_is_recorded_where_the_user_can_see_it() -> None:
+    # Before this, a failed run left only a server-log line: next_run_at kept
+    # advancing and the schedule looked healthy while nothing ever ran.
+    row = _row("sch_h", kind="daily", next_run_at="2026-10-12T02:59:00Z")
+    repo = FakeSchedulesRepo([row])
+    executor = _executor_failing_with(repo, SessionRunConflictError("session is running"))
+    asyncio.run(executor.tick())
+
+    recorded = repo.updates[0][1]
+    assert recorded["last_error"] == "session is running"
+    assert recorded["last_error_at"]  # when it failed, not just that it did
+
+    advanced = repo.updates[1][1]
+    # An advance from the retry grace is not a run: the failure stays visible.
+    assert "last_error" not in advanced
+    assert "last_error_at" not in advanced
+
+
+def test_disabled_target_failure_names_the_cause() -> None:
+    row = _row("sch_i", kind="daily", next_run_at="2026-10-12T02:59:00Z")
+    repo = FakeSchedulesRepo([row])
+    executor = _executor_failing_with(repo, SessionRunNotFoundError("project not found"))
+    asyncio.run(executor.tick())
+
+    _, values = repo.updates[0]
+    assert values["enabled"] == 0
+    assert values["last_error"] == "target no longer exists: project not found"
+    assert values["last_error_at"]
+
+
+def test_error_text_is_single_line_and_bounded() -> None:
+    from agent_server.services.schedule_executor import _error_text
+
+    assert _error_text(ValueError("first line\n  second   line")) == "first line second line"
+    assert _error_text(ValueError("")) == "ValueError"
+    long = _error_text(ValueError("x" * 5000))
+    assert len(long) == 400
+    assert long.endswith("…")
+
+
+def test_successful_run_clears_the_previous_failure() -> None:
+    row = _row("sch_j", kind="daily", next_run_at="2026-10-12T02:00:00Z")
+    row["last_error"] = "connector is offline"
+    row["last_error_at"] = "2026-10-12T02:00:00Z"
+    repo = FakeSchedulesRepo([row])
+    executor = ScheduleExecutor(FakeStore(repo), rpc=None, device_runtimes=None)
+    asyncio.run(
+        executor._advance(row, "2026-10-12T03:00:00Z", last_run_at="2026-10-12T03:00:00Z")
+    )
+
+    _, values = repo.updates[0]
+    assert values["last_error"] is None
+    assert values["last_error_at"] is None
+
+
+def test_grace_advance_keeps_the_failure() -> None:
+    # Advancing after the retry grace is not a run; hiding the failure here is
+    # exactly the blind spot this change exists to close.
+    row = _row("sch_k", kind="daily", next_run_at="2026-10-12T01:00:00Z")
+    row["last_error"] = "connector is offline"
+    repo = FakeSchedulesRepo([row])
+    executor = ScheduleExecutor(FakeStore(repo), rpc=None, device_runtimes=None)
+    asyncio.run(executor._advance(row, "2026-10-12T03:00:00Z", last_run_at=None))
+
     _, values = repo.updates[0]
     assert values["next_run_at"] is not None
-    assert "enabled" not in values  # still enabled, still scheduled
+    assert "last_error" not in values
 
 
 def test_fire_without_any_target_is_a_missing_target() -> None:

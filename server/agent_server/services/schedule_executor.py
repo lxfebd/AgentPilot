@@ -23,6 +23,17 @@ from agent_server.services.session_run import SessionRunNotFoundError
 # not retry forever.
 _RETRY_GRACE_SECONDS = 3600
 
+# The failure reason is shown verbatim in every client, so it is kept short and
+# on one line.  Details belong in the server log, not in a list row.
+_ERROR_TEXT_LIMIT = 400
+
+
+def _error_text(error: BaseException) -> str:
+    text = " ".join(str(error).split()) or type(error).__name__
+    if len(text) > _ERROR_TEXT_LIMIT:
+        text = text[: _ERROR_TEXT_LIMIT - 1] + "…"
+    return text
+
 
 class ScheduleExecutor:
     """Background loop that fires due schedules and advances their next run."""
@@ -67,7 +78,24 @@ class ScheduleExecutor:
                 logger.warning(
                     "schedule {} failed: {}", row.get("id"), error
                 )
+                await self._record_failure(row, now, error)
                 await self._give_up_if_stale(row, now)
+
+    async def _record_failure(
+        self, row: dict[str, Any], now: str, error: Exception
+    ) -> None:
+        """Put the failure where the user can see it.
+
+        Until now a failed run left only a server-log line: `next_run_at`
+        advancing made the schedule look healthy while nothing ever ran.
+        """
+        await self._store.schedules.update(
+            row["id"],
+            None,
+            last_error=_error_text(error),
+            last_error_at=now,
+            updated_at=now,
+        )
 
     async def _disable_missing_target(
         self, row: dict[str, Any], now: str, error: Exception
@@ -77,6 +105,8 @@ class ScheduleExecutor:
             None,
             enabled=0,
             next_run_at=None,
+            last_error=f"target no longer exists: {_error_text(error)}",
+            last_error_at=now,
             updated_at=now,
         )
         logger.warning(
@@ -131,13 +161,18 @@ class ScheduleExecutor:
                 timezone_name=row["timezone"],
                 now=datetime.now(UTC),
             )
-        await self._store.schedules.update(
-            row["id"],
-            None,
-            last_run_at=last_run_at if last_run_at is not None else row["last_run_at"],
-            next_run_at=next_run_at,
-            updated_at=now,
-        )
+        values: dict[str, Any] = {
+            "last_run_at": last_run_at if last_run_at is not None else row["last_run_at"],
+            "next_run_at": next_run_at,
+            "updated_at": now,
+        }
+        if last_run_at is not None:
+            # A run that worked supersedes whatever failed before it.  When
+            # last_run_at is None this advance came from the retry grace, so the
+            # failure stays visible: the schedule moved on without ever running.
+            values["last_error"] = None
+            values["last_error_at"] = None
+        await self._store.schedules.update(row["id"], None, **values)
 
     async def _give_up_if_stale(self, row: dict[str, Any], now: str) -> None:
         due_at = row.get("next_run_at")

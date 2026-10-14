@@ -104,6 +104,8 @@ def _to_view(row: dict) -> ScheduleView:
         enabled=bool(row["enabled"]),
         lastRunAt=row["last_run_at"],
         nextRunAt=row["next_run_at"],
+        lastError=row.get("last_error"),
+        lastErrorAt=row.get("last_error_at"),
         createdAt=row["created_at"],
         updatedAt=row["updated_at"],
     )
@@ -152,6 +154,8 @@ class ScheduleService:
             "enabled": 1 if payload.enabled else 0,
             "last_run_at": None,
             "next_run_at": next_run_at if payload.enabled else None,
+            "last_error": None,
+            "last_error_at": None,
             "created_at": moment,
             "updated_at": moment,
         }
@@ -192,6 +196,11 @@ class ScheduleService:
             now=datetime.now(UTC),
         )
         merged["next_run_at"] = next_run_at if merged["enabled"] else None
+        # Any edit — including a plain re-enable — means a fresh attempt is
+        # coming, so a failure recorded against the previous settings is dropped
+        # instead of being shown as if it were current.
+        merged["last_error"] = None
+        merged["last_error_at"] = None
         merged["updated_at"] = utc_now()
         await self._store.schedules.update(schedule_id, user_id, **merged)
         stored = {**current, **merged, "id": schedule_id}

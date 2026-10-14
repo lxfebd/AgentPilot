@@ -1399,6 +1399,10 @@ class ScheduleView(BaseModel):
     enabled: bool
     lastRunAt: str | None = None
     nextRunAt: str | None = None
+    # Why the most recent attempt did not run, and when it happened.  Cleared
+    # on a successful run and whenever the schedule is edited.
+    lastError: str | None = None
+    lastErrorAt: str | None = None
     createdAt: str
     updatedAt: str
 

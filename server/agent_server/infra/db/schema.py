@@ -514,6 +514,10 @@ session_schedules = Table(
     Column("enabled", Integer, nullable=False, server_default="1"),
     Column("last_run_at", Text),
     Column("next_run_at", Text),
+    # Why the last attempt failed and when it happened.  Cleared on a
+    # successful run and whenever the schedule is edited.
+    Column("last_error", Text),
+    Column("last_error_at", Text),
     Column("created_at", Text, nullable=False),
     Column("updated_at", Text, nullable=False),
     Index("ix_session_schedules_user", "user_id"),

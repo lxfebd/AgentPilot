@@ -1125,9 +1125,32 @@ def test_unversioned_runtime_schema_is_classified_by_actual_columns(
     )
 
 
-def test_current_schema_version_is_v2_42() -> None:
-    assert CURRENT_SCHEMA_REVISION == "v2_42"
-    assert CURRENT_SCHEMA_VERSION == "2.42"
+def test_current_schema_version_is_v2_43() -> None:
+    assert CURRENT_SCHEMA_REVISION == "v2_43"
+    assert CURRENT_SCHEMA_VERSION == "2.43"
+
+
+def test_v2_43_adds_schedule_failure_columns(tmp_path) -> None:
+    path = tmp_path / "schedule-failure.sqlite3"
+    url = _sqlite_url(path)
+    upgrade_database(db_url=url, revision="v2_42")
+    engine = create_engine(f"sqlite:///{path}")
+    try:
+        columns = {column["name"] for column in inspect(engine).get_columns("session_schedules")}
+        assert "last_error" not in columns
+        assert "last_error_at" not in columns
+    finally:
+        engine.dispose()
+
+    upgrade_database(db_url=url)
+    upgrade_database(db_url=url)  # re-running must not add the columns twice
+
+    engine = create_engine(f"sqlite:///{path}")
+    try:
+        columns = {column["name"] for column in inspect(engine).get_columns("session_schedules")}
+        assert {"last_error", "last_error_at"} <= columns
+    finally:
+        engine.dispose()
 
 
 def test_v2_41_drops_the_sidebar_order_table(tmp_path) -> None:
