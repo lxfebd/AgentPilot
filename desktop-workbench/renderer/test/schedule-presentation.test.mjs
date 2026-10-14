@@ -7,6 +7,7 @@ import {
   buildScheduleCreateRequest,
   buildScheduleEnabledPatch,
   buildScheduleTarget,
+  deriveScheduleFailure,
   emptyScheduleDraft,
   formatInstantLocal,
   formatNextRun,
@@ -43,6 +44,8 @@ function schedule(overrides = {}) {
     cwd: null,
     nextRunAt: "2026-10-15T01:30:00.000Z",
     lastRunAt: null,
+    lastError: null,
+    lastErrorAt: null,
     createdAt: "2026-10-01T00:00:00.000Z",
     updatedAt: "2026-10-01T00:00:00.000Z",
     ...overrides,
@@ -224,6 +227,95 @@ test("next run shows the next trigger, and nothing once a one-shot has fired", (
   assert.equal(scheduleHasFinished(schedule({ scheduleKind: "once", nextRunAt: null })), true)
   assert.equal(scheduleHasFinished(schedule({ scheduleKind: "once", nextRunAt: "2026-10-15T01:30:00.000Z" })), false)
   assert.equal(scheduleHasFinished(schedule({ scheduleKind: "weekly", nextRunAt: null })), false)
+})
+
+// ── Failed runs ─────────────────────────────────────────────────
+
+test("a schedule with no reported failure shows nothing extra", () => {
+  assert.equal(deriveScheduleFailure(schedule()), null)
+  assert.equal(deriveScheduleFailure(schedule({ lastError: null, lastErrorAt: null })), null)
+  // A blank reason is nothing the user can act on, and a timestamp on its own
+  // is not a failure.
+  assert.equal(deriveScheduleFailure(schedule({ lastError: "", lastErrorAt: "2026-10-12T00:00:00Z" })), null)
+  assert.equal(deriveScheduleFailure(schedule({ lastError: "   ", lastErrorAt: null })), null)
+  assert.equal(deriveScheduleFailure(schedule({ lastError: null, lastErrorAt: "2026-10-12T00:00:00Z" })), null)
+  // A schedule the user paused is not a failure, and stays unreported.
+  assert.equal(deriveScheduleFailure(schedule({ enabled: false })), null)
+})
+
+test("a reported failure carries the reason and the attempt time in the schedule's own timezone", () => {
+  const failure = deriveScheduleFailure(schedule({
+    lastError: "connector is offline",
+    lastErrorAt: "2026-10-12T00:00:00Z",
+  }))
+  assert.deepEqual(failure, {
+    reason: "connector is offline",
+    // 00:00 UTC reads as 08:00 in the schedule's zone, exactly like the next run.
+    at: "2026-10-12 08:00",
+    switchedOff: false,
+  })
+  // The zone belongs to the schedule, never to the machine running the test.
+  for (const [zone, expected] of [
+    ["UTC", "2026-10-12 00:00"],
+    ["America/New_York", "2026-10-11 20:00"],
+    ["Europe/Berlin", "2026-10-12 02:00"],
+  ]) {
+    const inZone = deriveScheduleFailure(
+      schedule({ timezone: zone, lastError: "connector is offline", lastErrorAt: "2026-10-12T00:00:00Z" }),
+    )
+    assert.equal(inZone?.at, expected, zone)
+  }
+  // The reason is the server's own wording, minus surrounding whitespace.
+  assert.equal(deriveScheduleFailure(schedule({ lastError: "  connector is offline  " }))?.reason, "connector is offline")
+})
+
+test("a failure with no usable timestamp still reports the reason", () => {
+  assert.deepEqual(
+    deriveScheduleFailure(schedule({ lastError: "connector is offline", lastErrorAt: null })),
+    { reason: "connector is offline", at: null, switchedOff: false },
+  )
+  const broken = deriveScheduleFailure(schedule({ lastError: "connector is offline", lastErrorAt: "sometime" }))
+  assert.equal(broken?.reason, "connector is offline")
+  assert.equal(broken?.at, null)
+  // An unusable zone name falls back to the raw instant instead of guessing.
+  assert.equal(
+    deriveScheduleFailure(schedule({ timezone: "Not/AZone", lastError: "boom", lastErrorAt: "2026-10-12T00:00:00Z" }))?.at,
+    "2026-10-12T00:00:00.000Z",
+  )
+  // A missing zone name falls back to UTC, the same rule the next run uses.
+  assert.equal(
+    deriveScheduleFailure(schedule({ timezone: "  ", lastError: "boom", lastErrorAt: "2026-10-12T00:00:00Z" }))?.at,
+    "2026-10-12 00:00",
+  )
+})
+
+test("a schedule the server switched off reports the off state together with its reason", () => {
+  // What the server writes when the target is gone: enabled false, no next
+  // trigger, and the reason on the schedule itself.
+  const stopped = schedule({
+    scheduleKind: "once",
+    enabled: false,
+    nextRunAt: null,
+    lastError: "target no longer exists: session not found",
+    lastErrorAt: "2026-10-12T00:00:00Z",
+  })
+  const failure = deriveScheduleFailure(stopped)
+  assert.deepEqual(failure, {
+    reason: "target no longer exists: session not found",
+    at: "2026-10-12 08:00",
+    switchedOff: true,
+  })
+  // The trigger state alone would read as a one-shot that finished; the failure
+  // is what tells the row to say "off, because the target is gone" instead.
+  assert.equal(scheduleHasFinished(stopped), true)
+  assert.equal(failure.switchedOff, true)
+})
+
+test("deriving a failure is pure: same input, same answer, no mutation", () => {
+  const input = schedule({ lastError: "connector is offline", lastErrorAt: "2026-10-12T00:00:00Z" })
+  const copy = { ...input }
+  assert.deepEqual(deriveScheduleFailure(input), deriveScheduleFailure(input))
+  assert.deepEqual(input, copy)
 })
 
 // ── Target selection ────────────────────────────────────────────

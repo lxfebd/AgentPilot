@@ -869,6 +869,8 @@
       "notScheduled": "Not scheduled",
       "finished": "Finished",
       "paused": "Paused",
+      "stoppedByServer": "Stopped by server",
+      "lastFailed": "Last run failed",
       "existingSession": "Existing session",
       "newSession": "New session",
       "untitledSession": "(Untitled session)",

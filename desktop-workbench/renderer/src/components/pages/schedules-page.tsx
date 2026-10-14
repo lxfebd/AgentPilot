@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import {
+  AlertTriangle,
   CalendarClock,
   Loader2,
   Plus,
@@ -54,6 +55,7 @@ import {
   buildScheduleCreateRequest,
   buildScheduleEnabledPatch,
   browserTimezone,
+  deriveScheduleFailure,
   emptyScheduleDraft,
   formatNextRun,
   formatTriggerSummary,
@@ -256,6 +258,11 @@ function ScheduleRow({
   const timezone = schedule.timezone?.trim() || "UTC"
   const nextRun = formatNextRun(schedule, timezone)
   const finished = scheduleHasFinished(schedule)
+  // The server's own report of a failed run, or null when the row is healthy.
+  const failure = deriveScheduleFailure(schedule)
+  // A schedule the server stopped is not "finished" and not "paused": its
+  // target is gone, and `failure.reason` is the explanation.
+  const switchedOff = Boolean(failure?.switchedOff)
   const summary = formatTriggerSummary(schedule, {
     once: t("kind.once"),
     daily: t("kind.daily"),
@@ -263,6 +270,11 @@ function ScheduleRow({
     weekdays: WEEKDAY_KEYS.map((key) => t(key)),
     timezoneSuffix: (zone) => `(${zone})`,
   })
+  // Rendered only when `failure` exists; `undefined` so the tooltip attribute
+  // is simply absent otherwise.
+  const failureText = failure
+    ? `${t("lastFailed")} · ${failure.reason}${failure.at ? ` · ${failure.at}` : ""}`
+    : undefined
 
   return (
     <li className="flex min-h-14 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent/40">
@@ -274,20 +286,31 @@ function ScheduleRow({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-medium">{schedule.title}</p>
-          {finished ? (
+          {switchedOff ? (
+            <Badge variant="destructive" className="shrink-0 font-normal">{t("stoppedByServer")}</Badge>
+          ) : finished ? (
             <Badge variant="secondary" className="shrink-0 font-normal">{t("finished")}</Badge>
-          ) : null}
-          {!schedule.enabled && !finished ? (
+          ) : !schedule.enabled ? (
             <Badge variant="outline" className="shrink-0 font-normal">{t("paused")}</Badge>
           ) : null}
         </div>
         <p className="mt-0.5 truncate text-xs text-muted-foreground" title={summary}>
           {summary}
         </p>
+        {failure ? (
+          <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-destructive" title={failureText}>
+            <AlertTriangle className="size-3 shrink-0" />
+            <span className="truncate">{failureText}</span>
+          </p>
+        ) : null}
       </div>
       <div className="shrink-0 text-right">
         <p className="text-xs text-muted-foreground">
-          {nextRun ? `${t("nextRun")} ${nextRun}` : finished ? t("finished") : t("notScheduled")}
+          {nextRun
+            ? `${t("nextRun")} ${nextRun}`
+            : finished && !switchedOff
+              ? t("finished")
+              : t("notScheduled")}
         </p>
         <p className="truncate text-xs text-muted-foreground/70" title={schedule.prompt}>
           {schedule.sessionId ? t("existingSession") : t("newSession")}

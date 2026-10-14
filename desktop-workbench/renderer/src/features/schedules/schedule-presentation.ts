@@ -261,6 +261,50 @@ export function scheduleHasFinished(
   return schedule.scheduleKind === "once" && !schedule.nextRunAt
 }
 
+/**
+ * A run that could not happen, as the server reports it on the schedule.
+ *
+ * `lastError` is the server's own wording for the failed attempt ("connector is
+ * offline", "target no longer exists: session not found") and `lastErrorAt` is
+ * when that attempt happened. The server clears both on a successful run and on
+ * any edit, so what is shown is the schedule's current state rather than an old
+ * complaint. A schedule the server switched off — its session, project or
+ * connector is gone — arrives as `enabled: false` plus a `lastError` saying why,
+ * which is a different situation from the user pausing it.
+ */
+export type ScheduleFailure = {
+  /** Why the last attempt failed, in the server's words. */
+  reason: string
+  /** `lastErrorAt` read in the schedule's own timezone, or null when absent. */
+  at: string | null
+  /** The schedule is off and the failure is why: the server stopped it. */
+  switchedOff: boolean
+}
+
+/** The only fields the failure is derived from. */
+export type ScheduleFailureSource = Pick<
+  ScheduleView,
+  "lastError" | "lastErrorAt" | "enabled" | "timezone"
+>
+
+/**
+ * Derive what a row should say about a failed run, or `null` when there is
+ * nothing to report. Pure: no React, no clock, no fetch, and the timestamp is
+ * read in the schedule's timezone exactly like the next run is.
+ */
+export function deriveScheduleFailure(
+  schedule: ScheduleFailureSource,
+): ScheduleFailure | null {
+  const reason = typeof schedule.lastError === "string" ? schedule.lastError.trim() : ""
+  if (!reason) return null
+  const timezone = schedule.timezone?.trim() || "UTC"
+  return {
+    reason,
+    at: formatInstantLocal(schedule.lastErrorAt, timezone),
+    switchedOff: !schedule.enabled,
+  }
+}
+
 /** Exactly one target: an existing `sessionId`, or `projectId` + `connectorId`. */
 export function scheduleTargetError(target: ScheduleTarget): "targetRequired" | null {
   const sessionId = Boolean(target.sessionId?.trim())
