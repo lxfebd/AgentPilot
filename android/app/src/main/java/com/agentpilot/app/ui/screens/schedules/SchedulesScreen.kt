@@ -56,20 +56,33 @@ import java.time.format.DateTimeFormatter
 private val DisplayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm")
 
 /**
- * Format a schedule's `nextRunAt` for display, in the schedule's own timezone.
+ * Format an instant carried by a schedule for display, in the schedule's own
+ * timezone.
  *
  * The timezone comes from the schedule, never a fixed zone: a schedule the user
  * created for `America/New_York` must not be shown in Shanghai time. Returns
  * null when the instant is missing, unparseable, or the zone is unknown.
  */
-internal fun formatScheduleNextRunAt(nextRunAt: String?, timezone: String?): String? {
-    if (nextRunAt.isNullOrBlank()) return null
+private fun formatScheduleInstant(instant: String?, timezone: String?): String? {
+    if (instant.isNullOrBlank()) return null
     val zoneId = runCatching { ZoneId.of(timezone?.takeIf { it.isNotBlank() } ?: "UTC") }.getOrNull()
         ?: return null
     return runCatching {
-        Instant.parse(nextRunAt).atZone(zoneId).format(DisplayFormatter)
+        Instant.parse(instant).atZone(zoneId).format(DisplayFormatter)
     }.getOrNull()
 }
+
+internal fun formatScheduleNextRunAt(nextRunAt: String?, timezone: String?): String? =
+    formatScheduleInstant(nextRunAt, timezone)
+
+/**
+ * Format `lastErrorAt` — when a schedule last failed — in the schedule's own
+ * timezone, the same rule as [formatScheduleNextRunAt]. A failure time shown in
+ * a zone the schedule was never created for is off by hours, which is exactly
+ * the confusion the timestamp was added to remove.
+ */
+internal fun formatScheduleErrorAt(lastErrorAt: String?, timezone: String?): String? =
+    formatScheduleInstant(lastErrorAt, timezone)
 
 /**
  * Parse a user-typed local wall-clock time into the UTC instant the server wants.
@@ -108,18 +121,18 @@ internal fun SchedulesScreen(
 ) {
     val colors = LocalAAColors.current
     val scope = rememberCoroutineScope()
-    var schedules by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
+    var schedules by remember { mutableStateOf<List<ScheduleItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var createOpen by remember { mutableStateOf(false) }
     var createError by remember { mutableStateOf<String?>(null) }
-    var deleteTarget by remember { mutableStateOf<JSONObject?>(null) }
+    var deleteTarget by remember { mutableStateOf<ScheduleItem?>(null) }
 
     fun refresh() {
         scope.launch {
             onListSchedules()
                 .onSuccess { array ->
-                    schedules = (0 until array.length()).map { array.getJSONObject(it) }
+                    schedules = (0 until array.length()).map { parseScheduleItem(array.getJSONObject(it)) }
                     errorMessage = null
                 }
                 .onFailure { error -> errorMessage = error.message }
@@ -199,12 +212,12 @@ internal fun SchedulesScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 32.dp),
             ) {
-                items(schedules, key = { it.optString("id") }) { item ->
+                items(schedules, key = { it.id }) { item ->
                     ScheduleRow(
                         item = item,
                         onToggle = { enabled ->
                             scope.launch {
-                                onSetScheduleEnabled(item.optString("id"), enabled)
+                                onSetScheduleEnabled(item.id, enabled)
                                     .onSuccess { refresh() }
                             }
                         },
@@ -240,11 +253,11 @@ internal fun SchedulesScreen(
             onDismissRequest = { deleteTarget = null },
             containerColor = colors.raisedSurface,
             title = { Text(stringResource(R.string.schedules_delete), color = colors.ink) },
-            text = { Text(target.optString("title"), color = colors.inkSoft) },
+            text = { Text(target.title, color = colors.inkSoft) },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
-                        onDeleteSchedule(target.optString("id"))
+                        onDeleteSchedule(target.id)
                         deleteTarget = null
                         refresh()
                     }
@@ -261,18 +274,29 @@ internal fun SchedulesScreen(
 
 @Composable
 private fun ScheduleRow(
-    item: JSONObject,
+    item: ScheduleItem,
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = LocalAAColors.current
-    val kindLabel = when (item.optString("scheduleKind")) {
+    val kindLabel = when (item.scheduleKind) {
         "once" -> stringResource(R.string.schedules_kind_once)
         "weekly" -> stringResource(R.string.schedules_kind_weekly)
         else -> stringResource(R.string.schedules_kind_daily)
     }
-    val nextText = remember(item.optString("nextRunAt"), item.optString("timezone")) {
-        formatScheduleNextRunAt(item.optString("nextRunAt"), item.optString("timezone"))
+    val nextText = remember(item.nextRunAt, item.timezone) {
+        formatScheduleNextRunAt(item.nextRunAt, item.timezone)
+    }
+    // Why this schedule last failed, and when. Nothing is rendered while the
+    // server has no failure to report (`lastError` is cleared on a successful
+    // run and on every edit).
+    val failureWhenText = formatScheduleErrorAt(item.lastErrorAt, item.timezone)
+    val failureText = item.lastError?.let { reason ->
+        if (failureWhenText != null) {
+            stringResource(R.string.schedules_last_error_at, reason, failureWhenText)
+        } else {
+            stringResource(R.string.schedules_last_error, reason)
+        }
     }
     Row(
         modifier = Modifier
@@ -284,7 +308,7 @@ private fun ScheduleRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                text = item.optString("title"),
+                text = item.title,
                 color = colors.ink,
                 fontSize = 14.5.sp,
                 fontWeight = FontWeight.Medium,
@@ -298,9 +322,19 @@ private fun ScheduleRow(
                 fontSize = 12.sp,
                 maxLines = 1,
             )
+            failureText?.let {
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = it,
+                    color = colors.errorText,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Switch(
-            checked = item.optBoolean("enabled", true),
+            checked = item.enabled,
             onCheckedChange = onToggle,
         )
         Spacer(Modifier.width(6.dp))

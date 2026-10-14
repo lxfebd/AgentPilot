@@ -678,6 +678,8 @@
     <string name="schedules_kind_once">一次性</string>
     <string name="schedules_kind_daily">每日</string>
     <string name="schedules_kind_weekly">每周</string>
+    <string name="schedules_last_error">上次运行失败：%1$s</string>
+    <string name="schedules_last_error_at">上次运行失败：%1$s（%2$s）</string>
     <string name="schedules_weekday_1">一</string>
     <string name="schedules_weekday_2">二</string>
     <string name="schedules_weekday_3">三</string>

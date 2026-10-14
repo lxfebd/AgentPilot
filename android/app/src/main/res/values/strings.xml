@@ -680,6 +680,8 @@
     <string name="schedules_kind_once">One-time</string>
     <string name="schedules_kind_daily">Daily</string>
     <string name="schedules_kind_weekly">Weekly</string>
+    <string name="schedules_last_error">Last run failed: %1$s</string>
+    <string name="schedules_last_error_at">Last run failed: %1$s (%2$s)</string>
     <string name="schedules_weekday_1">Mon</string>
     <string name="schedules_weekday_2">Tue</string>
     <string name="schedules_weekday_3">Wed</string>

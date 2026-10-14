@@ -51,6 +51,32 @@ class ApiClient(
         }
     }
 
+    /**
+     * GET an absolute URL and return the raw response body, or null when the
+     * resource is unavailable (non-2xx, unreachable, or a bad URL).
+     *
+     * For optional resources only — an older server never serves
+     * `<origin>/apk/version.json`, and that must be a fallback, not an error.
+     * The body is returned unparsed so the caller decides what is malformed.
+     */
+    fun getTextOrNull(url: String): String? {
+        return try {
+            val request = Request.Builder()
+                .url(url)
+                .header("Accept", "application/json")
+                .header("ngrok-skip-browser-warning", "true")
+                .get()
+                .build()
+            JSON_HTTP_CLIENT.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) null else response.body?.string()
+            }
+        } catch (exc: IOException) {
+            null
+        } catch (exc: IllegalArgumentException) {
+            null
+        }
+    }
+
     fun getJson(
         serverUrl: String,
         path: String,

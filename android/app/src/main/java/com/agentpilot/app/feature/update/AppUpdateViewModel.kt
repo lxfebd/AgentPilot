@@ -77,7 +77,11 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
         checkJob = viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    api.check(serverUrl, BuildConfig.VERSION_NAME)
+                    api.check(
+                        serverUrl = serverUrl,
+                        currentVersionName = BuildConfig.VERSION_NAME,
+                        currentVersionCode = BuildConfig.VERSION_CODE,
+                    )
                 }
             }.onSuccess { release ->
                 if (!isCurrentSession(serverUrl, generation)) return@onSuccess
