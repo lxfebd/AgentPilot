@@ -433,22 +433,26 @@ def test_stale_owner_cannot_delete_replacement_lease() -> None:
 
 
 def test_connector_heartbeat_renews_distributed_lease() -> None:
+    # The lease TTL here is enforced by fakeredis on the real clock, so the
+    # margins have to survive a loaded test run: with 0.05s timeouts a stall of
+    # a few tens of milliseconds between the touch and the second register let
+    # the lease lapse and the duplicate check passed for the wrong reason.
     async def exercise() -> None:
         fake_server = FakeServer()
         owner = ConnectorRpcManager(
             _coordinator(fake_server),
             instance_id="server-a",
-            heartbeat_timeout_seconds=0.05,
+            heartbeat_timeout_seconds=2.0,
         )
         other = ConnectorRpcManager(
             _coordinator(fake_server),
             instance_id="server-b",
-            heartbeat_timeout_seconds=0.05,
+            heartbeat_timeout_seconds=2.0,
         )
         connection = await owner.register("conn_1", FakeWebSocket())  # type: ignore[arg-type]
-        await asyncio.sleep(0.03)
+        await asyncio.sleep(1.0)
         assert await owner.touch("conn_1", connection)
-        await asyncio.sleep(0.03)
+        await asyncio.sleep(1.0)
 
         with pytest.raises(DuplicateConnectorConnectionError):
             await other.register("conn_1", FakeWebSocket())  # type: ignore[arg-type]
