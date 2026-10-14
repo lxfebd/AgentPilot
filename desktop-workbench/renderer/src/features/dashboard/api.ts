@@ -40,6 +40,10 @@ import type {
   ProjectSessionListResponse,
   RpcResponse,
   RuntimeTypeListResponse,
+  ScheduleCreateRequest,
+  ScheduleListResponse,
+  SchedulePatchRequest,
+  ScheduleResponse,
   SessionCommandListResponse,
   SessionCreateAndStartRequest,
   SessionCreateRequest,
@@ -973,6 +977,36 @@ export class DashboardApi {
   ): Promise<DeviceRuntimeView> {
     return this.client.delete<DeviceRuntimeView>(
       `/connectors/${encodeURIComponent(connectorId)}/runtimes/${encodeURIComponent(runtimeId)}/config`,
+      { token },
+    );
+  }
+
+  listSchedules(token: string): Promise<ScheduleListResponse> {
+    return this.client.get<ScheduleListResponse>("/schedules", { token });
+  }
+
+  createSchedule(
+    token: string,
+    body: ScheduleCreateRequest,
+  ): Promise<ScheduleResponse> {
+    return this.client.post<ScheduleResponse>("/schedules", body, { token });
+  }
+
+  patchSchedule(
+    token: string,
+    scheduleId: string,
+    body: SchedulePatchRequest,
+  ): Promise<ScheduleResponse> {
+    return this.client.patch<ScheduleResponse>(
+      `/schedules/${encodeURIComponent(scheduleId)}`,
+      body,
+      { token },
+    );
+  }
+
+  deleteSchedule(token: string, scheduleId: string): Promise<void> {
+    return this.client.delete<void>(
+      `/schedules/${encodeURIComponent(scheduleId)}`,
       { token },
     );
   }

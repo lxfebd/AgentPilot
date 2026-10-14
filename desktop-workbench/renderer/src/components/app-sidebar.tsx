@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { DesktopConnectionStatus } from "@/components/desktop/desktop-shell-header"
-import { Plus, Smartphone } from "lucide-react"
+import { Plus, Smartphone, CalendarClock } from "lucide-react"
 import { toast } from "sonner"
 
 import { useAuth } from "@/components/auth/auth-context"
@@ -260,6 +260,16 @@ export function AppSidebar({ contained = false }: { contained?: boolean }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : null}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-10 font-medium"
+              isActive={page === "schedules"}
+              onClick={() => navigate("schedules")}
+            >
+              <CalendarClock />
+              <span>{t("actions.schedules")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
         <DesktopConnectionStatus />
       </SidebarHeader>

@@ -53,8 +53,9 @@ export type PanelMode = "docked" | "floating" | "closed"
  *   mobile-connections           →  #/mobile-connections
  *   home + project prefill       →  #/new-session/proj-1
  *   device/:id                   →  #/device/conn-3
+ *   schedules                    →  #/schedules
  */
-export type AppPage = "home" | "session" | "settings" | "dashboard" | "team" | "service" | "mobile-connections" | "device"
+export type AppPage = "home" | "session" | "settings" | "dashboard" | "team" | "service" | "mobile-connections" | "schedules" | "device"
 
 export type WorkspaceSessionView = DemoSessionView & {
   projectId?: string | null
@@ -87,6 +88,7 @@ type ParsedRoute =
   | { page: "team" }
   | { page: "service" }
   | { page: "mobile-connections" }
+  | { page: "schedules" }
   | { page: "device"; connectorId: string }
 
 type WorkspaceHistoryMeta = {
@@ -118,6 +120,8 @@ function parseHash(hash: string): ParsedRoute {
       return { page: "service" }
     case "mobile-connections":
       return { page: "mobile-connections" }
+    case "schedules":
+      return { page: "schedules" }
     case "device": {
       const connectorId = parts[1]
       if (!connectorId) return { page: "home" }
@@ -137,6 +141,7 @@ function buildHash(route: ParsedRoute): string {
     case "team":      return "#/team"
     case "service":   return "#/service"
     case "mobile-connections": return "#/mobile-connections"
+    case "schedules": return "#/schedules"
     case "device":    return `#/device/${route.connectorId}`
   }
 }
@@ -183,6 +188,7 @@ function isWorkspaceRouteHash(hash: string): boolean {
     path === "team" ||
     path === "service" ||
     path === "mobile-connections" ||
+    path === "schedules" ||
     path === "device" ||
     path.startsWith("device/")
   )
@@ -1047,6 +1053,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       else if (page === "team") pushRoute({ page: "team" })
       else if (page === "service") pushRoute({ page: "service" })
       else if (page === "mobile-connections") pushRoute({ page: "mobile-connections" })
+      else if (page === "schedules") pushRoute({ page: "schedules" })
     },
     [pushRoute],
   )
@@ -1498,7 +1505,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   // ── Derived route fields ──────────────────────────────────
 
-  const validPages: AppPage[] = ["home", "session", "settings", "dashboard", "team", "service", "mobile-connections", "device"]
+  const validPages: AppPage[] = ["home", "session", "settings", "dashboard", "team", "service", "mobile-connections", "schedules", "device"]
   const page: AppPage = validPages.includes(route.page as AppPage) ? (route.page as AppPage) : "home"
 
   const routeSessionId = route.page === "session" ? route.sessionId : null
