@@ -29,6 +29,15 @@ struct SchedulesView: View {
         )
     }
 
+    private var failureLabels: SchedulePresentation.FailureSummaryLabels {
+        SchedulePresentation.FailureSummaryLabels(
+            failed: String(localized: "Last run failed: {reason}"),
+            failedAt: String(localized: "Last run failed at {time}: {reason}"),
+            disabled: String(localized: "Turned off: {reason}"),
+            disabledAt: String(localized: "Turned off at {time}: {reason}")
+        )
+    }
+
     private var validationLabels: ScheduleValidationLabels {
         ScheduleValidationLabels(
             titleRequired: String(localized: "Enter a task name."),
@@ -53,6 +62,7 @@ struct SchedulesView: View {
                 ScheduleRow(
                     schedule: schedule,
                     labels: labels,
+                    failureLabels: failureLabels,
                     busy: model.busyScheduleId == schedule.id,
                     onToggle: { enabled in Task { await model.setEnabled(schedule, enabled: enabled) } },
                     onDelete: { model.deletingSchedule = schedule }
@@ -123,11 +133,20 @@ struct SchedulesView: View {
 private struct ScheduleRow: View {
     let schedule: V2Schedule
     let labels: SchedulePresentation.TriggerSummaryLabels
+    let failureLabels: SchedulePresentation.FailureSummaryLabels
     let busy: Bool
     let onToggle: (Bool) -> Void
     let onDelete: () -> Void
 
     private var finished: Bool { SchedulePresentation.hasFinished(schedule) }
+    private var failure: SchedulePresentation.ScheduleFailure? {
+        SchedulePresentation.describeFailure(schedule, labels: failureLabels)
+    }
+    /// A row with a recorded failure explains itself better than the "Already
+    /// ran" badge does — that badge claims the run happened, and a failure says
+    /// it did not. A schedule the Server switched off (its target is gone) is
+    /// the sharpest case of that.
+    private var showsFinishedBadge: Bool { finished && failure == nil }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -145,7 +164,12 @@ private struct ScheduleRow: View {
                 Text("\(Text(String(localized: "Next run"))) \(SchedulePresentation.nextRunLabel(schedule, emptyLabel: String(localized: "not scheduled")))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                if finished {
+                if let failure {
+                    Label(Text(failure.text), systemImage: "exclamationmark.triangle")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.red)
+                }
+                if showsFinishedBadge {
                     Text(String(localized: "Already ran"))
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tint)

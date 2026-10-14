@@ -220,6 +220,12 @@ regenerate it from the product's own app icon: `python scripts/write-app-icon.py
 (Pillow). The Web favicon is not a suitable source: it is a black silhouette on
 transparency and vanishes on a dark taskbar.
 
+`bundle:uv` and `bundle:python` fetch the `uv` and CPython distributions from
+GitHub releases into `.cache/`, so packaging needs that host to be reachable.
+Downloads are cached per version and the timeout is configurable
+(`UV_BUNDLE_DOWNLOAD_TIMEOUT_MS`); on a network where GitHub is unreachable the
+packaging step stops there with `Download timed out` and nothing is produced.
+
 | Environment | Effect |
 | --- | --- |
 | `MAC_CERT_P12_BASE64` + `MACOS_SIGN_IDENTITY` + `CSC_KEY_PASSWORD` | macOS signing from a Base64 PKCS#12, mapped to `CSC_LINK`/`CSC_NAME` |

@@ -26,13 +26,20 @@ nonisolated struct V2Schedule: Codable, Identifiable, Hashable {
     /// UTC ISO-8601 of the next trigger; null once a `once` schedule has run.
     let nextRunAt: String?
     let lastRunAt: String?
+    /// Why the most recent attempt failed, in the Server's own words (added in
+    /// 2.2.0). Null when there is no recorded failure: the Server clears it on a
+    /// successful run and on every edit. Optional so a Server older than 2.2.0,
+    /// which omits the pair entirely, still decodes.
+    let lastError: String?
+    /// UTC ISO-8601 instant of that failed attempt.
+    let lastErrorAt: String?
     let createdAt: String
     let updatedAt: String
 
     enum CodingKeys: String, CodingKey {
         case id, title, prompt, scheduleKind, runAt, runTime, weekday
         case timezone, enabled, sessionId, projectId, connectorId, runtime, cwd
-        case nextRunAt, lastRunAt, createdAt, updatedAt
+        case nextRunAt, lastRunAt, lastError, lastErrorAt, createdAt, updatedAt
     }
 }
 

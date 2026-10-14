@@ -36,6 +36,24 @@
         }
       }
     },
+    "%@ %@": {
+      "comment": "Schedules row: SwiftUI concatenates the localized Next run label with the timestamp, so this key carries the separator. Mirrors the Web schedules page (pages.schedules.nextRun), which renders the label and the time with a full-width colon in Chinese.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@：%2$@"
+          }
+        }
+      }
+    },
     "%@ / %@": {
       "extractionState": "manual",
       "localizations": {
@@ -852,6 +870,24 @@
         }
       }
     },
+    "Already ran": {
+      "comment": "Schedules row badge for a once schedule whose nextRunAt the Server cleared.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already ran"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已运行过"
+          }
+        }
+      }
+    },
     "Always use the dark appearance.": {
       "comment": "Shared with Web: pages.settings.darkDescription. Sync with ios/scripts/web_copy.py.",
       "extractionState": "manual",
@@ -1267,6 +1303,60 @@
         }
       }
     },
+    "Choose a session": {
+      "comment": "Schedules create form. Wording matches the Web schedules page (pages.schedules.selectSession).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a session"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择会话"
+          }
+        }
+      }
+    },
+    "Choose a target session.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.targetRequired) with the iOS target-session wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a target session."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择目标会话。"
+          }
+        }
+      }
+    },
+    "Choose a weekday.": {
+      "comment": "Schedules create form validation. Wording matches the Web schedules page (pages.schedules.weekdayRequired).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a weekday."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择星期。"
+          }
+        }
+      }
+    },
     "Choose an avatar image before uploading.": {
       "extractionState": "manual",
       "localizations": {
@@ -1385,6 +1475,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "选择图片"
+          }
+        }
+      }
+    },
+    "Choose when to run.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.runAtRequired) with the iOS Run at wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose when to run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择运行时间。"
           }
         }
       }
@@ -2011,6 +2119,24 @@
         }
       }
     },
+    "Create one to have the Server send a message on a schedule.": {
+      "comment": "Schedules empty state. iOS-only copy; tone follows the Web schedules page (pages.schedules.description).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create one to have the Server send a message on a schedule."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建一个定时任务，服务器会按计划自动发送消息。"
+          }
+        }
+      }
+    },
     "Create project": {
       "comment": "Shared with Web: dashboard.projects.create. Sync with ios/scripts/web_copy.py.",
       "extractionState": "manual",
@@ -2199,6 +2325,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "删除项目？"
+          }
+        }
+      }
+    },
+    "Delete schedule?": {
+      "comment": "Schedules delete confirmation. Wording matches the Web schedules page (pages.schedules.deleteTitle).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete schedule?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除这个定时任务？"
           }
         }
       }
@@ -2552,6 +2696,24 @@
         }
       }
     },
+    "Enabled": {
+      "comment": "Schedules row toggle label (labelsHidden, so accessibility only). Vocabulary follows the Web schedules page (pages.schedules.enableToggle).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用"
+          }
+        }
+      }
+    },
     "Enter Server": {
       "extractionState": "manual",
       "localizations": {
@@ -2616,6 +2778,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "请输入会话标题。"
+          }
+        }
+      }
+    },
+    "Enter a task name.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.titleRequired) with the iOS Task name field wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a task name."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入任务名称。"
+          }
+        }
+      }
+    },
+    "Enter a time as HH:MM.": {
+      "comment": "Schedules create form validation. Wording matches the Web schedules page (pages.schedules.runTimeRequired).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a time as HH:MM."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请按 HH:MM 填写时间。"
           }
         }
       }
@@ -2705,6 +2903,24 @@
         }
       }
     },
+    "Enter the message to send.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.promptRequired) with the iOS Message field wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the message to send."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入要发送的消息。"
+          }
+        }
+      }
+    },
     "Enter valid JSON.": {
       "extractionState": "manual",
       "localizations": {
@@ -2752,6 +2968,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "错误"
+          }
+        }
+      }
+    },
+    "Every day": {
+      "comment": "Schedules trigger summary and create-form kind. Wording matches the Web schedules page (pages.schedules.summaryDaily).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every day"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每天"
+          }
+        }
+      }
+    },
+    "Every week": {
+      "comment": "Schedules create-form kind. Wording matches the Web schedules page (pages.schedules.kindWeekly).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every week"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每周"
+          }
+        }
+      }
+    },
+    "Every {weekday}": {
+      "comment": "Schedules trigger summary. {weekday} is filled by SchedulePresentation.describeTrigger, so the named token must stay: ios/scripts/web_copy.py would rewrite it into a printf specifier. Wording matches the Web schedules page (pages.schedules.summaryWeekly).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every {weekday}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每周{weekday}"
+          }
+        }
+      }
+    },
+    "Existing session": {
+      "comment": "Schedules create form target picker. Wording matches the Web schedules page (pages.schedules.targetExistingSession).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Existing session"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已有会话"
           }
         }
       }
@@ -2880,6 +3168,24 @@
         }
       }
     },
+    "IANA name, for example Asia/Shanghai.": {
+      "comment": "Schedules create form timezone hint. Wording matches the Web schedules page (pages.schedules.timezoneDescription), without the browser-only sentence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IANA name, for example Asia/Shanghai."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IANA 时区名称，例如 Asia/Shanghai。"
+          }
+        }
+      }
+    },
     "Idle": {
       "extractionState": "manual",
       "localizations": {
@@ -2932,6 +3238,24 @@
         }
       }
     },
+    "Interpreted in %@. Must be in the future.": {
+      "comment": "Schedules create form hint for a once schedule; %@ is the draft timezone filled by Swift interpolation. Tone follows the Web schedules page (pages.schedules.runAtDescription).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interpreted in %@. Must be in the future."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 %@ 的本地时间解释，并且必须在未来。"
+          }
+        }
+      }
+    },
     "Keep editing": {
       "extractionState": "manual",
       "localizations": {
@@ -2945,6 +3269,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "继续编辑"
+          }
+        }
+      }
+    },
+    "Kind": {
+      "comment": "Schedules create form trigger picker label.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kind"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "类型"
           }
         }
       }
@@ -2963,6 +3305,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "语言"
+          }
+        }
+      }
+    },
+    "Last run failed: {reason}": {
+      "comment": "Schedules row. {reason} is filled by SchedulePresentation.describeFailure; wording matches the Web schedules page (pages.schedules.errorFailed).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last run failed: {reason}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次运行失败：{reason}"
+          }
+        }
+      }
+    },
+    "Last run failed at {time}: {reason}": {
+      "comment": "Schedules row. {time} / {reason} are filled by SchedulePresentation.describeFailure; wording matches the Web schedules page (pages.schedules.errorFailedAt).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last run failed at {time}: {reason}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次运行失败（{time}）：{reason}"
           }
         }
       }
@@ -3228,6 +3606,42 @@
         }
       }
     },
+    "Message": {
+      "comment": "Schedules create form section.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消息"
+          }
+        }
+      }
+    },
+    "Message to send when it fires": {
+      "comment": "Schedules create form field. Mirrors the Web schedules page (pages.schedules.promptLabel) with the iOS message wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message to send when it fires"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "到点后要发送的消息"
+          }
+        }
+      }
+    },
     "Missing '%@' in %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -3384,6 +3798,42 @@
         }
       }
     },
+    "New task": {
+      "comment": "Schedules toolbar action and create sheet title. Wording matches the Web schedules page (pages.schedules.new).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建任务"
+          }
+        }
+      }
+    },
+    "Next run": {
+      "comment": "Schedules row. Label half of the Web nextRun message (pages.schedules.nextRun); Swift appends the timestamp, so the label carries no colon.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next run"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次运行"
+          }
+        }
+      }
+    },
     "Nickname": {
       "extractionState": "manual",
       "localizations": {
@@ -3490,6 +3940,24 @@
         }
       }
     },
+    "No scheduled tasks yet.": {
+      "comment": "Schedules empty state. Wording matches the Web schedules page (pages.schedules.empty).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No scheduled tasks yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有定时任务。"
+          }
+        }
+      }
+    },
     "No sessions here": {
       "comment": "Shared with Web: dashboard.device.noSessions. Sync with ios/scripts/web_copy.py.",
       "extractionState": "manual",
@@ -3504,6 +3972,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "没有会话。"
+          }
+        }
+      }
+    },
+    "No sessions loaded. A new-session target can be used instead.": {
+      "comment": "Schedules create form. iOS-only copy; the new-session target wording matches the Web schedules page (pages.schedules.targetNewSession).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sessions loaded. A new-session target can be used instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前没有已加载的会话，可以改用“新会话”目标。"
           }
         }
       }
@@ -3593,6 +4079,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "离线"
+          }
+        }
+      }
+    },
+    "Once": {
+      "comment": "Schedules trigger summary and create-form kind. Wording matches the Web schedules page (pages.schedules.kindOnce).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次性"
           }
         }
       }
@@ -3909,6 +4413,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "项目"
+          }
+        }
+      }
+    },
+    "Project ID": {
+      "comment": "Schedules create form field for a new-session target.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project ID"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "项目 ID"
           }
         }
       }
@@ -4442,6 +4964,24 @@
         }
       }
     },
+    "Run at": {
+      "comment": "Schedules create form picker for a once schedule. Mirrors the Web schedules page (pages.schedules.runAtLabel) with the iOS Run at wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run at"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行时间"
+          }
+        }
+      }
+    },
     "Run this command in the terminal on %@ to connect it to your account automatically.": {
       "comment": "Shared with Web: dashboard.pairDevice.commandStepDescription. Sync with ios/scripts/web_copy.py.",
       "extractionState": "manual",
@@ -4525,6 +5065,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "扫描 Web 控制台上的登录二维码。"
+          }
+        }
+      }
+    },
+    "Schedules": {
+      "comment": "Schedules screen title. Wording matches the Web schedules page (pages.schedules.title).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schedules"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "定时任务"
           }
         }
       }
@@ -4665,6 +5223,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "服务器不可用"
+          }
+        }
+      }
+    },
+    "Session": {
+      "comment": "Schedules create form session picker. Wording matches the Web schedules page (pages.schedules.sessionLabel).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会话"
           }
         }
       }
@@ -5034,6 +5610,60 @@
         }
       }
     },
+    "Target": {
+      "comment": "Schedules create form section and target picker. Wording matches the Web schedules page (pages.schedules.targetLabel).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标"
+          }
+        }
+      }
+    },
+    "Task": {
+      "comment": "Schedules create form section.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务"
+          }
+        }
+      }
+    },
+    "Task name": {
+      "comment": "Schedules create form field. Mirrors the Web schedules page (pages.schedules.titleLabel) with the iOS task-name wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task name"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务名称"
+          }
+        }
+      }
+    },
     "The app's signing configuration does not allow access to sign-in credentials in the Keychain (error %@).": {
       "extractionState": "manual",
       "localizations": {
@@ -5302,6 +5932,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "请求的分页大小超出了支持范围。"
+          }
+        }
+      }
+    },
+    "The run time must be in the future.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.runAtFuture) with the iOS Run at wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The run time must be in the future."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行时间必须在未来。"
           }
         }
       }
@@ -5956,6 +6604,96 @@
         }
       }
     },
+    "Time (HH:MM)": {
+      "comment": "Schedules create form field. Mirrors the Web schedules page (pages.schedules.runTimeLabel) with the iOS format hint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time (HH:MM)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时间（HH:MM）"
+          }
+        }
+      }
+    },
+    "Timezone": {
+      "comment": "Schedules create form field. Wording matches the Web schedules page (pages.schedules.timezoneLabel).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timezone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时区"
+          }
+        }
+      }
+    },
+    "Trigger": {
+      "comment": "Schedules create form section. Wording matches the Web schedules page (pages.schedules.kindLabel).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trigger"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触发方式"
+          }
+        }
+      }
+    },
+    "Turned off: {reason}": {
+      "comment": "Schedules row. The Server switched the schedule off itself. {reason} is filled by SchedulePresentation.describeFailure; wording matches the Web schedules page (pages.schedules.errorDisabled).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned off: {reason}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已自动停用：{reason}"
+          }
+        }
+      }
+    },
+    "Turned off at {time}: {reason}": {
+      "comment": "Schedules row. The Server switched the schedule off itself. {time} / {reason} are filled by SchedulePresentation.describeFailure; wording matches the Web schedules page (pages.schedules.errorDisabledAt).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned off at {time}: {reason}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已于 {time} 自动停用：{reason}"
+          }
+        }
+      }
+    },
     "Unable to Load Files": {
       "comment": "Shared with Web: dashboard.workspacePicker.loadFailed. Sync with ios/scripts/web_copy.py.",
       "extractionState": "manual",
@@ -6004,6 +6742,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "未知"
+          }
+        }
+      }
+    },
+    "Unknown timezone.": {
+      "comment": "Schedules create form validation. Mirrors the Web schedules page (pages.schedules.timezoneInvalid) with the iOS wording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown timezone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法识别这个时区。"
           }
         }
       }
@@ -6267,6 +7023,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "等待确认"
+          }
+        }
+      }
+    },
+    "Weekday": {
+      "comment": "Schedules create form weekday picker. Wording matches the Web schedules page (pages.schedules.weekdayLabel).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekday"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "星期"
           }
         }
       }
@@ -7814,6 +8588,24 @@
         }
       }
     },
+    "not scheduled": {
+      "comment": "Schedules row next-run placeholder. Wording matches the Web schedules page (pages.schedules.nextRunNone).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not scheduled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无运行计划"
+          }
+        }
+      }
+    },
     "·": {
       "extractionState": "manual",
       "localizations": {
@@ -8133,6 +8925,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "更新日期：2026 年 9 月 7 日"
+          }
+        }
+      }
+    },
+    "“%@” will stop firing.": {
+      "comment": "Schedules delete confirmation; %@ is the schedule title filled by Swift interpolation. Wording matches the Web schedules page (pages.schedules.deleteDescription).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” will stop firing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”将不再运行，并被删除。"
           }
         }
       }

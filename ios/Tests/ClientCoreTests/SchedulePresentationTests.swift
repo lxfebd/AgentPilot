@@ -9,12 +9,16 @@ import Testing
         weekday: Int? = nil,
         timezone: String = "Asia/Shanghai",
         runAt: String? = nil,
-        nextRunAt: String? = "2026-10-20T01:30:00Z"
+        nextRunAt: String? = "2026-10-20T01:30:00Z",
+        enabled: Bool = true,
+        lastError: String? = nil,
+        lastErrorAt: String? = nil
     ) -> V2Schedule {
         V2Schedule(id: "sch_1", title: "Digest", prompt: "Summarize.", scheduleKind: kind,
                    runAt: runAt, runTime: runTime, weekday: weekday, timezone: timezone,
-                   enabled: true, sessionId: "sess_1", projectId: nil, connectorId: nil,
+                   enabled: enabled, sessionId: "sess_1", projectId: nil, connectorId: nil,
                    runtime: nil, cwd: nil, nextRunAt: nextRunAt, lastRunAt: nil,
+                   lastError: lastError, lastErrorAt: lastErrorAt,
                    createdAt: "2026-10-01T00:00:00Z", updatedAt: "2026-10-01T00:00:00Z")
     }
 
@@ -23,6 +27,17 @@ import Testing
             once: "Once", daily: "Every day", weekly: "Every {weekday}",
             weekdays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             timezoneSuffix: { "($0)" }
+        )
+    }
+
+    /// The same templates the row passes in, kept literal so the wording the
+    /// helper produces is checked, not the localized copy.
+    private var failureLabels: SchedulePresentation.FailureSummaryLabels {
+        SchedulePresentation.FailureSummaryLabels(
+            failed: "Last run failed: {reason}",
+            failedAt: "Last run failed at {time}: {reason}",
+            disabled: "Turned off: {reason}",
+            disabledAt: "Turned off at {time}: {reason}"
         )
     }
 
@@ -97,7 +112,7 @@ import Testing
     @Test func triggerSummaryCoversEveryKind() {
         #expect(SchedulePresentation.describeTrigger(schedule(kind: .weekly, weekday: 0), labels: labels)
             == "Every Monday 09:30 (Asia/Shanghai)")
-        #expect(SchedulePresentation.describeTrigger(schedule(kind: .weekly, weekday: 6, runTime: "23:00", timezone: "UTC"), labels: labels)
+        #expect(SchedulePresentation.describeTrigger(schedule(kind: .weekly, runTime: "23:00", weekday: 6, timezone: "UTC"), labels: labels)
             == "Every Sunday 23:00 (UTC)")
         #expect(SchedulePresentation.describeTrigger(schedule(kind: .daily, runTime: "08:00", timezone: "UTC"), labels: labels)
             == "Every day 08:00 (UTC)")
@@ -110,7 +125,7 @@ import Testing
         // Only the leading label is comma-separated; the timezone stays attached
         // to the timestamp. A timezone name must never be read as a separator.
         #expect(SchedulePresentation.describeTrigger(
-            schedule(kind: .once, runTime: nil, runAt: "2026-10-20T01:30:00Z", timezone: "UTC", nextRunAt: nil), labels: labels)
+            schedule(kind: .once, runTime: nil, timezone: "UTC", runAt: "2026-10-20T01:30:00Z", nextRunAt: nil), labels: labels)
             == "Once, 2026-10-20 01:30 (UTC)")
         // With neither runAt nor nextRunAt there is no timestamp to attach.
         #expect(SchedulePresentation.describeTrigger(
@@ -141,6 +156,150 @@ import Testing
         #expect(SchedulePresentation.hasFinished(schedule(kind: .once, nextRunAt: nil)))
         #expect(!SchedulePresentation.hasFinished(schedule(kind: .once, nextRunAt: "2026-10-20T01:30:00Z")))
         #expect(!SchedulePresentation.hasFinished(schedule(kind: .daily, nextRunAt: nil)))
+    }
+
+    // ── failure visibility (Server 2.2.0) ────────────────────
+
+    @Test func nothingIsShownWhenTheServerReportsNoFailure() {
+        #expect(SchedulePresentation.describeFailure(schedule(), labels: failureLabels) == nil)
+        // Absent, empty and whitespace-only all mean "no recorded failure".
+        #expect(SchedulePresentation.describeFailure(schedule(lastError: nil), labels: failureLabels) == nil)
+        #expect(SchedulePresentation.describeFailure(schedule(lastError: ""), labels: failureLabels) == nil)
+        #expect(SchedulePresentation.describeFailure(schedule(lastError: "   \n "), labels: failureLabels) == nil)
+    }
+
+    @Test func failedAttemptShowsTheReasonAndTheTimeInTheSchedulesTimezone() {
+        let failure = SchedulePresentation.describeFailure(
+            schedule(lastError: "connector is offline", lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        // 11:05Z is 19:05 in the schedule's own +08:00 zone, never a fixed one.
+        #expect(failure?.text == "Last run failed at 2026-10-14 19:05: connector is offline")
+        #expect(failure?.switchedOff == false)
+        // The same instant read in the schedule's other zone.
+        let utc = SchedulePresentation.describeFailure(
+            schedule(timezone: "UTC", lastError: "connector is offline", lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        #expect(utc?.text == "Last run failed at 2026-10-14 11:05: connector is offline")
+    }
+
+    @Test func aFailedAttemptStillReadsAsAnAttempt() {
+        // `enabled` is true, so the Server will retry: not "turned off".
+        let failure = SchedulePresentation.describeFailure(
+            schedule(timezone: "UTC", lastError: "target session is running",
+                     lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        #expect(failure?.text == "Last run failed at 2026-10-14 11:05: target session is running")
+        #expect(failure?.switchedOff == false)
+    }
+
+    @Test func aMissingFailureTimeDegradesToTheReasonAlone() {
+        let failure = SchedulePresentation.describeFailure(
+            schedule(lastError: "connector is offline"), labels: failureLabels)
+        #expect(failure?.text == "Last run failed: connector is offline")
+        #expect(failure?.switchedOff == false)
+    }
+
+    @Test func anUnparseableFailureTimeDegradesToTheReasonAlone() {
+        for value in ["", "   ", "garbage", "2026-10-14", "2026-10-14T11:05"] {
+            let failure = SchedulePresentation.describeFailure(
+                schedule(lastError: "connector is offline", lastErrorAt: value), labels: failureLabels)
+            #expect(failure?.text == "Last run failed: connector is offline")
+        }
+    }
+
+    @Test func anUnknownTimezoneDegradesToTheReasonAlone() {
+        let failure = SchedulePresentation.describeFailure(
+            schedule(timezone: "Mars/Olympus", lastError: "connector is offline",
+                     lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        #expect(failure?.text == "Last run failed: connector is offline")
+        // An empty zone name is the Server's default, not an unknown one.
+        let empty = SchedulePresentation.describeFailure(
+            schedule(timezone: "", lastError: "connector is offline", lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        #expect(empty?.text == "Last run failed at 2026-10-14 11:05: connector is offline")
+    }
+
+    @Test func aScheduleTheServerStoppedReadsAsTurnedOff() {
+        let stopped = SchedulePresentation.describeFailure(
+            schedule(timezone: "UTC", enabled: false,
+                     lastError: "target no longer exists: session not found",
+                     lastErrorAt: "2026-10-14T11:05:00Z"),
+            labels: failureLabels)
+        #expect(stopped?.text == "Turned off at 2026-10-14 11:05: target no longer exists: session not found")
+        #expect(stopped?.switchedOff == true)
+        // Without a readable time the wording still says "turned off".
+        let undated = SchedulePresentation.describeFailure(
+            schedule(enabled: false, lastError: "target no longer exists: project not found"),
+            labels: failureLabels)
+        #expect(undated?.text == "Turned off: target no longer exists: project not found")
+        #expect(undated?.switchedOff == true)
+    }
+
+    @Test func stoppedByServerOutranksTheFinishedWording() {
+        // A `once` schedule the Server switched off has no `nextRunAt`, so it
+        // looks finished; the row has to say why it stopped instead.
+        let stopped = schedule(kind: .once, runTime: nil, timezone: "UTC", nextRunAt: nil, enabled: false,
+                               lastError: "target no longer exists: session not found",
+                               lastErrorAt: "2026-10-14T11:05:00Z")
+        #expect(SchedulePresentation.hasFinished(stopped))
+        #expect(SchedulePresentation.describeFailure(stopped, labels: failureLabels)?.switchedOff == true)
+        // The same shape stays a failure when the Server left it enabled: a
+        // `once` schedule that gave up after its grace period has no upcoming
+        // run either, and the reason — not "Already ran" — is what the row shows.
+        let gaveUp = schedule(kind: .once, runTime: nil, timezone: "UTC", nextRunAt: nil,
+                              lastError: "connector is offline", lastErrorAt: "2026-10-14T11:05:00Z")
+        #expect(SchedulePresentation.hasFinished(gaveUp))
+        #expect(SchedulePresentation.describeFailure(gaveUp, labels: failureLabels)?.switchedOff == false)
+        // A `once` schedule that simply ran keeps the old wording and no failure.
+        let ran = schedule(kind: .once, runTime: nil, nextRunAt: nil)
+        #expect(SchedulePresentation.hasFinished(ran))
+        #expect(SchedulePresentation.describeFailure(ran, labels: failureLabels) == nil)
+    }
+
+    @Test func microsecondFailureTimesAreStillRead() {
+        // The Server writes `datetime.isoformat()` precision — six fractional
+        // digits — and `ISO8601DateFormatter` takes at most three.
+        let failure = SchedulePresentation.describeFailure(
+            schedule(lastError: "connector is offline", lastErrorAt: "2026-10-14T11:05:00.569351Z"),
+            labels: failureLabels)
+        #expect(failure?.text == "Last run failed at 2026-10-14 19:05: connector is offline")
+        #expect(SchedulePresentation.parseUTInstant("2026-10-20T01:30:00.123456Z") != nil)
+        #expect(SchedulePresentation.formatNextRunAt("2026-10-20T01:30:00.123456Z", timezone: "UTC") == "2026-10-20 01:30")
+        // Millisecond and second precision keep working unchanged.
+        #expect(SchedulePresentation.formatNextRunAt("2026-10-20T01:30:00.123Z", timezone: "UTC") == "2026-10-20 01:30")
+        #expect(SchedulePresentation.formatNextRunAt("2026-10-20T01:30:00Z", timezone: "UTC") == "2026-10-20 01:30")
+    }
+
+    @Test func olderServerPayloadsStillDecode() throws {
+        let base: [String: Any] = [
+            "id": "sch_1", "title": "Digest", "prompt": "Summarize.", "scheduleKind": "daily",
+            "runTime": "09:30", "timezone": "UTC", "enabled": true, "sessionId": "sess_1",
+            "nextRunAt": "2026-10-20T01:30:00Z",
+            "createdAt": "2026-10-01T00:00:00Z", "updatedAt": "2026-10-01T00:00:00Z",
+        ]
+        // A Server older than 2.2.0 omits the pair entirely.
+        let older: V2Schedule = try decode(base)
+        #expect(older.lastError == nil)
+        #expect(older.lastErrorAt == nil)
+        #expect(SchedulePresentation.describeFailure(older, labels: failureLabels) == nil)
+
+        var failed = base
+        failed["lastError"] = "connector is offline"
+        failed["lastErrorAt"] = "2026-10-14T11:05:00Z"
+        let failure: V2Schedule = try decode(failed)
+        #expect(failure.lastError == "connector is offline")
+        #expect(SchedulePresentation.describeFailure(failure, labels: failureLabels)?.text
+                == "Last run failed at 2026-10-14 11:05: connector is offline")
+
+        // Explicit nulls — a run succeeded, or the row was edited, so the
+        // failure was cleared. Same as being absent.
+        var cleared = base
+        cleared["lastError"] = NSNull()
+        cleared["lastErrorAt"] = NSNull()
+        let ok: V2Schedule = try decode(cleared)
+        #expect(ok.lastError == nil)
+        #expect(ok.lastErrorAt == nil)
     }
 
     // ── validation ───────────────────────────────────────────

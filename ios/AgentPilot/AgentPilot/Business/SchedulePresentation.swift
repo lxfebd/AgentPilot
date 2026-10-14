@@ -58,11 +58,31 @@ enum SchedulePresentation {
 
     static func parseUTInstant(_ value: String?) -> Date? {
         guard let value, !value.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let text = value.trimmingCharacters(in: .whitespaces)
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: value) { return date }
+        if let date = formatter.date(from: text) { return date }
+        // The Server writes microsecond precision (`2026-10-14T11:05:00.569351Z`)
+        // and `ISO8601DateFormatter` takes at most three fractional digits, so
+        // the tail is trimmed to milliseconds rather than the instant lost.
+        if let milliseconds = trimmedToMilliseconds(text),
+           let date = formatter.date(from: milliseconds) { return date }
         formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: value)
+        return formatter.date(from: text)
+    }
+
+    /// `…T11:05:00.569351Z` → `…T11:05:00.569Z`; nil when there is no fraction
+    /// longer than three digits to trim.
+    private static func trimmedToMilliseconds(_ value: String) -> String? {
+        guard let dot = value.firstIndex(of: ".") else { return nil }
+        var digits = ""
+        var index = value.index(after: dot)
+        while index < value.endIndex, value[index].isNumber {
+            digits.append(value[index])
+            index = value.index(after: index)
+        }
+        guard digits.count > 3 else { return nil }
+        return String(value[..<dot]) + "." + String(digits.prefix(3)) + String(value[index...])
     }
 
     /// The local wall-clock fields of a UTC instant in `timezone`.
@@ -85,11 +105,19 @@ enum SchedulePresentation {
         return "\(pad(hour)):\(pad(minute))"
     }
 
-    /// `2026-10-20 09:00` in the schedule's own timezone.
-    static func formatNextRunAt(_ nextRunAt: String?, timezone: String) -> String? {
-        guard let parts = zonedComponents(parseUTInstant(nextRunAt), timezone: timezone),
+    /// `2026-10-20 09:00` — the wall clock of a UTC instant in `timezone`.
+    /// nil when the instant is missing, unparseable, or the zone is unknown.
+    /// Every timestamp a row shows goes through here, so a failure time reads
+    /// the same way as the next run it failed to produce.
+    static func formatZonedInstant(_ instant: String?, timezone: String) -> String? {
+        guard let parts = zonedComponents(parseUTInstant(instant), timezone: timezone),
               let date = formatDateInput(parts), let time = formatTimeInput(parts) else { return nil }
         return "\(date) \(time)"
+    }
+
+    /// `nextRunAt` in the schedule's own timezone.
+    static func formatNextRunAt(_ nextRunAt: String?, timezone: String) -> String? {
+        formatZonedInstant(nextRunAt, timezone: timezone)
     }
 
     struct TriggerSummaryLabels {
@@ -147,6 +175,67 @@ enum SchedulePresentation {
     /// True once a `once` schedule has fired: the Server clears `nextRunAt`.
     static func hasFinished(_ schedule: V2Schedule) -> Bool {
         schedule.scheduleKind == .once && schedule.nextRunAt == nil
+    }
+
+    // ── Failure visibility (Server 2.2.0) ─────────────────────
+
+    /// Templates for a failed run, supplied by the caller so this module stays
+    /// free of UI copy — same shape as `TriggerSummaryLabels`. `{time}` and
+    /// `{reason}` are filled by `describeFailure`, which owns when a timestamp
+    /// can be shown.
+    struct FailureSummaryLabels {
+        /// Failure whose time is missing or unparseable — "Last run failed: {reason}"
+        var failed: String
+        /// Failure with a readable time — "Last run failed at {time}: {reason}"
+        var failedAt: String
+        /// Switched off by the Server, time unknown — "Turned off: {reason}"
+        var disabled: String
+        /// Switched off by the Server, time known — "Turned off at {time}: {reason}"
+        var disabledAt: String
+    }
+
+    struct ScheduleFailure {
+        /// One line: the reason, plus when it happened whenever that can be shown.
+        var text: String
+        /// True when the schedule is off too, i.e. the failure explains why the
+        /// Server stopped it, rather than one attempt that will be retried.
+        var switchedOff: Bool
+    }
+
+    /// Why a row's last attempt failed, or nil when there is nothing to say.
+    ///
+    /// `lastError` is cleared by the Server on a successful run and on every
+    /// edit, so whatever is shown is the current state and never a stale
+    /// failure. A schedule whose target (session, project or connector) no
+    /// longer exists is switched off by the Server as well: `enabled == false`
+    /// plus a `lastError` saying why, which reads as "turned off", not as "last
+    /// run failed" — an attempt that will be retried. A missing or unparseable
+    /// `lastErrorAt`, and an unknown timezone, both degrade to the reason alone
+    /// rather than hiding the failure.
+    static func describeFailure(_ schedule: V2Schedule, labels: FailureSummaryLabels) -> ScheduleFailure? {
+        let reason = (schedule.lastError ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !reason.isEmpty else { return nil }
+        let zone = schedule.timezone.trimmingCharacters(in: .whitespaces).isEmpty
+            ? "UTC" : schedule.timezone
+        let time = formatZonedInstant(schedule.lastErrorAt, timezone: zone)
+        let switchedOff = !schedule.enabled
+        let template: String
+        if switchedOff {
+            template = time == nil ? labels.disabled : labels.disabledAt
+        } else {
+            template = time == nil ? labels.failed : labels.failedAt
+        }
+        return ScheduleFailure(
+            text: fillFailureTemplate(template, time: time, reason: reason),
+            switchedOff: switchedOff
+        )
+    }
+
+    /// Fill `{time}` / `{reason}`. The time is filled first so a reason handed
+    /// over by the Server can never be re-read as a placeholder of its own.
+    private static func fillFailureTemplate(_ template: String, time: String?, reason: String) -> String {
+        template.replacingOccurrences(of: "{time}", with: time ?? "")
+            .replacingOccurrences(of: "{reason}", with: reason)
     }
 }
 
