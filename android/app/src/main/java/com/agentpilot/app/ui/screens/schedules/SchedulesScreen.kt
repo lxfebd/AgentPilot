@@ -55,6 +55,39 @@ import java.time.format.DateTimeFormatter
 
 private val DisplayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm")
 
+/**
+ * Format a schedule's `nextRunAt` for display, in the schedule's own timezone.
+ *
+ * The timezone comes from the schedule, never a fixed zone: a schedule the user
+ * created for `America/New_York` must not be shown in Shanghai time. Returns
+ * null when the instant is missing, unparseable, or the zone is unknown.
+ */
+internal fun formatScheduleNextRunAt(nextRunAt: String?, timezone: String?): String? {
+    if (nextRunAt.isNullOrBlank()) return null
+    val zoneId = runCatching { ZoneId.of(timezone?.takeIf { it.isNotBlank() } ?: "UTC") }.getOrNull()
+        ?: return null
+    return runCatching {
+        Instant.parse(nextRunAt).atZone(zoneId).format(DisplayFormatter)
+    }.getOrNull()
+}
+
+/**
+ * Parse a user-typed local wall-clock time into the UTC instant the server wants.
+ *
+ * The typed value is read in `zoneId` — the zone the user is actually in — and
+ * the same zone id is sent to the server alongside it, so the schedule and its
+ * display agree. Reading a typed time in a zone other than the user's is what
+ * silently shifts a one-shot schedule by hours.
+ */
+internal fun parseLocalScheduleTime(dateText: String, zoneId: java.time.ZoneId): String? {
+    return runCatching {
+        java.time.LocalDateTime.parse(dateText.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            .atZone(zoneId)
+            .toInstant()
+            .toString()
+    }.getOrNull()
+}
+
 @Composable
 internal fun SchedulesScreen(
     onBack: () -> Unit,
@@ -187,9 +220,9 @@ internal fun SchedulesScreen(
             sessions = sessions,
             saving = false,
             serverError = createError,
-            onCreate = { title, prompt, kind, runAt, runTime, weekday, sessionId ->
+            onCreate = { title, prompt, kind, runAt, runTime, weekday, sessionId, timezone ->
                 scope.launch {
-                    onCreateSchedule(title, prompt, kind, runAt, runTime, weekday, "Asia/Shanghai", sessionId)
+                    onCreateSchedule(title, prompt, kind, runAt, runTime, weekday, timezone, sessionId)
                         .onSuccess {
                             createOpen = false
                             createError = null
@@ -238,11 +271,8 @@ private fun ScheduleRow(
         "weekly" -> stringResource(R.string.schedules_kind_weekly)
         else -> stringResource(R.string.schedules_kind_daily)
     }
-    val nextText = remember(item.optString("nextRunAt")) {
-        runCatching {
-            Instant.parse(item.optString("nextRunAt")).atZone(ZoneId.of("UTC"))
-                .withZoneSameInstant(ZoneId.of("Asia/Shanghai")).format(DisplayFormatter)
-        }.getOrNull()
+    val nextText = remember(item.optString("nextRunAt"), item.optString("timezone")) {
+        formatScheduleNextRunAt(item.optString("nextRunAt"), item.optString("timezone"))
     }
     Row(
         modifier = Modifier
@@ -300,6 +330,7 @@ private fun ScheduleCreateDialog(
         runTime: String?,
         weekday: Int?,
         sessionId: String?,
+        timezone: String,
     ) -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -377,13 +408,12 @@ private fun ScheduleCreateDialog(
             TextButton(
                 enabled = !saving,
                 onClick = {
-                    val zone = ZoneId.of("Asia/Shanghai")
-                    val runAt = if (kind == "once") {
-                        runCatching {
-                            java.time.LocalDateTime.parse(dateText.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                                .atZone(zone).toInstant().toString()
-                        }.getOrNull()
-                    } else null
+                    // The user types a local wall-clock time, so it is read in
+                    // the device's own zone and that zone is sent along. A fixed
+                    // zone here would silently shift every one-shot schedule for
+                    // anyone outside it.
+                    val zone = ZoneId.systemDefault()
+                    val runAt = if (kind == "once") parseLocalScheduleTime(dateText, zone) else null
                     val runTime = if (kind == "once") null else timeText.trim()
                     when {
                         title.isBlank() -> error = requiredText
@@ -395,7 +425,7 @@ private fun ScheduleCreateDialog(
                             error = invalidTimeText
                         else -> onCreate(
                             title.trim(), prompt.trim(), kind, runAt, runTime,
-                            if (kind == "weekly") weekdayIndex else null, targetSessionId,
+                            if (kind == "weekly") weekdayIndex else null, targetSessionId, zone.id,
                         )
                     }
                 },
