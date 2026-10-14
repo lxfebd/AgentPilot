@@ -70,6 +70,11 @@ services:
       AGENT_SERVER_DB_POOL_TIMEOUT: ${AGENT_SERVER_DB_POOL_TIMEOUT:-30}
       AGENT_SERVER_DB_POOL_RECYCLE: ${AGENT_SERVER_DB_POOL_RECYCLE:-1800}
       AGENT_SERVER_REDIS_URL: redis://redis-next:6379/0
+      # Every Redis key is namespaced by this prefix: connector presence,
+      # runtime leases and timeline locks.  Changing it on a running deployment
+      # moves all of them at once, so it is pinned here instead of inherited
+      # from a code default that a release may rename.
+      AGENT_SERVER_REDIS_PREFIX: ${AGENT_SERVER_REDIS_PREFIX:-agent-pilot}
       AGENT_SERVER_REDIS_CONNECT_TIMEOUT: ${AGENT_SERVER_REDIS_CONNECT_TIMEOUT:-5}
       AGENT_SERVER_TIMELINE_REVISION_LEASE_SIZE: ${AGENT_SERVER_TIMELINE_REVISION_LEASE_SIZE:-4096}
       AGENT_SERVER_FILES_BACKEND: local

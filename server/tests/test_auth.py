@@ -853,6 +853,91 @@ def test_first_party_oauth_authorization_code_pkce_round_trip(tmp_path):
     assert reused.status_code == 400
 
 
+def test_pre_rebrand_oauth_clients_still_authorize(tmp_path):
+    """Client ids are compiled into shipped builds, so old ids stay registered.
+
+    An install that predates the rebrand still sends `agents-anywhere-*`.  If
+    the server only knows the current ids the authorize step answers "oauth
+    client not found", and there is nothing the user can do about it from
+    inside that app.
+    """
+    client = make_client(tmp_path)
+    token = admin_token(client)
+    verifier = "legacy-verifier-value"
+
+    for client_id, redirect_uri in (
+        ("agents-anywhere-mobile", "agents-anywhere://oauth/callback"),
+        ("agents-anywhere-desktop", "agents-anywhere-desktop://oauth/callback"),
+    ):
+        auth = client.get(
+            "/oauth/authorize",
+            headers=bearer(token),
+            params={
+                "response_type": "code",
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "code_challenge": pkce_challenge(verifier),
+                "code_challenge_method": "S256",
+                "scope": "profile",
+                "state": "legacy",
+            },
+            follow_redirects=False,
+        )
+        assert auth.status_code in (302, 307), auth.text
+        code = parse_qs(urlparse(auth.headers["location"]).query)["code"][0]
+
+        exchanged = client.post(
+            "/oauth/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": client_id,
+                "redirect_uri": redirect_uri,
+                "code_verifier": verifier,
+            },
+        )
+        assert exchanged.status_code == 200, exchanged.text
+        assert exchanged.json()["access_token"]
+
+
+def test_pre_rebrand_plugin_loopback_redirect_still_allowed(tmp_path):
+    client = make_client(tmp_path)
+    token = admin_token(client)
+
+    def authorize(redirect_uri: str):
+        return client.post(
+            "/oauth/authorize",
+            headers=bearer(token),
+            json={
+                "response_type": "code",
+                "client_id": "agents-anywhere-dsh-plugin",
+                "redirect_uri": redirect_uri,
+                "code_challenge": pkce_challenge("loopback-verifier"),
+                "code_challenge_method": "S256",
+                "scope": "profile",
+                "state": "legacy-plugin",
+            },
+        )
+
+    assert authorize("http://127.0.0.1:43521/oauth/callback").status_code == 200
+    # The loopback allowance is loopback-only; a hostname is not loopback.
+    assert authorize("http://localhost:43521/oauth/callback").status_code == 422
+
+    unknown = client.get(
+        "/oauth/authorize",
+        headers=bearer(token),
+        params={
+            "response_type": "code",
+            "client_id": "someone-else-mobile",
+            "redirect_uri": "agent-pilot://oauth/callback",
+            "code_challenge": pkce_challenge("verifier"),
+            "code_challenge_method": "S256",
+        },
+        follow_redirects=False,
+    )
+    assert unknown.status_code == 404
+
+
 def test_first_party_oauth_authorize_json_returns_app_callback(tmp_path):
     client = make_client(tmp_path)
     token = admin_token(client)
