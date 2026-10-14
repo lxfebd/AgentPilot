@@ -285,15 +285,19 @@ icon. Ignoring persists the exact server version in
 version prompts again. The download icon beside the account avatar remains
 visible whenever an update is offered, including after ignoring a version.
 
-Set `updates.downloadUrl` in `config.json` to the fixed HTTPS installer address
-before distribution. An empty value or the `.invalid` placeholder means there is
-no installer to offer: the Server being ahead alone does not raise the badge or
-the dialog, because the only outcome of that dialog would be an error. A
-self-hosted Server that is simply newer than the Desktop build is therefore not
-reported as an update this app cannot deliver. Downloads stream into
-`<Electron userData>/updates/downloads` with progress, remove incomplete files
-on failure/quit, and open the completed installer with the OS. Installing the
-new app remains an installer operation.
+The installer a Desktop can download is resolved in one of two ways. If
+`updates.downloadUrl` in `config.json` is used as given — that is the vendor
+channel, and the shipped `.invalid` value is not a usable one, so it falls
+through to the derived channel like an empty value does. Otherwise the installer is derived from the origin
+the user is signed into: `<origin>/desktop-installer/latest.exe`, probed with a
+HEAD request and offered only when the Server really serves it. This is the same
+rule `AppConfig` uses for the Android `/apk/latest.apk` channel, so a
+self-hosted deployment offers its own build and the shipped configuration
+hardcodes no host. A Server that is simply newer than the Desktop build, with no
+installer behind it, is not reported as an update this app cannot deliver.
+Downloads stream into `<Electron userData>/updates/downloads` with progress,
+remove incomplete files on failure/quit, and open the completed installer with
+the OS. Installing the new app remains an installer operation.
 
 ## Shared local machine record
 

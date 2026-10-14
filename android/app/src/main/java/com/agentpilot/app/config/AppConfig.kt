@@ -18,7 +18,7 @@ object AppConfig {
      * get updates from their own deployment without hardcoding any host.
      */
     fun updateDownloadUrl(serverUrl: String): String? {
-        val origin = apkChannelOrigin(serverUrl) ?: return null
+        val origin = normalizeServerOrigin(serverUrl) ?: return null
         return "$origin/apk/latest.apk"
     }
 
@@ -30,11 +30,9 @@ object AppConfig {
      * different host than the download would describe a different APK.
      */
     fun updateManifestUrl(serverUrl: String): String? {
-        val origin = apkChannelOrigin(serverUrl) ?: return null
+        val origin = normalizeServerOrigin(serverUrl) ?: return null
         return "$origin/apk/version.json"
     }
-
-    private fun apkChannelOrigin(serverUrl: String): String? = normalizeServerOrigin(serverUrl)
 
     fun isOfficialServer(serverUrl: String): Boolean {
         if (OFFICIAL_SERVER_URL.isBlank()) return false

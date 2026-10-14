@@ -121,23 +121,62 @@ test("partial downloads are removed and can be retried without closing the dialo
   assert.equal((await h.service.download()).phase, "downloaded");
 });
 
-test("a placeholder or missing download URL offers no update at all", async (t) => {
+test("a placeholder download URL is not a channel and falls back to the Server's own", async (t) => {
   const placeholder = harness(t, { downloadUrl: "https://downloads.example.invalid/desktop" });
   const checked = await placeholder.service.check(server);
-  assert.equal(checked.available, false, "an update with nowhere to get it is not an offer");
-  assert.equal(checked.dialogOpen, false);
-  assert.equal(checked.latestVersion, "0.1.7.2", "the newer Server is still reported, just not as something to install");
-  assert.equal((await placeholder.service.download()).error, null);
-  assert.equal(placeholder.requests.length, 1);
+  assert.equal(checked.latestVersion, "0.1.7.2");
+  assert.equal(checked.available, true, "the placeholder is not a channel, so the installer the Server publishes is");
+  assert.equal((await placeholder.service.download()).phase, "downloaded");
+  assert.equal(placeholder.requests.at(-1)?.url, "https://server.test/desktop-installer/latest.exe");
+  assert.equal(placeholder.requests.filter((r) => r.url.includes("example.invalid")).length, 0);
 
-  // The shipped default: no download URL configured.
-  const unset = harness(t, { downloadUrl: "" });
-  assert.equal((await unset.service.check(server)).available, false);
+  // The shipped default: no download URL configured, and a Server that does not
+  // publish one either.
+  const unset = harness(t, { downloadUrl: "", fetcher: async (input) => String(input).endsWith("/health") ? healthy() : new Response(null, { status: 404 }) });
+  const quiet = await unset.service.check(server);
+  assert.equal(quiet.available, false, "an update with nowhere to get it is not an offer");
+  assert.equal(quiet.dialogOpen, false);
+  assert.equal((await unset.service.download()).error, null);
 
   const html = harness(t, { fetcher: async (input) => String(input).endsWith("/health") ? healthy() : new Response("<html>not an installer</html>", { headers: { "content-type": "text/html" } }) });
   await html.service.check(server);
   assert.equal((await html.service.download()).error, "downloadFailed");
   assert.equal(html.opened.length, 0);
+});
+
+test("a Server that publishes its own installer is a real update channel", async (t) => {
+  const h = harness(t, { downloadUrl: "" });
+  const checked = await h.service.check(server);
+  assert.equal(checked.available, true, "the Server serves /desktop-installer/latest.exe, so the update can be delivered");
+  const probes = h.requests.filter((r) => r.url === "https://server.test/desktop-installer/latest.exe");
+  assert.equal(probes.length, 1);
+  assert.ok(probes.every((r) => r.init?.method === "HEAD"), "the channel is probed with HEAD, not by downloading the installer");
+
+  const result = await h.service.download();
+  assert.equal(result.phase, "downloaded");
+  assert.equal(h.requests.at(-1)?.url, "https://server.test/desktop-installer/latest.exe");
+  assert.equal(h.opened.length, 1);
+});
+
+test("a Server without a published installer is not offered as a channel", async (t) => {
+  const h = harness(t, { downloadUrl: "", fetcher: async (input) => String(input).endsWith("/health") ? healthy() : new Response(null, { status: 404 }) });
+  const checked = await h.service.check(server);
+  assert.equal(checked.available, false);
+  assert.equal(checked.dialogOpen, false);
+  assert.equal(checked.latestVersion, "0.1.7.2", "the newer Server is still reported, just not as something installable");
+});
+
+test("the installer probe only runs when the Server is actually ahead", async (t) => {
+  const h = harness(t, { downloadUrl: "" });
+  h.setVersion("0.1.0");
+  assert.equal((await h.service.check(server)).available, false);
+  assert.deepEqual(h.requests.map((r) => r.url), ["https://server.test/api/v2/health"]);
+});
+
+test("an http Server never becomes a derived installer channel", async (t) => {
+  const h = harness(t, { downloadUrl: "" });
+  assert.equal((await h.service.check({ ...server, serverUrl: "http://server.test" })).available, false);
+  assert.equal(h.requests.filter((r) => r.url.includes("desktop-installer")).length, 0);
 });
 
 test("a failed installer launch retries the existing complete download", async (t) => {

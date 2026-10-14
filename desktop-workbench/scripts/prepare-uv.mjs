@@ -13,8 +13,14 @@ const CACHE_ROOT = join(PROJECT_ROOT, ".cache", "uv", UV_VERSION);
 const OUTPUT_ROOT = process.env.WORKBENCH_UV_BUNDLE_DIR?.trim()
   ? resolve(process.env.WORKBENCH_UV_BUNDLE_DIR.trim())
   : join(PROJECT_ROOT, "build", "uv");
-const RELEASE_BASE = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
-const RAW_BASE = `https://raw.githubusercontent.com/astral-sh/uv/${UV_VERSION}`;
+// uv ships from two hosts - the release assets on github.com and the license
+// texts on raw.githubusercontent.com - so a mirror is a prefix in front of the
+// canonical URL rather than a replacement host the way PYTHON_BUNDLE_MIRROR is
+// for the single-host CPython release.  The prefix must pass the full URL
+// through unchanged, and the checksum next to each asset is still verified.
+const URL_PREFIX = process.env.UV_BUNDLE_URL_PREFIX?.trim() ?? "";
+const RELEASE_BASE = `${URL_PREFIX}https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
+const RAW_BASE = `${URL_PREFIX}https://raw.githubusercontent.com/astral-sh/uv/${UV_VERSION}`;
 const DOWNLOAD_TIMEOUT_MS = Number(process.env.UV_BUNDLE_DOWNLOAD_TIMEOUT_MS || 30_000);
 const PROXY_KEYS = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"];
 

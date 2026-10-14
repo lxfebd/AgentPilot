@@ -46,13 +46,23 @@ function fail(message) {
   process.exit(1);
 }
 
+/**
+ * cmd.exe splits the command line before Node can pass arguments separately, so
+ * with `shell: true` a command path containing a space is parsed as a program
+ * named `C:\Program` - which is what every default Windows Node install
+ * (`C:\Program Files\nodejs\node.exe`) produced here, making `dist:win` fail
+ * before electron-builder printed a single line.  Quote each token instead of
+ * letting spawnSync concatenate them.
+ */
+function quoteForShell(value) {
+  return `"${String(value).replace(/"/g, '\\"')}"`;
+}
+
 function run(command, args, env) {
-  const result = spawnSync(command, args, {
-    cwd: PROJECT_ROOT,
-    env,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
+  const shell = process.platform === "win32";
+  const result = shell
+    ? spawnSync([command, ...args].map(quoteForShell).join(" "), { cwd: PROJECT_ROOT, env, stdio: "inherit", shell })
+    : spawnSync(command, args, { cwd: PROJECT_ROOT, env, stdio: "inherit" });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} exited with ${result.status ?? "null"}`);
 }

@@ -41,6 +41,25 @@ function usableDownloadUrl(raw: string): URL | null {
   }
 }
 
+/**
+ * Where a Server publishes its own Desktop installer, next to `/apk/` for the
+ * Android channel.  Derived from the origin the user is signed into rather than
+ * configured, so a self-hosted deployment offers its own build and the shipped
+ * configuration hardcodes no host - the same rule `AppConfig` uses on Android.
+ */
+const DERIVED_INSTALLER_PATH = "/desktop-installer/latest.exe";
+
+function derivedInstallerUrl(serverUrl: string): URL | null {
+  try {
+    const origin = new URL(serverUrl);
+    // Only https: the download itself refuses anything else.
+    if (origin.protocol !== "https:") return null;
+    return new URL(`${origin.origin}${DERIVED_INSTALLER_PATH}`);
+  } catch {
+    return null;
+  }
+}
+
 export class DesktopUpdateService {
   private state: DesktopUpdateState;
   private serverKey = "";
@@ -50,11 +69,13 @@ export class DesktopUpdateService {
   private healthAbort: AbortController | null = null;
   private downloadAbort: AbortController | null = null;
   private installerPath: string | null = null;
-  private readonly downloadTarget: URL | null;
+  private readonly configuredDownload: URL | null;
+  /** The installer resolved for the Server of the current check, if there is one. */
+  private downloadTarget: URL | null = null;
 
   constructor(private readonly options: Options) {
     this.state = this.initialState();
-    this.downloadTarget = usableDownloadUrl(options.downloadUrl);
+    this.configuredDownload = usableDownloadUrl(options.downloadUrl);
   }
 
   getState(): DesktopUpdateState { return { ...this.state }; }
@@ -68,6 +89,7 @@ export class DesktopUpdateService {
       this.healthAbort = null;
       this.downloadAbort = null;
       this.installerPath = null;
+      this.downloadTarget = null;
       this.publish(this.initialState());
       return Promise.resolve(this.getState());
     }
@@ -100,9 +122,18 @@ export class DesktopUpdateService {
         const comparison = compareUpdateVersions(latestVersion, this.options.serverVersion);
         if (comparison === null) throw new Error("Unsupported version format.");
         if (generation !== this.generation) return this.getState();
-        // Without an installer there is nothing to act on, so no badge and no
-        // dialog: a newer Server alone is not an update this app can deliver.
-        const available = comparison > 0 && this.downloadTarget !== null;
+        // A configured URL is operator intent and taken at face value.  Without
+        // one, the Server's own published installer counts only if it is really
+        // there: offering an update with nothing behind it produces a dialog
+        // whose only outcome is an error.
+        let target = this.configuredDownload;
+        if (target === null && comparison > 0) {
+          const derived = derivedInstallerUrl(server.serverUrl);
+          if (derived !== null && await this.providesInstaller(derived, controller.signal)) target = derived;
+        }
+        if (generation !== this.generation) return this.getState();
+        this.downloadTarget = target;
+        const available = comparison > 0 && target !== null;
         const ignoredVersion = this.readIgnored()[key];
         const ignored = available && typeof ignoredVersion === "string" && compareUpdateVersions(ignoredVersion, latestVersion) === 0;
         this.publish({ checking: false, latestVersion, available, ignored, dialogOpen: available && !ignored, error: null });
@@ -116,6 +147,18 @@ export class DesktopUpdateService {
     })();
     this.checkPromise = promise;
     return promise;
+  }
+
+  /** Whether this Server actually publishes the installer derived from its origin. */
+  private async providesInstaller(url: URL, signal: AbortSignal): Promise<boolean> {
+    try {
+      const response = await this.options.fetcher(url.href, {
+        method: "HEAD", credentials: "omit", cache: "no-store", redirect: "error", signal,
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   showPrompt(): DesktopUpdateState {
@@ -139,7 +182,8 @@ export class DesktopUpdateService {
   download(): Promise<DesktopUpdateState> {
     if (this.downloadPromise) return this.downloadPromise;
     if (!this.state.available) return Promise.resolve(this.getState());
-    if (this.downloadTarget === null) {
+    const target = this.downloadTarget;
+    if (target === null) {
       this.publish({ dialogOpen: true, error: "downloadNotConfigured" });
       return Promise.resolve(this.getState());
     }
@@ -152,7 +196,7 @@ export class DesktopUpdateService {
       try {
         if (!this.installerPath || !fs.existsSync(this.installerPath)) {
           const downloadedPath = await downloadDesktopInstaller({
-            url: this.options.downloadUrl, directory: path.join(this.options.directory, "downloads"),
+            url: target.href, directory: path.join(this.options.directory, "downloads"),
             platform: this.options.platform, fetcher: this.options.fetcher, signal: controller.signal,
             onProgress: (downloadedBytes, totalBytes) => {
               if (generation === this.generation) this.publish({ downloadedBytes, totalBytes });
