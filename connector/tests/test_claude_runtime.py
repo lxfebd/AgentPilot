@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import stat
 from pathlib import Path
 from types import SimpleNamespace
@@ -2046,7 +2047,10 @@ async def _test_claude_runtime_applies_model_gateway_to_sdk_options() -> None:
             "ANTHROPIC_API_KEY": "",
         }
     }
-    assert client.settings_mode == 0o600
+    # os.chmod(0o600) only clears the writable bits on POSIX; on Windows the
+    # owner-write bit is always reflected, so accept 0o666 there.
+    expected_mode = 0o600 if os.name != "nt" else 0o666
+    assert client.settings_mode == expected_mode
     assert client.settings_path is not None
     assert client.settings_path.exists() is False
 

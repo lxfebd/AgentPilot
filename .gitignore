@@ -28,6 +28,10 @@ pnpm-lock.yaml
 .freebuff/
 agent-server/*-review.html
 
+# Local scratch directory for an unrelated AMD-account side project
+# (contains credentials and vendored third-party packages; never committed).
+amd-proxy/
+
 # Local runtime state
 .local-dev/
 *.sqlite
