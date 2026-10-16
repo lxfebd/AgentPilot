@@ -13,6 +13,7 @@ from agent_server.infra.timeline_broker import TimelineBroker
 from agent_server.services.attachments import AttachmentService
 from agent_server.infra.terminal_broker import TerminalBroker
 from agent_server.services.catalogs import CatalogService
+from agent_server.services.connector_device import ConnectorDeviceService
 from agent_server.services.connector_files import ConnectorFileService
 from agent_server.services.connector_ingest import ConnectorIngestService
 from agent_server.services.connector_notifications import ConnectorNotificationService
@@ -76,6 +77,10 @@ def get_connector_shell_service(conn: HTTPConnection) -> ConnectorShellService:
         ConnectorGateway(conn.app.state.rpc),
         conn.app.state.shell_tasks,
     )
+
+
+def get_connector_device_service(conn: HTTPConnection) -> ConnectorDeviceService:
+    return ConnectorDeviceService(ConnectorGateway(conn.app.state.rpc))
 
 
 def get_connector_file_service(conn: HTTPConnection) -> ConnectorFileService:

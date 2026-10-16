@@ -12,6 +12,10 @@ from typing import Any, Literal, Self
 
 import httpx
 import pytest
+from pydantic import BaseModel, ValidationError
+from websockets.exceptions import ConnectionClosedError
+from websockets.frames import Close
+
 from connector.core.config import ConnectorConfig
 from connector.local.terminal import TerminalBackend
 from connector.runtime_protocol import (
@@ -83,9 +87,6 @@ from connector.server.runtime_sync import (
     _timeline_sync_notification,
     validation_error_summary,
 )
-from pydantic import BaseModel, ValidationError
-from websockets.exceptions import ConnectionClosedError
-from websockets.frames import Close
 
 
 def test_runtime_sync_validation_error_summary_is_bounded() -> None:
@@ -1926,6 +1927,7 @@ def test_default_runtime_providers_use_new_protocol_providers() -> None:
         "codex",
         "claude",
         "dsh",
+        "zcode",
     )
     assert isinstance(providers[0], CodexProvider)
     assert isinstance(providers[1], ClaudeProvider)

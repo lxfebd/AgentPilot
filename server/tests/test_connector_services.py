@@ -8,6 +8,7 @@ import pytest
 from agent_server.infra.connector_gateway import ConnectorGateway
 from agent_server.infra.connector_rpc import ConnectorOfflineError, ConnectorRpcError
 from agent_server.infra.fs_downloads import FsDownloadRelayManager
+from agent_server.services.connector_device import ConnectorDeviceService
 from agent_server.services.connector_files import ConnectorFileService
 from agent_server.services.connector_realtime import ConnectorRealtimeService
 from agent_server.services.connector_rpc import (
@@ -195,5 +196,56 @@ def test_realtime_service_completes_shell_task() -> None:
         completed = await tasks.get(task.id, session_id=task.session_id)
         assert completed.status == "completed"
         assert completed.result == {"exitCode": 0, "stdout": "/repo\n"}
+
+    asyncio.run(exercise())
+
+
+def test_device_service_launches_dsh_through_connector_rpc() -> None:
+    async def exercise() -> None:
+        rpc = StubRpc(
+            result={
+                "launched": True,
+                "alreadyRunning": False,
+                "app": "dsh",
+                "path": "C:\\Program Files\\DeepSeek Harness\\DeepSeek Harness.exe",
+                "source": "common",
+                "pid": 4242,
+            }
+        )
+        service = ConnectorDeviceService(rpc)
+
+        result = await service.launch(
+            connector_id="connector-1",
+            scope_id="browse_connector-1",
+            app="dsh",
+        )
+
+        assert result["launched"] is True
+        assert rpc.requests == [
+            (
+                "connector-1",
+                "device.launch",
+                {
+                    "sessionId": "browse_connector-1",
+                    "app": "dsh",
+                },
+                20,
+            )
+        ]
+
+    asyncio.run(exercise())
+
+
+def test_device_service_propagates_transport_errors() -> None:
+    async def exercise() -> None:
+        service = ConnectorDeviceService(
+            ConnectorGateway(StubRpc(error=ConnectorRpcError("app_not_found", "未找到 dsh")))
+        )
+        with pytest.raises(ConnectorUpstreamError, match="未找到 dsh"):
+            await service.launch(
+                connector_id="connector-1",
+                scope_id="browse_connector-1",
+                app="dsh",
+            )
 
     asyncio.run(exercise())

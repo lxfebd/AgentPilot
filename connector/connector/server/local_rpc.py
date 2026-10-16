@@ -30,6 +30,7 @@ class LocalRpcHandler:
         "terminal.release",
         "terminal.snapshot",
         "terminal.relay.connect",
+        "device.launch",
     }
 
     def __init__(
@@ -85,4 +86,6 @@ class LocalRpcHandler:
             return await self.local_ops.terminal_snapshot(params)
         if method == "terminal.relay.connect":
             return await self.start_terminal_relay(params)
+        if method == "device.launch":
+            return await self.local_ops.app_launch(params)
         raise ValueError(f"unsupported local method: {method}")

@@ -4,10 +4,10 @@ import asyncio
 import json
 import os
 import sys
-from types import SimpleNamespace
-from unittest.mock import AsyncMock
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -40,6 +40,7 @@ def test_dsh_is_third_default_provider() -> None:
         "codex",
         "claude",
         "dsh",
+        "zcode",
     ]
 
 

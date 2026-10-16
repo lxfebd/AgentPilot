@@ -1299,6 +1299,21 @@ class ShellTaskWaitResponse(BaseModel):
     serverTime: str
 
 
+class DeviceLaunchRequest(BaseModel):
+    app: str = Field(min_length=1, max_length=64)
+
+
+class DeviceLaunchResponse(BaseModel):
+    launched: bool
+    alreadyRunning: bool
+    app: str
+    path: str | None = None
+    source: str | None = None
+    pid: int | None = None
+    reason: str | None = None
+    serverTime: str
+
+
 class TerminalView(BaseModel):
     terminalId: str
     sessionId: str

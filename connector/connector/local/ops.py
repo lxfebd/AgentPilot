@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from connector.local.app_launcher import AppLauncher
 from connector.local.common import Notify
 from connector.local.file_ops import FileOps
 from connector.local.shell import ShellBackend, UnixShellBackend, WindowsShellBackend
@@ -16,10 +17,12 @@ class LocalOps:
         files: FileOps,
         shell: ShellBackend,
         terminal: TerminalBackend,
+        apps: AppLauncher,
     ) -> None:
         self.files = files
         self.shell = shell
         self.terminal = terminal
+        self.apps = apps
 
     @property
     def notify(self) -> Notify | None:
@@ -81,6 +84,12 @@ class LocalOps:
     async def terminal_snapshot(self, params: dict[str, Any]) -> dict[str, Any]:
         return await self.terminal.snapshot(params)
 
+    async def app_launch(self, params: dict[str, Any]) -> dict[str, Any]:
+        app = params.get("app")
+        if not isinstance(app, str) or not app:
+            raise ValueError("app must be a non-empty string")
+        return await self.apps.launch(app)
+
 
 def create_local_ops(
     notify: Notify | None = None,
@@ -92,4 +101,4 @@ def create_local_ops(
     else:
         shell = UnixShellBackend(notify=notify)
     terminal = default_terminal_backend(notify=notify)
-    return LocalOps(files=files, shell=shell, terminal=terminal)
+    return LocalOps(files=files, shell=shell, terminal=terminal, apps=AppLauncher())
