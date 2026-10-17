@@ -2,7 +2,7 @@
   "name": "agent-pilot-desktop-workbench",
   "productName": "AgentPilot",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Electron shell for the AgentPilot web workbench",
   "packageManager": "yarn@4.6.0",
   "workspaces": [
