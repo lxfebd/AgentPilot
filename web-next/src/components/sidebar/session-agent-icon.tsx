@@ -22,7 +22,7 @@ const agentIcons = {
   },
 }
 
-export function SessionAgentIcon({ runtime, runtimeType }: { runtime: string; runtimeType?: string }) {
+export function SessionAgentIcon({ runtime, runtimeType, className }: { runtime: string; runtimeType?: string; className?: string }) {
   const type = (runtimeType?.trim() || runtime).toLowerCase().replace(/[\s_-]/g, "")
   const agent = type === "codex" ? "codex"
     : type === "claude" || type === "claudecode" ? "claude"
@@ -30,7 +30,7 @@ export function SessionAgentIcon({ runtime, runtimeType }: { runtime: string; ru
     : type === "zcode" ? "zcode"
     : null
 
-  if (!agent) return <Bot aria-label={runtime} role="img" data-icon="inline-start" />
+  if (!agent) return <Bot aria-label={runtime} role="img" data-icon="inline-start" className={className} />
 
   const icon = agentIcons[agent]
   const label = agent === "codex" ? "Codex"
@@ -39,7 +39,7 @@ export function SessionAgentIcon({ runtime, runtimeType }: { runtime: string; ru
     : "DeepSeek Harness"
 
   return (
-    <svg viewBox={icon.viewBox} fill="currentColor" role="img" aria-label={label} data-icon="inline-start">
+    <svg viewBox={icon.viewBox} fill="currentColor" role="img" aria-label={label} data-icon="inline-start" className={className}>
       <path d={icon.path} />
     </svg>
   )

@@ -765,7 +765,8 @@
       "unarchiveAllTitle": "取消归档会话？",
       "archiveAllDescription": "归档当前 {name} 视图中的全部会话。",
       "unarchiveAllDescription": "取消归档当前 {name} 视图中的全部会话。",
-      "bulkArchiveFailed": "无法更新会话。"
+      "bulkArchiveFailed": "无法更新会话。",
+      "filterByPlatform": "按平台筛选"
     },
     "panels": {
       "files": {

@@ -57,6 +57,7 @@ import type { ConnectorRevokeResponse } from "@/features/dashboard/types"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
+import { SessionAgentIcon } from "@/components/sidebar/session-agent-icon"
 import { RuntimeAddDialog } from "@/components/runtime-add-dialog"
 import { RuntimeConfigDialog } from "@/components/runtime-config-dialog"
 import { RuntimeInstanceNameDialog } from "@/components/runtime-instance-name-dialog"
@@ -71,6 +72,7 @@ import {
   namedInstanceRequiredConfigFields,
   runtimeInstanceName,
   runtimeTypeName,
+  sessionRuntimeType,
 } from "@/features/dashboard/runtime-instances"
 import {
   runtimeErrorCode,
@@ -102,6 +104,7 @@ type DeviceSession = {
   connectorId: string
   connectorStatus: "online" | "offline"
   runtime: string
+  runtimeType?: string
   title?: string | null
   cwd?: string | null
   status: "idle" | "waiting" | "pending" | "running" | "stopping" | "waiting_approval" | "error" | "blocked"
@@ -186,6 +189,11 @@ function SessionRow({
           aria-label={t("selectSession", { title: session.title ?? t("untitled") })}
         />
       ) : null}
+      <SessionAgentIcon
+        runtime={session.runtime}
+        runtimeType={session.runtimeType ?? undefined}
+        className="size-4 shrink-0 text-muted-foreground"
+      />
       <span
         className={cn(
           "size-1.5 shrink-0 rounded-full border",
@@ -242,6 +250,7 @@ function mergeRealSession(prev: DeviceSession | undefined, session: RealSessionV
     connectorId: session.connectorId,
     connectorStatus: session.connectorStatus,
     runtime: prev?.runtime ?? session.runtime,
+    runtimeType: prev?.runtimeType ?? session.runtimeType ?? undefined,
     title: session.title,
     cwd: session.cwd,
     status: session.status,
@@ -325,6 +334,7 @@ export function DevicePage() {
 
   const [showAllProjects, setShowAllProjects] = React.useState(false)
   const [sessionTab, setSessionTab] = React.useState<SessionTabId>("active")
+  const [runtimeFilter, setRuntimeFilter] = React.useState<string | null>(null)
   const [configRuntime, setConfigRuntime] = React.useState<DeviceRuntimeView | null>(null)
   const [savingRuntimeId, setSavingRuntimeId] = React.useState<string | null>(null)
   const [runtimeActionId, setRuntimeActionId] = React.useState<string | null>(null)
@@ -356,6 +366,7 @@ export function DevicePage() {
       setLoading(true)
       setShowAllProjects(false)
       setSessionTab("active")
+      setRuntimeFilter(null)
       setRuntimes([])
       setRuntimeTypes([])
       setConfigRuntime(null)
@@ -417,7 +428,8 @@ export function DevicePage() {
     if (sessionTab === "active") return !s.archived
     if (sessionTab === "archived") return s.archived
     return true
-  })
+  }).filter((s) => runtimeFilter === null || sessionRuntimeType(s) === runtimeFilter)
+  const sessionPlatforms = [...new Set(sessions.map((s) => sessionRuntimeType(s)))].sort()
   const targetArchiveSelected = sessionTab !== "archived" || Array.from(selectedSessionIds).some((id) => !sessions.find((s) => s.id === id)?.archived)
   const targetArchiveAll = sessionTab !== "archived"
   const allVisibleSelected = filteredSessions.length > 0 && filteredSessions.every((session) => selectedSessionIds.has(session.id))
@@ -1026,6 +1038,29 @@ export function DevicePage() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
+
+          {sessionPlatforms.length > 1 ? (
+            <div className="mb-3">
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t("filterByPlatform")}
+              </p>
+              <ToggleGroup
+                type="single"
+                value={runtimeFilter ?? "all"}
+                onValueChange={(value: string) => setRuntimeFilter(value === "all" ? null : value)}
+                size="sm"
+                className="flex-wrap"
+              >
+                <ToggleGroupItem value="all">{t("all")}</ToggleGroupItem>
+                {sessionPlatforms.map((platform) => (
+                  <ToggleGroupItem key={platform} value={platform}>
+                    <SessionAgentIcon runtime={platform} runtimeType={platform} />
+                    {platform}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          ) : null}
 
           {selectMode ? (
             <div className="mb-3 flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 text-sm">
