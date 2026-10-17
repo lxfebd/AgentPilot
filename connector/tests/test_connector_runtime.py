@@ -1158,6 +1158,16 @@ def test_connector_projects_inventory_capabilities_to_protocol_ids() -> None:
                     },
                 },
                 {
+                    "runtimeType": "zcode",
+                    "available": True,
+                    "configSchema": {"schema": {"type": "object"}},
+                    "capabilities": {
+                        "startTurn": True,
+                        "steerTurn": True,
+                        "interruptTurn": True,
+                    },
+                },
+                {
                     "runtimeType": "unknown-agent",
                     "available": True,
                     "capabilities": {"modelCatalog": True},
@@ -1191,6 +1201,10 @@ def test_connector_projects_inventory_capabilities_to_protocol_ids() -> None:
     assert by_runtime_and_id[("dsh", "session.interrupt")]["available"] is True
     assert by_runtime_and_id[("dsh", "session.commands")]["available"] is True
     assert by_runtime_and_id[("dsh", "runtime.config")]["available"] is True
+    assert by_runtime_and_id[("zcode", "session.send_message")]["available"] is True
+    assert by_runtime_and_id[("zcode", "session.steer")]["available"] is True
+    assert by_runtime_and_id[("zcode", "session.interrupt")]["available"] is True
+    assert by_runtime_and_id[("zcode", "runtime.config")]["available"] is True
     assert ("unknown-agent", "catalog.model") not in by_runtime_and_id
     assert payload["revision"] == 42
 

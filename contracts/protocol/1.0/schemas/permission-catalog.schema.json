@@ -68,7 +68,8 @@
         "claude",
         "opencode",
         "acp",
-        "dsh"
+        "dsh",
+        "zcode"
       ],
       "title": "Runtime",
       "type": "string"
