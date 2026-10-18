@@ -38,12 +38,14 @@ import com.agentpilot.app.feature.sessions.NewSessionPermissionCatalog
 import com.agentpilot.app.feature.sessions.NewSessionRuntimeCapabilities
 import com.agentpilot.app.feature.sessions.SessionBatchUpdate
 import com.agentpilot.app.feature.sessions.SessionsState
+import com.agentpilot.app.feature.sessions.filterSessionMapByRuntime
 import com.agentpilot.app.feature.terminal.RemoteTerminalPool
 import com.agentpilot.app.feature.update.AppUpdateViewModel
 import com.agentpilot.app.model.AgentDevice
 import com.agentpilot.app.model.AgentProject
 import com.agentpilot.app.model.AgentSession
 import com.agentpilot.app.model.MobileLoginQrPayload
+import com.agentpilot.app.model.runtimeTypeLabel
 import com.agentpilot.app.navigation.AppDestination
 import com.agentpilot.app.ui.designsystem.AppTabletRail
 import com.agentpilot.app.ui.designsystem.LocalAAColors
@@ -194,6 +196,16 @@ internal fun AgentPilotNavHost(
                 }
             }
         merged
+    }
+
+    // 平板侧边栏：按选中的 agent 过滤项目会话（与手机首页过滤一致）。
+    val railRuntimes = remember(railProjectSessionsById) {
+        railProjectSessionsById.values.flatten()
+            .map(AgentSession::runtime).filter(String::isNotBlank).distinct()
+            .sortedBy(String::runtimeTypeLabel)
+    }
+    val railProjectSessionsFiltered = remember(railProjectSessionsById, projectPreferences.selectedAgentRuntime) {
+        filterSessionMapByRuntime(railProjectSessionsById, projectPreferences.selectedAgentRuntime)
     }
 
     val pageContent: @Composable () -> Unit = {
@@ -420,7 +432,7 @@ internal fun AgentPilotNavHost(
                     profileOpen = true
                 },
                 projects = sessionsState.projects,
-                projectSessionsById = railProjectSessionsById,
+                projectSessionsById = railProjectSessionsFiltered,
                 expandedProjectIds = projectPreferences.expandedIds,
                 onProjectExpandedChange = { id, expanded ->
                     projectPreferences.setProjectExpanded(id, expanded)
@@ -431,6 +443,9 @@ internal fun AgentPilotNavHost(
                 onSetSessionPinned = onSetSessionPinned,
                 onSetSessionArchived = onSetSessionArchived,
                 onSearch = { searchRequestSignal++ },
+                agentRuntimes = railRuntimes,
+                selectedAgentRuntime = projectPreferences.selectedAgentRuntime,
+                onSelectAgentRuntime = projectPreferences::selectAgent,
             ) {
                 pageContent()
             }

@@ -44,15 +44,17 @@ import com.agentpilot.app.ui.designsystem.LocalAAColors
 internal fun HomeTaskDashboard(
     state: SessionsState,
     projectSessionsById: Map<String, List<AgentSession>>,
+    selectedAgentRuntime: String?,
     onOpenSession: (AgentSession) -> Unit,
     onPairDevice: () -> Unit,
 ) {
     val colors = LocalAAColors.current
-    val allSessions = remember(projectSessionsById, state.sessions) {
+    val allSessions = remember(projectSessionsById, state.sessions, selectedAgentRuntime) {
         (projectSessionsById.values.flatten() + state.sessions)
             .associateBy { it.id }
             .values
             .filter { !it.archived }
+            .filter { selectedAgentRuntime == null || it.runtime == selectedAgentRuntime }
             .sortedBy { railSessionOrder(it) }
     }
     Column(

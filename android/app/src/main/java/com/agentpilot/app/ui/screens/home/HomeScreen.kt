@@ -72,6 +72,7 @@ import com.agentpilot.app.navigation.AppDestination
 import com.agentpilot.app.ui.designsystem.AAToastHost
 import com.agentpilot.app.ui.designsystem.AAToastVisuals
 import com.agentpilot.app.ui.designsystem.AAWordmark
+import com.agentpilot.app.ui.designsystem.AgentFilterBar
 import com.agentpilot.app.ui.designsystem.AuthErrorNotice
 import com.agentpilot.app.ui.designsystem.LocalAAColors
 import com.agentpilot.app.ui.designsystem.LocalAAWindowSize
@@ -533,6 +534,19 @@ private fun HomeContent(
             onTerminalClick = { navigate(AppDestination.Terminal) },
             onFilesClick = { navigate(AppDestination.Files) },
         )
+        if (!isTablet) {
+            // 手机形态：会话列表顶部的 agent 来源分类栏（平板形态在侧边栏里）。
+            val runtimes = remember(state.sessions, projectSessionsById) {
+                (state.sessions.map(AgentSession::runtime) + projectSessionsById.values.flatten().map(AgentSession::runtime))
+                    .filter(String::isNotBlank).distinct().sortedBy(String::runtimeTypeLabel)
+            }
+            AgentFilterBar(
+                runtimes = runtimes,
+                selected = projectPreferences.selectedAgentRuntime,
+                onSelect = projectPreferences::selectAgent,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             state = refreshState,
@@ -555,6 +569,7 @@ private fun HomeContent(
                 HomeTaskDashboard(
                     state = state,
                     projectSessionsById = projectSessionsById,
+                    selectedAgentRuntime = projectPreferences.selectedAgentRuntime,
                     onOpenSession = onOpenSession,
                     onPairDevice = onPairDevice,
                 )
@@ -582,6 +597,7 @@ private fun HomeContent(
                     state = state,
                     tab = HomeTab.Active,
                     darkMode = darkMode,
+                    selectedAgentRuntime = projectPreferences.selectedAgentRuntime,
                     onSessionLongPress = onSessionLongPress,
                     onOpenSession = onOpenSession,
                     onOpenDevice = onOpenDevice,

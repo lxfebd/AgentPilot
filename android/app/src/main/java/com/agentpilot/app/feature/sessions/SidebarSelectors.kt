@@ -73,6 +73,20 @@ fun projectHasVisibleSessions(
 fun projectHasActiveSessions(project: AgentProject, sessions: Collection<AgentSession>): Boolean =
     projectHasVisibleSessions(project, sessions, ProjectSessionStatusFilter.Active)
 
+/**
+ * 按 agent runtime 过滤「项目 id → 会话列表」映射；runtime 为 null 时原样返回。
+ * 手机首页列表与平板侧边栏共用同一过滤语义。
+ */
+fun filterSessionMapByRuntime(
+    sessionsByProject: Map<String, List<AgentSession>>,
+    runtime: String?,
+): Map<String, List<AgentSession>> {
+    if (runtime == null) return sessionsByProject
+    return sessionsByProject.mapValues { (_, sessions) ->
+        sessions.filter { it.runtime == runtime }
+    }
+}
+
 fun sortProjectsByActivity(projects: List<AgentProject>, sessions: Collection<AgentSession>): List<AgentProject> {
     val activity = sessions.filter { !it.projectId.isNullOrBlank() }.groupBy { it.projectId }
         .mapValues { (_, items) -> items.maxOf { timestampMillis(it.sortKey) } }

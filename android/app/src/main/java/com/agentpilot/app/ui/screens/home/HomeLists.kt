@@ -87,6 +87,7 @@ internal fun HomeList(
     state: SessionsState,
     tab: HomeTab,
     darkMode: Boolean,
+    selectedAgentRuntime: String? = null,
     onSessionLongPress: (AgentSession, Rect) -> Unit,
     onOpenSession: (AgentSession) -> Unit,
     onOpenDevice: (AgentDevice) -> Unit,
@@ -96,7 +97,10 @@ internal fun HomeList(
     onLoadMore: (HomeTab) -> Unit,
 ) {
     val devices = remember(state.devices) { state.devices.sortedForDevicesPage() }
-    val sessions = if (tab == HomeTab.Active) state.sessions else state.archivedSessions
+    val sessions = remember(state.sessions, state.archivedSessions, tab, selectedAgentRuntime) {
+        val source = if (tab == HomeTab.Active) state.sessions else state.archivedSessions
+        if (selectedAgentRuntime == null) source else source.filter { it.runtime == selectedAgentRuntime }
+    }
     val hasAnySessions = state.sessions.isNotEmpty() || state.archivedSessions.isNotEmpty()
     when {
         state.isLoading && !state.hasLoaded -> HomeLoadingState()

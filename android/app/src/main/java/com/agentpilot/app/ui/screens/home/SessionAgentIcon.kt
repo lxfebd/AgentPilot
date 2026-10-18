@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.agentpilot.app.R
@@ -16,6 +17,7 @@ internal fun SessionAgentIcon(
     runtime: String,
     runtimeType: String?,
     modifier: Modifier = Modifier,
+    tint: Color? = null,
 ) {
     // Match the Web sidebar's runtime aliases, including custom runtime instances.
     val type = runtimeType?.trim().orEmpty().ifBlank { runtime }
@@ -34,18 +36,19 @@ internal fun SessionAgentIcon(
         R.drawable.ic_session_agent_zcode -> "ZCode"
         else -> runtime
     }
+    val effectiveTint = tint ?: LocalAAColors.current.faint
     if (drawable != null) {
         Icon(
             painter = painterResource(drawable),
             contentDescription = label,
-            tint = LocalAAColors.current.faint,
+            tint = effectiveTint,
             modifier = modifier.size(16.dp),
         )
     } else {
         Icon(
             imageVector = Lucide.Bot,
             contentDescription = label,
-            tint = LocalAAColors.current.faint,
+            tint = effectiveTint,
             modifier = modifier.size(16.dp),
         )
     }

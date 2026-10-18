@@ -158,10 +158,11 @@ internal fun HomeProjectList(
                 )
             }
         }
-    } else LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 96.dp),
-    ) {
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp),
+        ) {
         if (pinnedProjects.isNotEmpty() || pinnedSessions.isNotEmpty()) {
             item("project-pinned-title") {
                 HomeListSectionHeader(
@@ -237,6 +238,7 @@ internal fun HomeProjectList(
                 }
             }
         }
+    }
     }
     filterAnchor?.let { anchor ->
         HomeProjectFilterMenu(

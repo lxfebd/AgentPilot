@@ -66,7 +66,6 @@ import com.agentpilot.app.model.AgentSession
 import com.agentpilot.app.model.SessionStatus
 import com.agentpilot.app.navigation.AppDestination
 import com.composables.icons.lucide.Archive
-import com.composables.icons.lucide.Clock
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
@@ -80,7 +79,6 @@ import com.composables.icons.lucide.Pin
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.Server
-import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Terminal
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -102,6 +100,9 @@ fun AppTabletRail(
     onSetSessionPinned: suspend (String, Boolean) -> Result<AgentSession> = { _, _ -> Result.failure(Exception("unsupported")) },
     onSetSessionArchived: suspend (String, Boolean) -> Result<AgentSession> = { _, _ -> Result.failure(Exception("unsupported")) },
     onSearch: () -> Unit = {},
+    agentRuntimes: List<String> = emptyList(),
+    selectedAgentRuntime: String? = null,
+    onSelectAgentRuntime: (String?) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val colors = LocalAAColors.current
@@ -167,6 +168,14 @@ fun AppTabletRail(
                     onSessions = { onNavigate(AppDestination.Sessions) },
                     onNew = { onNavigate(AppDestination.NewSession) },
                 )
+                if (agentRuntimes.isNotEmpty() || selectedAgentRuntime != null) {
+                    AgentFilterBar(
+                        runtimes = agentRuntimes,
+                        selected = selectedAgentRuntime,
+                        onSelect = onSelectAgentRuntime,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 RailProjects(
                     modifier = Modifier.weight(1f),
                     projects = projects,
@@ -182,7 +191,6 @@ fun AppTabletRail(
                 Spacer(Modifier.height(6.dp))
                 RailCircleActions(
                     onNavigate = onNavigate,
-                    onSettings = onOpenSettings,
                 )
             }
         }
@@ -868,8 +876,9 @@ private fun RailSessionStatusChip(session: AgentSession) {
 @Composable
 private fun RailCircleActions(
     onNavigate: (AppDestination) -> Unit,
-    onSettings: () -> Unit,
 ) {
+    // 精简后的底部圆形入口：只保留 设备/终端/文件。
+    // 归档在侧边栏中部已有入口，设置点头像可进，计划/其他均不再占用底部。
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -891,22 +900,6 @@ private fun RailCircleActions(
             icon = Lucide.FileText,
             label = stringResource(R.string.common_files),
             onClick = { onNavigate(AppDestination.Files) },
-        )
-        RailCircle(
-            icon = Lucide.Archive,
-            label = stringResource(R.string.profile_archived_sessions),
-            onClick = { onNavigate(AppDestination.ArchivedSessions) },
-        )
-        RailCircle(
-            icon = Lucide.Clock,
-            label = stringResource(R.string.schedules_title),
-            onClick = { onNavigate(AppDestination.Schedules) },
-        )
-        Spacer(Modifier.weight(1f))
-        RailCircle(
-            icon = Lucide.Settings,
-            label = stringResource(R.string.rail_settings),
-            onClick = onSettings,
         )
     }
 }
