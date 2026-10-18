@@ -74,9 +74,8 @@ erase newer input or update a different session. Commands refresh when the menu
 reopens, the connection recovers, runtime availability/status changes or the
 catalog revision changes.
 
-The shared UI contract is documented in
-[connector-to-runtime](../../docs/runtime-protocol/connector-to-runtime.md#commands)
-and [Web behavior](../../docs/runtime-protocol/web-behavior.md#commands).
+The shared UI contract is defined by the connector runtime protocol
+(`connector/runtime_protocol/`) and the Web console implementation.
 
 ## Headless verification
 

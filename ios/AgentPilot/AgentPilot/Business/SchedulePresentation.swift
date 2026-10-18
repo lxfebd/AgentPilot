@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Pure value logic with no UI or transport dependency, so it is unit testable.
 /// The Server stays the authority on persistence; these helpers only keep
-/// obviously wrong input from reaching it (see `docs/api/schedules.md`).
+/// obviously wrong input from reaching it.
 ///
 /// Time contract from the Server:
 ///   - `weekday` is 0 = Monday … 6 = Sunday.

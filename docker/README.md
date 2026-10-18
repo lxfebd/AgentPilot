@@ -1,7 +1,7 @@
 # Docker
 
 Docker deployment for the AgentPilot v2 mainline. For existing databases,
-read [Upgrading](../docs/upgrading.md) before running Compose. The current
+follow the migration notes below before running Compose. The current
 schema revision is `v2_35`; historical migration notes below explain individual
 changes, not the latest target revision.
 
@@ -161,8 +161,7 @@ before applying this profile: the initial setup token remains process-local.
 Use a shared upload volume or S3 and the same auth secret for all workers.
 Per-worker RPC identities remain unique even if an instance-name prefix is set.
 
-The profile's measured scaling and its single-connection limit are documented
-in [the session performance report](../docs/performance/session-pipeline.md).
+The profile's measured scaling is documented in this file's `## Multi-worker deployment` section.
 
 Use a non-default `AGENT_SERVER_SECRET` and database password outside local
 development. Put HTTPS in front of the Web service for production.

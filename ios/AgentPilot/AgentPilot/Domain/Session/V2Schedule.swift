@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The Server fires `prompt` into either an existing session (`sessionId`) or a
 /// brand-new session (`projectId` + `connectorId`) at the scheduled moment.
-/// Added in 2.1.0; see `docs/api/schedules.md`.
+/// Added in 2.1.0.
 nonisolated struct V2Schedule: Codable, Identifiable, Hashable {
     let id: String
     let title: String

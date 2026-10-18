@@ -14,7 +14,7 @@ import org.json.JSONObject
  *
  * Regression context: the update check asked the Server `/health` which version
  * it was, and compared that against the installed Android version. Server and
- * Android PATCH versions are released independently (docs/versioning.md), so
+ * Android PATCH versions are released independently, so
  * with Server 2.1.1 and Android 2.1.3 the comparison was `<= 0` forever and the
  * Android-only releases 2.1.2 / 2.1.3 could never reach a phone. Bumping the
  * Server version instead would have falsely offered Desktop updates, because

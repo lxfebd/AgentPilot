@@ -50,4 +50,4 @@ dsh plugin --profile desktop add @agent-pilot/dsh-bridge-next
 
 本仓库源码和 npm 已发布包可能处于不同版本。源码构建、链接安装、headless 检查、配置和实现细节见[技术说明](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/TECHNICAL.md)。
 
-[开发计划](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/DEVELOPMENT_PLAN.md) · [Onboarding 方案](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/ONBOARDING_PLAN.md) · [验证记录](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/VERIFICATION.md) · [AgentPilot 使用文档](https://github.com/lxfebd/AgentPilot/blob/main/docs/README.md)
+[开发计划](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/DEVELOPMENT_PLAN.md) · [Onboarding 方案](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/ONBOARDING_PLAN.md) · [验证记录](https://github.com/lxfebd/AgentPilot/blob/main/dsh-bridge-next/VERIFICATION.md)

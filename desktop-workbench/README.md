@@ -274,8 +274,7 @@ at build time, not with `app.getVersion()`. `yarn build:main` (and therefore
 `yarn dev`, `yarn build` and `yarn dist:*`) runs `scripts/write-build-info.mjs`,
 which copies `server/pyproject.toml`'s version into the generated
 `build-info.json`. A live Server newer than that baseline means a newer Desktop
-build exists; Desktop and Server PATCH versions may otherwise differ (see
-[versioning](../docs/versioning.md)). No dedicated release API is used.
+build exists; Desktop and Server PATCH versions may otherwise differ. No dedicated release API is used.
 
 A Desktop built against an older Server opens an update dialog with **Ignore this version** and
 **Update now** — but only when an installer can actually be delivered. Outside
@@ -425,8 +424,7 @@ available under its normal cleanup rules.
 Shared Web fixes synchronized on 2026-09-06 include device pairing, compact
 settings sections, project/directory defaults and creation, project ordering and
 expansion persistence, tool cards, file editing safeguards, and terminal restore.
-See the [frontend/Desktop handoff](../docs/migrations/main-to-v2/frontend-desktop-follow-up.md)
-for scope and verification. Pairing and mobile login use the selected public
+Pairing and mobile login use the selected public
 server address; native renderer URLs are never shared as connection addresses.
 
 ### Universal macOS installers

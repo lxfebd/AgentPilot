@@ -1,6 +1,6 @@
 # AgentPilot — Agent 工作指南
 
-本文件写给在本仓库中工作的编码 Agent（Codex、Claude Code 等）。面向人的说明见 [docs/README.md](docs/README.md)；本文件只保留 Agent 做出正确修改所需的内容。
+本文件写给在本仓库中工作的编码 Agent（Codex、Claude Code 等）。本文件只保留 Agent 做出正确修改所需的内容。
 
 ## 项目是什么
 
@@ -10,7 +10,7 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 
 | 目录 | 内容 | 技术栈 |
 | --- | --- | --- |
-| `server/` | API、实时通道、存储；分层规则见 [Server 架构](docs/server-architecture.md) | Python 3.12、FastAPI、PostgreSQL、Redis、Alembic、uv |
+| `server/` | API、实时通道、存储；分层规则见 [server/README.md](server/README.md) | Python 3.12、FastAPI、PostgreSQL、Redis、Alembic、uv |
 | `connector/` | 工作设备侧进程，连接 Server 并驱动 Runtime | Python、uv |
 | `web-next/` | Web 客户端（另有自己的 [AGENTS.md](web-next/AGENTS.md)） | Next.js、TypeScript、Yarn |
 | `desktop-workbench/` | **当前**桌面客户端，内含受管理的本机 Connector | Electron、TypeScript、Yarn |
@@ -19,17 +19,13 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 | `dsh-bridge-next/` | **当前** DSH 插件（npm 包，也随 DSH Desktop 分发） | TypeScript、Yarn |
 | `contracts/` | 跨端契约与 fixtures，按 `<name>/<version>/` 组织 | JSON Schema / 文档 |
 | `docker/` | 自托管部署与本地数据库 compose | Docker Compose |
-| `docs/` | 使用、开发、API、Runtime 协议、发布说明 | — |
 
 不在当前主线上开发的目录：
 
 - `desktop-next/`、`dsh-bridge/`：已分别被 `desktop-workbench/`、`dsh-bridge-next/` 取代，除非任务明确要求，否则不要修改。
 - `_deprecated/`、`_reference/`，以及各子项目内同名目录：历史代码或参考实现，不参与构建，不要从中导入。
-- `docs/` 中名字带 proposal、plan、target、gap 的文档，以及 `docs/migrations/`：描述设计或某个时间点的状态，使用前要和源码、契约核对。
 
 ## 开发与验证
-
-完整说明见[开发指南](docs/development.md)，要点如下：
 
 - 仓库根目录**没有**统一的构建命令，每个子项目单独安装依赖、单独检查。
 - **不提交 lockfile**（`yarn.lock`、`uv.lock`、`package-lock.json` 等已被 `.gitignore` 忽略），不要把它们加回来。
@@ -45,15 +41,15 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 
 ## 跨端修改的规则
 
-- **契约优先**：修改 API 字段、实时事件或 Runtime 协议时，先更新 `contracts/` 或 `docs/api/`，再同步修改 Server、Connector 和所有受影响的客户端。Web / Desktop 的 `protocol:check` 用来发现契约偏差。
-- **能力驱动**：各 Runtime 支持的功能不同，客户端应当根据有效能力（见 [capabilities](docs/api/capabilities.md)）显示或隐藏功能，不要按 provider 名称写死判断。
+- **契约优先**：修改 API 字段、实时事件或 Runtime 协议时，先更新 `contracts/`，再同步修改 Server、Connector 和所有受影响的客户端。Web / Desktop 的 `protocol:check` 用来发现契约偏差。
+- **能力驱动**：各 Runtime 支持的功能不同，客户端应当根据有效能力（见 [contracts/dsh-bridge](contracts/dsh-bridge/README.md)）显示或隐藏功能，不要按 provider 名称写死判断。
 - **Server 分层**：`core` 不能导入外层；`services` 不能导入 FastAPI、API 模块或具体的 `Store`。这些规则由 `server/tests/test_architecture_boundaries.py` 强制检查。
 - **数据库**：schema 变化需要新增 Alembic 迁移 `server/migrations/versions/v2_N.py`，编号接着现有最大值递增，不要修改已发布的迁移。
 - 多端功能（例如排队消息、计划审阅）通常要同时修改 Web、Desktop、Android、iOS。如果只修改了其中一部分，要在 PR 中写明哪些端还没有跟进。
 
 ## 版本号
 
-遵循[版本号规则](docs/versioning.md)：`2.0.x` 是各端独立的小版本更新，`2.x.0` 是接口更新，`x.0.0` 是架构变更。只有 PATCH 允许各端不同；修改跨端接口时不能只升 PATCH，并且升 MINOR 或 MAJOR 时要更新**所有端**的版本号（文件位置见该文档）。
+`2.0.x` 是各端独立的小版本更新，`2.x.0` 是接口更新，`x.0.0` 是架构变更。只有 PATCH 允许各端不同；修改跨端接口时不能只升 PATCH，并且升 MINOR 或 MAJOR 时要更新**所有端**的版本号。
 
 ## 提交与 PR
 
@@ -65,4 +61,4 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 ## 文档
 
 - 面向用户的文档以中文为主；README 有中英两个版本（`README.md` / `README.en.md` / `README.zh-CN.md`），修改其中一个时要同步其他版本。
-- 功能或接口变化后，更新对应的 README、`docs/` 页面或发布说明，不要让文档描述已经不存在的行为。
+- 功能或接口变化后，更新对应的 README，不要让文档描述已经不存在的行为。

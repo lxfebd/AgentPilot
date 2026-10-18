@@ -14,7 +14,7 @@ data class AndroidAppRelease(
  * What `<origin>/apk/version.json` says about the APK that same origin serves.
  *
  * This is deliberately not the Server's own version. Server and Android PATCH
- * versions are released independently (docs/versioning.md), so `/health`
+ * versions are released independently, so `/health`
  * describes the Server — comparing it against an installed Android version
  * makes an Android-only release invisible to phones.
  */

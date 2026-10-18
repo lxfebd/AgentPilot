@@ -165,8 +165,7 @@ flush interval). PostgreSQL still prevents revision reuse, but the abandoned
 revisions become gaps and do not reconstruct the lost payloads. Use the fallback
 only for single-process development, not as a production durability mode.
 
-See `../docs/server-architecture.md` for layer boundaries, state ownership, and
-database versioning rules.
+See `server/tests/test_architecture_boundaries.py` for enforced layer boundaries.
 
 ## Multi-worker deployment
 
@@ -178,9 +177,6 @@ Dashboard lists. Reconstructible runtime-state entries expire after 24 hours;
 accepted Timeline writes retain their separate, non-expiring persistence rules.
 Concurrent background state refreshes share a renewable Redis lease, preventing
 each worker from independently asking the runtime to replay the same session.
-
-See [session pipeline measurements](../docs/performance/session-pipeline.md) for
-the tested workloads, queue/recovery behavior and deployment limits.
 
 ## Main API Areas
 
@@ -197,8 +193,6 @@ All product API, SSE, and WebSocket endpoints are namespaced under `/api/v2`.
   messages, interaction responses, interrupt, sync, filesystem, shell, terminal,
   and uploads.
 
-See `../docs/api/namespace.md` for Web and Connector namespace notes.
-
 ## Web Frontend
 
 The current Web console lives in `../web-next` and runs as a Next.js app. In
@@ -212,8 +206,7 @@ AGENT_PILOT_API=http://127.0.0.1:8000 yarn dev
 The checked-in production Dockerfile exports `web-next` to static files and
 serves it from FastAPI using `AGENT_SERVER_STATIC_DIR=/app/web-static`.
 API, WebSocket and Web paths share one origin. See [Docker](../docker/README.md)
-for the supported Compose deployment and [Upgrading](../docs/upgrading.md) for
-migration ordering and backup requirements.
+for the supported Compose deployment and migration ordering.
 
 A manually prepared static export can be served with:
 
