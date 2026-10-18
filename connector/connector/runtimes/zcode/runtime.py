@@ -27,7 +27,16 @@ from connector.runtime_protocol import (
 )
 from connector.runtime_protocol import models as protocol_models
 from connector.runtime_protocol.host import RuntimeHostClient
-from connector.runtimes.zcode import discovery, provider_config, sessions, timeline
+from connector.runtimes.zcode import (
+    catalog,
+    discovery,
+    provider_config,
+    sessions,
+    timeline,
+)
+from connector.runtimes.zcode import (
+    selections as zcode_selections,
+)
 from connector.runtimes.zcode.db import ZcodeDb
 from connector.runtimes.zcode.session_input import (
     deliver_send_text,
@@ -115,6 +124,8 @@ class ZCodeRuntime(AgentRuntime):
         flags = provider_config.zcode_capabilities()
         capabilities = []
         for capability_id in (
+            "catalog.model",
+            "catalog.effort",
             "session.send_message",
             "session.steer",
             "session.interrupt",
@@ -147,7 +158,31 @@ class ZCodeRuntime(AgentRuntime):
     async def list_model_catalog(
         self, query: str | None = None, limit: int = 100
     ) -> RuntimeModelCatalog:
-        raise RuntimeUnsupportedError("zcode model catalog")
+        async with self._read_lock:
+            catalog_value = catalog.load_model_catalog(
+                provider_config.zcode_data_dir(dict(self.config.values))
+            )
+        if query:
+            needle = query.lower()
+            catalog_value = protocol_models.RuntimeModelCatalog(
+                runtime=catalog_value.runtime,
+                revision=catalog_value.revision,
+                runtime_id=catalog_value.runtime_id,
+                models=tuple(
+                    item
+                    for item in catalog_value.models
+                    if needle in item.title.lower()
+                    or needle in str(item.metadata.get("model", "")).lower()
+                ),
+            )
+        if limit > 0 and len(catalog_value.models) > limit:
+            catalog_value = protocol_models.RuntimeModelCatalog(
+                runtime=catalog_value.runtime,
+                revision=catalog_value.revision,
+                runtime_id=catalog_value.runtime_id,
+                models=catalog_value.models[:limit],
+            )
+        return catalog_value
 
     async def list_permission_catalog(
         self, query: str | None = None, limit: int = 100
@@ -214,10 +249,14 @@ class ZCodeRuntime(AgentRuntime):
             )
             if row is None:
                 return None
+            selected = zcode_selections.read_current_selections(
+                self._db, external_session_id=external
+            )
             return sessions.session_state_from_row(
                 row,
                 runtime_id=None,
                 connector_id=self.host.connector_id,
+                selections=selected,
             )
 
     async def get_session_notices(
@@ -325,7 +364,21 @@ class ZCodeRuntime(AgentRuntime):
         external_session_id: str | None,
         selections: Mapping[str, str | None],
     ) -> RuntimeOperationResult:
-        raise RuntimeUnsupportedError("zcode selections")
+        external = _require_external(external_session_id)
+        if not selections:
+            raise RuntimeInvalidRequestError("selections 不能为空。")
+        async with self._read_lock:
+            outcome = zcode_selections.apply_selections(
+                self._db,
+                external_session_id=external,
+                selections=selections,
+            )
+        return RuntimeOperationResult(
+            ok=True,
+            code="selections_updated",
+            message="会话选择已更新。",
+            result=outcome,
+        )
 
     async def list_commands(
         self,
@@ -388,6 +441,9 @@ class ZCodeRuntime(AgentRuntime):
 
 def _capability_flag(capability_id: str) -> str:
     mapping = {
+        "catalog.model": "modelCatalog",
+        "catalog.effort": "modelCatalog",
+        "catalog.permission": "permissionCatalog",
         "session.send_message": "startTurn",
         "session.steer": "steerTurn",
         "session.interrupt": "interruptTurn",

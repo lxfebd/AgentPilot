@@ -125,11 +125,12 @@ def zcode_capabilities() -> dict[str, bool]:
     """Capability flags advertised by the ZCode provider.
 
     Delivery rides the ``session_input`` table, so sending is always supported
-    as long as the database is reachable; catalog and command surfaces are not
-    exposed.
+    as long as the database is reachable; the model catalog is projected from
+    the profile file the desktop maintains. Command/interaction surfaces are
+    not exposed.
     """
     return {
-        "modelCatalog": False,
+        "modelCatalog": True,
         "permissionCatalog": False,
         "sessionDiscovery": True,
         "sessionSnapshot": True,

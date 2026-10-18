@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from connector.runtime_protocol import (
@@ -44,6 +45,7 @@ def session_state_from_row(
     *,
     runtime_id: str | None,
     connector_id: str,
+    selections: Mapping[str, str | None] | None = None,
 ) -> SessionState:
     status = _status_from_activity(row)
     return SessionState(
@@ -51,7 +53,7 @@ def session_state_from_row(
         external_session_id=row["id"],
         runtime="zcode",
         status=status,
-        selections={},
+        selections=dict(selections or {}),
         metadata={
             "taskType": row.get("task_type") or "interactive",
             "timeUpdated": row.get("time_updated"),
