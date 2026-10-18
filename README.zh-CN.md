@@ -1,21 +1,19 @@
 <p align="center">
-  <a href="https://github.com/lxfebd/AgentPilot"><img src="docs/images/readme-hero-zh.webp" alt="AgentPilot：跨设备的开源 Agent 工作台。支持 Codex、Claude Code 和 DeepSeek Harness，更多 Agent 即将支持。" width="100%"></a>
+  <strong>AgentPilot：跨设备的开源 Agent 工作台</strong><br>
+  连接工作设备，在桌面、手机和 Web 管理 AI Agent。
 </p>
 
 <p align="center">
-  <strong>连接工作设备，在桌面、手机和 Web 管理 AI Agent。</strong><br>
   开源 · 多种 Agent · 会话与工作区 · 自托管
 </p>
 
 <p align="center">
   <a href="#下载与入口">下载客户端</a> ·
-  <a href="docs/getting-started.md#连接自托管服务">部署并打开 Web</a> ·
-  <a href="docs/README.md">使用文档</a> ·
+  <a href="#自托管快速开始">部署并打开 Web</a> ·
   <a href="README.en.md">English</a>
 </p>
 
 <p align="center">
-  <a href="docs/releases/2.1.x.md"><img src="https://img.shields.io/badge/release-2.1.x-222222?style=flat" alt="Release 2.1.x"></a>
   <a href="#开源许可"><img src="https://img.shields.io/badge/license-MIT-222222?style=flat" alt="MIT"></a>
   <a href="docker/README.md"><img src="https://img.shields.io/badge/self--hosted-Docker-222222?style=flat" alt="Self-host with Docker"></a>
 </p>
@@ -32,7 +30,7 @@
 | **Windows** | [GitHub Releases · x64 安装包](https://github.com/lxfebd/AgentPilot/releases) |
 | **Android** | [GitHub Releases · APK](https://github.com/lxfebd/AgentPilot/releases) |
 | **iOS / iPadOS** | [App Store](https://apps.apple.com/cn/app/agent-pilot) · [TestFlight](https://testflight.apple.com/join/AgentPilot) |
-| **Web** | 部署自己的服务后打开对应地址（见[登录服务](docs/getting-started.md#连接自托管服务)） |
+| **Web** | 部署自己的服务后打开对应地址（见[自托管快速开始](#自托管快速开始)） |
 | **Linux / headless** | [运行 Connector CLI](connector/README.md) |
 
 > 正式发布后，上面的安装包链接会指向对应 Release；当前 `main` 是开发主线，源码中的新修复不一定已进入安装包。
@@ -46,17 +44,11 @@
 - iOS / iPadOS：在 App Store 下载安装；也可以通过 TestFlight 安装测试版，以邀请页显示的可用状态为准。
 - Linux / headless：运行 Connector 接入工作设备，通过其他客户端操作。
 
-各端 PATCH 版本独立发布，数据库 schema revision 单独编号，见[版本号规则](docs/versioning.md)。发布范围见 [2.1.0 发布说明](docs/releases/2.1.0.md) 与 [2.1.x 发布说明](docs/releases/2.1.x.md)。
+各端 PATCH 版本独立发布，数据库 schema revision 单独编号。
 
 </details>
 
 ## Agent 与工作区管理
-
-<p align="center">
-  <img src="docs/images/readme-workbench.webp" alt="Windows 桌面工作台：左侧管理设备、项目和会话，右侧查看 Agent 的任务结果。" width="100%">
-</p>
-
-<a id="可以做什么"></a>
 
 | 你想做的事 | 在 AgentPilot 中 |
 | --- | --- |
@@ -69,13 +61,9 @@ Runtime 是工作设备上运行和连接 Agent 的组件。模型账号和调�
 
 ## 桌面、移动端与 Web
 
-<p align="center">
-  <img src="docs/images/readme-mobile.webp" alt="iPhone、iPad 和 Android 的真实客户端截图：查看会话、继续对话，以及回复 Agent 的输入请求。" width="100%">
-</p>
-
 用手机查看进展、回复 Agent，在平板上打开工作区，回到电脑后继续处理。同一服务、同一账号下，自己的设备和会话可以从不同客户端访问。
 
-**手机负责控制，工作设备负责执行。** 远程使用时，工作设备需要保持开机、联网，并让 Connector 与对应 Runtime 正常运行。上图 iPad 展示了回复 Agent 输入请求的界面。
+**手机负责控制，工作设备负责执行。** 远程使用时，工作设备需要保持开机、联网，并让 Connector 与对应 Runtime 正常运行。
 
 ## 首次使用
 
@@ -83,8 +71,6 @@ Runtime 是工作设备上运行和连接 Agent 的组件。模型账号和调�
 2. **连接工作设备。** Desktop 集成本机 Connector；服务器与无图形环境使用 [Connector CLI](connector/README.md)。
 3. **准备 Agent 和项目。** 在工作设备上配置 Runtime、账号与工作目录，创建或打开会话。
 4. **从其他设备访问。** 在手机、平板或另一台电脑登录同一服务和账号，访问自己的设备与任务。
-
-详细配对步骤、登录排查和后台运行说明见[安装与首次使用](docs/getting-started.md)。
 
 ## 执行位置与自托管
 
@@ -114,35 +100,27 @@ docker compose -f docker/docker-compose.postgres.yml up --build
 
 打开 `http://127.0.0.1:5174`，从 Server 日志取得 setup token，完成首位管理员设置。Compose 包含 PostgreSQL、Redis、迁移任务以及托管 Web 的 Server。
 
-[完整部署步骤](docker/README.md) · [备份与升级](docs/upgrading.md) · [Server 文档](server/README.md)
-
-<a id="架构与源码"></a>
+[完整部署步骤](docker/README.md) · [Server 文档](server/README.md)
 
 ## 开发与贡献
 
-开发环境使用 **Python 3.12+ / uv / Node.js 22 / Corepack + Yarn**。从[开发指南](docs/development.md)开始，查看源码运行方式与 headless 检查。
+开发环境使用 **Python 3.12+ / uv / Node.js 22 / Corepack + Yarn**。
 
 | 想了解什么 | 从这里开始 |
 | --- | --- |
-| 整体架构与 API | [Server 架构](docs/server-architecture.md) · [API 文档](docs/api/README.md) |
-| Agent 接入与本机执行 | [Connector](connector/README.md) · [Runtime 协议](docs/runtime-protocol/README.md) |
+| Agent 接入与本机执行 | [Connector](connector/README.md) |
 | Web 与桌面客户端 | [Web 源码](web-next/) · [Desktop Workbench](desktop-workbench/README.md) |
 | 原生移动客户端 | [Android](android/README.md) · [iOS 源码](ios/) |
 | DSH 集成 | [DSH Bridge Next](dsh-bridge-next/README.md) |
-| 更多文档 | [文档目录](docs/README.md) · [协议契约](contracts/) |
 
 欢迎通过 [Issues](https://github.com/lxfebd/AgentPilot/issues) 反馈问题，或通过 [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls) 参与改进。报告问题时，请附上客户端版本、系统、Runtime 类型和复现步骤，并移除日志中的凭据。
 
 ## 交流与反馈
 
-欢迎加入内测交流群获取最新版本与使用帮助，也欢迎通过 [Issues](https://github.com/lxfebd/AgentPilot/issues) 反馈问题、通过 [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls) 参与改进。如果项目对你有用，欢迎在 [GitHub](https://github.com/lxfebd/AgentPilot) 点个 Star，支持一下这个项目。
-
-> **内测交流群**：微信扫码或搜索群号加入，见仓库 [Discussions](https://github.com/lxfebd/AgentPilot/discussions) 置顶帖；报告问题时请附上客户端版本、系统、Runtime 类型和复现步骤，并移除日志中的凭据。
+欢迎通过 [Issues](https://github.com/lxfebd/AgentPilot/issues) 反馈问题、通过 [Pull Requests](https://github.com/lxfebd/AgentPilot/pulls) 参与改进。如果项目对你有用，欢迎在 [GitHub](https://github.com/lxfebd/AgentPilot) 点个 Star。
 
 ## 开源许可
 
 MIT。本项目的品牌、下载入口与社区以本项目仓库为准。
 
 > **致谢**：AgentPilot 基于 [Agents Anywhere](https://github.com/anywhere-labs/Agents-Anywhere)（MIT License）二次开发并更名。感谢原作者的开源工作。
-
-README 中的产品截图与品牌素材说明见[图片来源与复现方式](docs/readme-artwork/README.md)。
