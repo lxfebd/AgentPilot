@@ -1,6 +1,6 @@
 [project]
 name = "agentpilot-cli"
-version = "2.3.1"
+version = "2.3.2"
 description = "Local runtime connector for AgentPilot"
 readme = "README.md"
 requires-python = ">=3.12"
