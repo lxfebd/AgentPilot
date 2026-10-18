@@ -24,12 +24,14 @@ internal fun SessionAgentIcon(
         "codex" -> R.drawable.ic_session_agent_codex
         "claude", "claudecode" -> R.drawable.ic_session_agent_claude
         "dsh", "deepseek", "deepseekharness" -> R.drawable.ic_session_agent_deepseek
+        "zcode" -> R.drawable.ic_session_agent_zcode
         else -> null
     }
     val label = when (drawable) {
         R.drawable.ic_session_agent_codex -> "Codex"
         R.drawable.ic_session_agent_claude -> "Claude Code"
         R.drawable.ic_session_agent_deepseek -> "DeepSeek Harness"
+        R.drawable.ic_session_agent_zcode -> "ZCode"
         else -> runtime
     }
     if (drawable != null) {

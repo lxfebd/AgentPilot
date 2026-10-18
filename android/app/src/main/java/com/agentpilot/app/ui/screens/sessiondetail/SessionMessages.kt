@@ -114,6 +114,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 import com.agentpilot.app.ui.designsystem.AAShapes
+import com.agentpilot.app.ui.screens.home.SessionAgentIcon
+import com.agentpilot.app.model.runtimeTypeLabel
 private const val SESSION_WELCOME_WRITE_MS = 58L
 private const val SESSION_WELCOME_ERASE_MS = 22L
 private const val SESSION_WELCOME_HOLD_MS = 15_000L
@@ -126,6 +128,10 @@ private val SessionWelcomeFontFamily = FontFamily(
 internal sealed interface TimelineRenderItem {
     val key: String
     val messages: List<TimelineMessage>
+
+    /** Runtime this render item originates from; blank when unknown/platform. */
+    val sourceRuntime: String
+        get() = messages.firstOrNull()?.sourceRuntime.orEmpty()
 
     data class Single(val message: TimelineMessage) : TimelineRenderItem {
         override val key: String = message.id
@@ -294,6 +300,11 @@ internal fun MessageList(
     }
     val agentActionsByTurnEnd = remember(timelineItems, turnInProgress) {
         buildAgentActionsByTurnEnd(timelineItems, turnInProgress)
+    }
+    // 来源分段：正序把连续同源的渲染项合并成段，分隔条贴在每段第一条消息
+    // （正序段首 = 反向 LazyColumn 中该段的视觉顶部）上方。
+    val runtimeDividerByItemId = remember(timelineItems) {
+        computeRuntimeDividers(timelineItems)
     }
     var showScrollToBottom by remember { mutableStateOf(false) }
     var autoFollowLatest by remember(sessionId) { mutableStateOf(true) }
@@ -479,6 +490,9 @@ internal fun MessageList(
                 }
                 items(timelineItems.asReversed(), key = { it.key }) { item ->
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        runtimeDividerByItemId[item.key]?.let { runtime ->
+                            RuntimeSourceDivider(runtime = runtime, darkMode = darkMode)
+                        }
                         when (item) {
                             is TimelineRenderItem.Single -> TimelineMessageRow(
                                 message = item.message,
@@ -803,6 +817,40 @@ internal fun diagnosticTimelineText(message: TimelineMessage): String {
     return message.takeIf { it.kind == TimelineMessageKind.Diagnostic }?.text.orEmpty()
 }
 
+/**
+ * 计算来源分段：正序把连续同源的渲染项合并成段，返回每段第一条消息
+ * （正序段首 = 该段在反向 LazyColumn 中的视觉顶部）对应的分隔条来源。
+ * 来源为空（platform/未知）的段不产生分隔条。
+ */
+internal fun computeRuntimeDividers(
+    timelineItems: List<TimelineRenderItem>,
+): Map<String, String> {
+    val dividers = mutableMapOf<String, String>()
+    var lastSource: String? = null
+    var segmentStartKey: String? = null
+    var segmentSource: String? = null
+
+    fun closeSegment() {
+        val key = segmentStartKey
+        val source = segmentSource
+        if (key != null && source != null) dividers[key] = source
+        segmentStartKey = null
+        segmentSource = null
+    }
+
+    for (item in timelineItems) {
+        val source = item.sourceRuntime.takeIf { it.isNotBlank() }.orEmpty()
+        if (lastSource == null || source != lastSource) {
+            closeSegment()
+            lastSource = source
+            segmentStartKey = item.key
+            segmentSource = source.ifBlank { null }
+        }
+    }
+    closeSegment()
+    return dividers
+}
+
 @Composable
 private fun OlderMessagesLoadingIndicator() {
     val color = LocalAAColors.current.ink
@@ -816,6 +864,47 @@ private fun OlderMessagesLoadingIndicator() {
             color = color,
             strokeWidth = 2.dp,
             modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+@Composable
+private fun RuntimeSourceDivider(
+    runtime: String,
+    darkMode: Boolean,
+) {
+    val colors = LocalAAColors.current
+    val accent = colors.runtimeActive
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(14.dp)
+                    .clip(AAShapes.tinyShape)
+                    .background(accent),
+            )
+            SessionAgentIcon(runtime = runtime, runtimeType = runtime)
+            Text(
+                text = runtime.runtimeTypeLabel(),
+                color = colors.faint,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(colors.border.copy(alpha = 0.55f)),
         )
     }
 }

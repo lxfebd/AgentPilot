@@ -10,6 +10,7 @@ fun String.runtimeTypeLabel(): String {
         "codex" -> "Codex"
         "claude" -> "Claude Code"
         "dsh" -> "DeepSeek Harness"
+        "zcode" -> "ZCode"
         else -> replaceFirstChar { char ->
             if (char.isLowerCase()) char.titlecase() else char.toString()
         }
