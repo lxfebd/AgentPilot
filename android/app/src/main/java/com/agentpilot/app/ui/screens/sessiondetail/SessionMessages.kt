@@ -301,8 +301,8 @@ internal fun MessageList(
     val agentActionsByTurnEnd = remember(timelineItems, turnInProgress) {
         buildAgentActionsByTurnEnd(timelineItems, turnInProgress)
     }
-    // 来源分段：正序把连续同源的渲染项合并成段，分隔条贴在每段第一条消息
-    // （正序段首 = 反向 LazyColumn 中该段的视觉顶部）上方。
+    // 来源分段：正序把连续同源的渲染项合并成段，分隔条贴在每段最后一条消息
+    // （正序段末 = 反向 LazyColumn 中该段的视觉底部，紧贴最新消息）上方。
     val runtimeDividerByItemId = remember(timelineItems) {
         computeRuntimeDividers(timelineItems)
     }
@@ -818,8 +818,10 @@ internal fun diagnosticTimelineText(message: TimelineMessage): String {
 }
 
 /**
- * 计算来源分段：正序把连续同源的渲染项合并成段，返回每段第一条消息
- * （正序段首 = 该段在反向 LazyColumn 中的视觉顶部）对应的分隔条来源。
+ * 计算来源分段：正序把连续同源的渲染项合并成段，返回每段最后一条消息
+ * （正序段末 = 反向 LazyColumn 中该段的视觉底部、紧贴最新一条消息）
+ * 对应的分隔条来源。分隔条渲染在该消息块上方，用户从底部（最新）向上
+ * 阅读时，一眼就能看到当前段所属的 agent。
  * 来源为空（platform/未知）的段不产生分隔条。
  */
 internal fun computeRuntimeDividers(
@@ -827,14 +829,14 @@ internal fun computeRuntimeDividers(
 ): Map<String, String> {
     val dividers = mutableMapOf<String, String>()
     var lastSource: String? = null
-    var segmentStartKey: String? = null
+    var segmentEndKey: String? = null
     var segmentSource: String? = null
 
     fun closeSegment() {
-        val key = segmentStartKey
+        val key = segmentEndKey
         val source = segmentSource
         if (key != null && source != null) dividers[key] = source
-        segmentStartKey = null
+        segmentEndKey = null
         segmentSource = null
     }
 
@@ -843,8 +845,11 @@ internal fun computeRuntimeDividers(
         if (lastSource == null || source != lastSource) {
             closeSegment()
             lastSource = source
-            segmentStartKey = item.key
+            segmentEndKey = item.key
             segmentSource = source.ifBlank { null }
+        } else {
+            // 同源延续：段末推进到最新一条
+            segmentEndKey = item.key
         }
     }
     closeSegment()

@@ -26,18 +26,18 @@ class TimelineRuntimeDividersTest {
         TimelineRenderItem.Single(message(id, runtime))
 
     @Test
-    fun `single source labels the segment at its visual top`() {
+    fun `single source labels the segment at its newest end`() {
         val items = listOf(
             single("a", "dsh"),
             single("b", "dsh"),
             single("c", "dsh"),
         )
-        // 单来源会话：只贴一次来源标签，位置在段首（视觉顶部）消息上方
-        assertEquals(mapOf("a" to "dsh"), computeRuntimeDividers(items))
+        // 单来源会话：只贴一次来源标签，位置在段末（视觉底部、最新消息）上方
+        assertEquals(mapOf("c" to "dsh"), computeRuntimeDividers(items))
     }
 
     @Test
-    fun `source switch places divider at each segment start`() {
+    fun `source switch places divider at each segment end`() {
         val items = listOf(
             single("a", "dsh"),
             single("b", "zcode"),
@@ -45,8 +45,8 @@ class TimelineRuntimeDividersTest {
             single("d", "dsh"),
         )
         val dividers = computeRuntimeDividers(items)
-        // 三个段：[a]=dsh、[b,c]=zcode、[d]=dsh，分隔条各贴段首
-        assertEquals(mapOf("a" to "dsh", "b" to "zcode", "d" to "dsh"), dividers)
+        // 三个段：[a]=dsh、[b,c]=zcode、[d]=dsh，分隔条各贴段末（最新一条）
+        assertEquals(mapOf("a" to "dsh", "c" to "zcode", "d" to "dsh"), dividers)
     }
 
     @Test
