@@ -18,6 +18,7 @@ import {
 } from "@/components/sidebar/projects-section"
 import { PinnedSection } from "@/components/sidebar/pinned-section"
 import { RecentSessionsSection } from "@/components/sidebar/recent-sessions-section"
+import { RuntimeFilterShuttle } from "@/components/sidebar/runtime-filter-shuttle"
 import {
   filterProjectSessions,
   resolveProjectIdentity,
@@ -271,6 +272,8 @@ export function AppSidebar({ contained = false }: { contained?: boolean }) {
       </SidebarHeader>
 
       <SidebarContent className="px-2">
+
+        <RuntimeFilterShuttle />
 
         <DevicesSection
           connectors={connectors}

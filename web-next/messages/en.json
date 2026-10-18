@@ -765,8 +765,7 @@
       "unarchiveAllTitle": "Unarchive sessions?",
       "archiveAllDescription": "Archive all sessions in the current {name} view.",
       "unarchiveAllDescription": "Unarchive all sessions in the current {name} view.",
-      "bulkArchiveFailed": "Failed to update sessions.",
-      "filterByPlatform": "By platform"
+      "bulkArchiveFailed": "Failed to update sessions."
     },
     "panels": {
       "files": {
