@@ -661,25 +661,43 @@ private fun reconcileDshAssistantActivity(messages: List<TimelineMessage>): List
             ?.let { message.sourceItemId }
     }
 
+    // Single pass instead of the previous O(n^2) backward scan. For each content
+    // hash we keep the index of the nearest candidate that is actually eligible
+    // for replacement (activity, or a legacy null-typed row with revision > 1).
+    // When a later completed message arrives with the same hash, the eligibility
+    // check still depends on both sides (native: activity -> message; legacy:
+    // null-typed revision>1 -> null-typed revision==1), exactly like the scan.
+    // A user message resets the window, matching the original semantics.
+    val lastEligibleCandidateByHash = HashMap<String, Int>()
     messages.forEachIndexed { finalIndex, finalMessage ->
+        if (finalMessage.type == "message" && finalMessage.author == MessageAuthor.User) {
+            lastEligibleCandidateByHash.clear()
+            return@forEachIndexed
+        }
         if (!finalMessage.isCompletedDshAssistantMessage()) return@forEachIndexed
+        val hash = finalMessage.contentHash
+        if (hash.isBlank()) return@forEachIndexed
 
-        for (candidateIndex in finalIndex - 1 downTo 0) {
+        val candidateIndex = lastEligibleCandidateByHash[hash]
+        if (candidateIndex != null) {
             val candidate = messages[candidateIndex]
-            if (candidate.type == "message" && candidate.author == MessageAuthor.User) break
-            if (!candidate.isCompletedDshAssistantMessage()) continue
-            if (candidate.contentHash.isBlank() || candidate.contentHash != finalMessage.contentHash) continue
-
             val nativeReplacement = candidate.sourceItemType == "assistant_activity" &&
                 finalMessage.sourceItemType == "message"
             val legacyReplacement = candidate.sourceItemType == null &&
                 finalMessage.sourceItemType == null &&
                 candidate.revision > 1 &&
                 finalMessage.revision == 1
-            if (!nativeReplacement && !legacyReplacement) continue
-
-            supersededSourceIds += candidate.sourceItemId
-            break
+            if (nativeReplacement || legacyReplacement) {
+                supersededSourceIds += candidate.sourceItemId
+            }
+        }
+        // The new message becomes the nearest future candidate only when it is
+        // itself eligible (an activity row, or a legacy null-typed row with
+        // revision > 1); a plain message row can never be superseded either.
+        if (finalMessage.sourceItemType == "assistant_activity" ||
+            (finalMessage.sourceItemType == null && finalMessage.revision > 1)
+        ) {
+            lastEligibleCandidateByHash[hash] = finalIndex
         }
     }
 

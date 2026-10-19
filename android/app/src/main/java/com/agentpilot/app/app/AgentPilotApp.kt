@@ -86,10 +86,12 @@ import com.agentpilot.app.ui.screens.announcements.AnnouncementGate
 import com.agentpilot.app.ui.screens.announcements.AnnouncementPage
 import com.agentpilot.app.ui.screens.update.AppUpdatePromptDialog
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import android.os.SystemClock
 import java.util.concurrent.atomic.AtomicBoolean
 import java.io.File
@@ -587,39 +589,50 @@ fun AgentPilotApp(
                     if (sessionStore.readServerUrl() != realtimeServerUrl ||
                         sessionStore.readAccessToken() != realtimeAccessToken
                     ) return@launch
-                    projectsRequestVersion++
-                    val snapshotState = sessionsController.dashboardSnapshotState(snapshot)
-                    sessionsState = sessionsState.replacedByDashboardSnapshot(snapshotState)
                     // Dashboard snapshots are authoritative for every session in the
                     // inventory. Patch the per-project caches so sidebar rail badges
                     // (running / attention counts) refresh without a manual pull-refresh
                     // or a 30s cache expiry. Prefer the newer updatedSeq when both the
-                    // cached and snapshot copies exist.
-                    val snapshotSessions = snapshotState.sessions
-                        .filterNot { it.archived }
-                    if (snapshotSessions.isNotEmpty()) {
-                        val snapshotById = snapshotSessions.associateBy { it.id }
-                        val merged = projectSessionsById.mapValues { (projectId, cached) ->
-                            val mergedById = cached.associateBy { it.id }.toMutableMap()
-                            snapshotById.forEach { (id, incoming) ->
-                                if (incoming.projectId == projectId) {
-                                    val current = mergedById[id]
-                                    if (current == null || incoming.updatedSeq >= current.updatedSeq) {
-                                        mergedById[id] = incoming
+                    // cached and snapshot copies exist. The whole merge is pure data
+                    // transformation: run it off the main thread and commit only the
+                    // resulting immutable values on the main thread.
+                    val current = sessionsState
+                    val currentProjects = projectSessionsById
+                    val (nextState, nextProjects) = withContext(Dispatchers.Default) {
+                        val snapshotState = sessionsController.dashboardSnapshotState(snapshot)
+                        val next = current.replacedByDashboardSnapshot(snapshotState)
+                        val snapshotSessions = snapshotState.sessions
+                            .filterNot { it.archived }
+                        val mergedProjects = if (snapshotSessions.isNotEmpty()) {
+                            val snapshotById = snapshotSessions.associateBy { it.id }
+                            val merged = currentProjects.mapValues { (projectId, cached) ->
+                                val mergedById = cached.associateBy { it.id }.toMutableMap()
+                                snapshotById.forEach { (id, incoming) ->
+                                    if (incoming.projectId == projectId) {
+                                        val existing = mergedById[id]
+                                        if (existing == null || incoming.updatedSeq >= existing.updatedSeq) {
+                                            mergedById[id] = incoming
+                                        }
                                     }
                                 }
+                                mergedById.values.toList()
                             }
-                            mergedById.values.toList()
+                            // Also add snapshot sessions whose project has no cache entry yet.
+                            val cachedProjectIds = merged.keys
+                            val missingByProject = snapshotSessions
+                                .filter { it.projectId != null && it.projectId !in cachedProjectIds }
+                                .groupBy { it.projectId!! }
+                            merged + missingByProject.mapValues { (_, sessions) ->
+                                sessions.associateBy { it.id }.values.toList()
+                            }
+                        } else {
+                            currentProjects
                         }
-                        // Also add snapshot sessions whose project has no cache entry yet.
-                        val cachedProjectIds = merged.keys
-                        val missingByProject = snapshotSessions
-                            .filter { it.projectId != null && it.projectId !in cachedProjectIds }
-                            .groupBy { it.projectId!! }
-                        projectSessionsById = merged + missingByProject.mapValues { (_, sessions) ->
-                            sessions.associateBy { it.id }.values.toList()
-                        }
+                        next to mergedProjects
                     }
+                    projectsRequestVersion++
+                    sessionsState = nextState
+                    projectSessionsById = nextProjects
                 }
             },
             onInitialFailure = {

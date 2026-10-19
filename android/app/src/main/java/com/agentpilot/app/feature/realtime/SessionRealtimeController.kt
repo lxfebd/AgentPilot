@@ -76,7 +76,11 @@ class SessionRealtimeController(
                 activeConnectionGeneration.set(connectionGeneration)
             }
 
-            val incoming = Channel<String>(Channel.UNLIMITED)
+            // Bounded buffer: if the consumer falls behind, the listener drops
+            // events and reports overflow, which triggers a snapshot refetch.
+            // Events are then replayed from the cursor, so nothing is lost
+            // permanently and memory stays bounded under burst traffic.
+            val incoming = Channel<String>(capacity = SESSION_EVENT_CHANNEL_CAPACITY)
             var socket: WebSocket? = null
             val opened = AtomicBoolean(false)
             val openSignal = CompletableDeferred<Boolean>()
@@ -94,7 +98,14 @@ class SessionRealtimeController(
                         if (isCurrentConnection(connectionGeneration)) {
                             onConnectionChanged(true, hasConnected, 0, null)
                         }
-                    }.also { listener -> listener.onTerminated = { openSignal.complete(false) } },
+                    }.also { listener ->
+                        listener.onTerminated = { openSignal.complete(false) }
+                        listener.onOverflow = {
+                            // Consumer fell behind; drop events and recover from
+                            // the last cursor instead of buffering without bound.
+                            socket?.cancel()
+                        }
+                    },
                 )
                 val installed = synchronized(connectionLock) {
                     if (!isCurrentConnection(connectionGeneration)) {
@@ -257,6 +268,8 @@ class SessionRealtimeController(
     }
 
     private companion object {
+        /** Bounded incoming message buffer; overflow triggers a cursor recovery. */
+        const val SESSION_EVENT_CHANNEL_CAPACITY = 128
         const val MAX_RECOVERY_PAGES = 8
         const val MAX_TIMELINE_EVENT_BATCH_SIZE = 100
         const val MAX_WIRE_EVENT_BATCH_SIZE = 128

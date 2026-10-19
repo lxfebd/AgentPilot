@@ -48,7 +48,10 @@ class DashboardRealtimeController(
             val accessToken = sessionStore.readAccessToken()
             if (serverUrl.isBlank() || accessToken.isBlank()) return@launch
 
-            val incoming = Channel<String>(Channel.UNLIMITED)
+            // Dashboard snapshots are authoritative full state: only the latest
+            // matters, so a conflated channel is correct and bounds memory even
+            // if the consumer is briefly slower than the server.
+            val incoming = Channel<String>(Channel.CONFLATED)
             var socket: WebSocket? = null
             var receivedSnapshot = false
             val opened = AtomicBoolean(false)
@@ -61,7 +64,13 @@ class DashboardRealtimeController(
                         opened.set(true)
                         openSignal.complete(true)
                         onConnectionChanged(true, 0)
-                    }.also { listener -> listener.onTerminated = { openSignal.complete(false) } },
+                    }.also { listener ->
+                        listener.onTerminated = { openSignal.complete(false) }
+                        listener.onOverflow = {
+                            // A conflated channel drops intermediate snapshots; the
+                            // consumer still receives the latest. Nothing to do.
+                        }
+                    },
                 )
                 activeSocket.set(socket)
                 if (!openSignal.await()) throw IllegalStateException("Dashboard WebSocket handshake failed.")
@@ -118,13 +127,16 @@ internal class ChannelWebSocketListener(
     private val onOpenCallback: () -> Unit = {},
 ) : WebSocketListener() {
     var onTerminated: () -> Unit = {}
+    /** Invoked when [incoming] rejected a message because its buffer was full. */
+    var onOverflow: (() -> Unit)? = null
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         onOpenCallback()
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
-        incoming.trySend(text)
+        val accepted = incoming.trySend(text).isSuccess
+        if (!accepted) onOverflow?.invoke()
     }
 
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
