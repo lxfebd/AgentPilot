@@ -64,6 +64,80 @@ test('shared IDs are matched against this user, with local order winning over se
   } finally { await rm(root, { recursive: true, force: true }) }
 })
 
+test('a DSH plugin never renews a Desktop-created device from the shared registry', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'aa-binding-desktop-kind-'))
+  const renewed: string[] = []
+  let registrations = 0
+  let devices: Device[] = [
+    { id: 'desktop-device', userId: 'user', name: 'Office Desktop', status: 'online', connectorKind: 'desktop' },
+    { id: 'cli-device', userId: 'user', name: 'CLI Connector', status: 'offline', connectorKind: 'cli' },
+  ]
+  class Api extends AccountApi {
+    override async devices() { return devices }
+    override async renewConnector(_token: string, id: string) { renewed.push(id); return 'NEW-TOKEN' }
+    override async register() { registrations++; return { connector: { id: 'fresh-cli', userId: 'user', name: 'Fresh', status: 'offline', connectorKind: 'cli' }, connectorToken: 'NEW' } }
+  }
+  const api = new Api('https://server.test')
+  const account = { apiBaseUrl: api.baseUrl, userId: 'user', displayName: 'User', accessToken: 'USER', expiresAt: Date.now() + 60000 }
+  const run = async (ids: string[], renew = true) => {
+    await writeJson(machineStatePath(root), { version: 2, connectorIds: ids })
+    return ensureBinding(root, account, api, new AbortController().signal, { renew, machineState: localMachineRegistry(root) })
+  }
+  try {
+    // A Desktop-created device is in the shared registry: the plugin must pick
+    // the CLI device instead of renewing the Desktop's credential.
+    const matched = await run(['desktop-device', 'cli-device'])
+    assert.equal(matched.connectorId, 'cli-device')
+    assert.deepEqual(renewed, ['cli-device'])
+    assert.equal(registrations, 0)
+    // Only a Desktop-created device is shared: the plugin registers its own.
+    devices = [{ id: 'desktop-device', userId: 'user', name: 'Office Desktop', status: 'online', connectorKind: 'desktop' }]
+    const replacement = await run(['desktop-device'])
+    assert.equal(replacement.connectorId, 'fresh-cli')
+    assert.equal(registrations, 1)
+    assert.deepEqual(renewed, ['cli-device'])
+    // An unknown kind (older servers) is treated as CLI-compatible, matching
+    // the previous behavior for shared IDs.
+    devices = [{ id: 'legacy-shared', userId: 'user', name: 'Legacy', status: 'offline' }]
+    const legacy = await run(['legacy-shared'])
+    assert.equal(legacy.connectorId, 'legacy-shared')
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('a binding that already owns a Desktop device keeps it only while its credential is valid', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'aa-binding-keep-desktop-'))
+  const renewed: string[] = []
+  let valid = true
+  const device = { id: 'desktop-device', userId: 'user', name: 'Office Desktop', status: 'online', connectorKind: 'desktop' }
+  class Api extends AccountApi {
+    override async devices() { return [device] }
+    override async verifyConnector() { return valid }
+    override async renewConnector(_token: string, id: string) { renewed.push(id); return 'NEW-TOKEN' }
+    override async register() { return { connector: { id: 'fresh-cli', userId: 'user', name: 'Fresh', status: 'offline', connectorKind: 'cli' }, connectorToken: 'NEW' } }
+  }
+  const api = new Api('https://server.test')
+  const account = { apiBaseUrl: api.baseUrl, userId: 'user', displayName: 'User', accessToken: 'USER', expiresAt: Date.now() + 60000 }
+  const key = createHash('sha256').update(`${account.apiBaseUrl}\n${account.userId}`).digest('hex')
+  const path = join(root, 'bindings', `${key}.json`)
+  const saved = { installationId: 'installation', connectorId: device.id, connectorToken: 'OLD-VALID', name: device.name }
+  try {
+    await writeJson(path, saved)
+    // Valid credential: keep the Desktop device without renewing (never kick it).
+    const kept = await ensureBinding(root, account, api, new AbortController().signal, { renew: true, machineState: localMachineRegistry(root) })
+    assert.equal(kept.connectorId, 'desktop-device')
+    assert.equal(kept.connectorToken, 'OLD-VALID')
+    assert.deepEqual(renewed, [])
+    // Invalid credential: the plugin surfaces the recovery prompt instead of
+    // renewing (rotating) the Desktop device's token behind the user's back.
+    valid = false
+    await assert.rejects(
+      ensureBinding(root, account, api, new AbortController().signal, { renew: true, machineState: localMachineRegistry(root) }),
+      DeviceRecoveryRequired,
+    )
+    assert.deepEqual(renewed, [], 'an invalid Desktop binding must never be renewed automatically')
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
 test('a fresh login recreates a locally bound device deleted while signed out', async () => {
   const root = await mkdtemp(join(tmpdir(), 'aa-binding-login-recovery-'))
   const api = new class extends AccountApi {

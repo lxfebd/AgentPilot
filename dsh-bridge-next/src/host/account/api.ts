@@ -35,6 +35,8 @@ export interface Device {
   name: string
   userId: string
   status: string
+  /** Which client created the device: 'desktop' (AgentPilot Desktop) or 'cli' (DSH plugin / CLI Connector). */
+  connectorKind?: string
 }
 
 export class ApiError extends Error {

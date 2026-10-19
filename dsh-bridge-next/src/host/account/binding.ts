@@ -79,8 +79,18 @@ export async function ensureBinding(root: string, account: Account, api: Account
     if (!verified) throw new DeviceRecoveryRequired(binding.connectorId, 'disconnected')
   }
   // Automatic startup resumes the saved identity. A new OAuth authorization
-  // still follows the shared Desktop discovery order when choosing a device.
-  const matchedId = !options.renew && binding?.connectorId ? binding.connectorId : candidates.find(id => owned.has(id))
+  // still follows the shared Desktop discovery order when choosing a device,
+  // but the DSH plugin (a CLI Connector) must never take over a device created
+  // by the AgentPilot Desktop app: renewing that device's connector token would
+  // revoke the Desktop's credential and kick it offline. Shared Desktop IDs are
+  // therefore skipped for renewal; a binding that already owns one may keep
+  // using it only while its saved credential is still valid.
+  const shared = candidates.filter(id => owned.has(id))
+  const keepDesktopBinding = binding?.connectorId && owned.has(binding.connectorId)
+    && owned.get(binding.connectorId)!.connectorKind === 'desktop' && verified
+  const cliCandidate = shared.find(id => owned.get(id)!.connectorKind !== 'desktop')
+  const matchedId = !options.renew && binding?.connectorId ? binding.connectorId
+    : (keepDesktopBinding ? binding.connectorId : cliCandidate)
   if (matchedId) {
     const device = owned.get(matchedId)!
     const cached = binding?.connectorId === matchedId ? binding : null
