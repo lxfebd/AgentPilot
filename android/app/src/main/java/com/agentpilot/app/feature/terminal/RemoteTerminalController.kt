@@ -63,9 +63,28 @@ class RemoteTerminalController(
         this,
     )
 
-    private val http = OkHttpClient()
+    private val http = sharedTerminalHttpClient
     private val terminalScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val sendMutex = Mutex()
+
+    private companion object {
+        /** Base reconnect delay; grows exponentially with the attempt count. */
+        private const val RECONNECT_DELAY_BASE_MS = 800L
+        private const val RECONNECT_DELAY_CAP_MS = 10_000L
+        private const val STREAM_OPEN_GRACE_MS = 1_200L
+        private const val MAX_RECONNECT_ATTEMPTS = 8
+        private const val REMOTE_RESIZE_DEBOUNCE_MS = 160L
+        private const val OUTPUT_DRAIN_DELAY_MS = 16L
+        /** Upper bound for input buffered while the socket is closed. */
+        private const val MAX_PENDING_INPUT_BYTES = 256 * 1024
+
+        private val sharedTerminalHttpClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .pingInterval(20, java.util.concurrent.TimeUnit.SECONDS)
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+        }
+    }
     private val groupId = "mobile_${UUID.randomUUID()}"
     private var socket: WebSocket? = null
     private var connectorId: String? = null
@@ -91,6 +110,8 @@ class RemoteTerminalController(
     private val frameSeq = AtomicLong(0)
     private val pendingInput = ArrayDeque<ByteArray>()
     private val pendingInputLock = Any()
+    /** Total bytes currently buffered in [pendingInput], guarded by [pendingInputLock]. */
+    private var pendingInputQueuedBytes = 0
 
     val isCtrlLatched: Boolean get() = ctrlLatched
     val isAltLatched: Boolean get() = altLatched
@@ -296,6 +317,7 @@ class RemoteTerminalController(
         setLatched(ctrl = false, alt = false)
         synchronized(pendingInputLock) {
             pendingInput.clear()
+            pendingInputQueuedBytes = 0
         }
         if (terminalId != null && state.value.status != RemoteTerminalStatus.Exited) {
             state.value = RemoteTerminalState(status = RemoteTerminalStatus.Closed)
@@ -325,6 +347,7 @@ class RemoteTerminalController(
         setLatched(ctrl = false, alt = false)
         synchronized(pendingInputLock) {
             pendingInput.clear()
+            pendingInputQueuedBytes = 0
         }
         state.value = RemoteTerminalState()
         return if (currentConnectorId != null && currentTerminalId != null) {
@@ -462,7 +485,18 @@ class RemoteTerminalController(
         if (state.value.status != RemoteTerminalStatus.Open) {
             if (terminalId != null && streamUrl != null && !manuallyClosed) {
                 synchronized(pendingInputLock) {
+                    if (pendingInputQueuedBytes + bytes.size > MAX_PENDING_INPUT_BYTES) {
+                        // Bounded buffer: drop the oldest queued input, keep the
+                        // newest. The server replays from lastSeenSeq on resume,
+                        // so stale dropped input is superseded by the replay.
+                        while (pendingInput.isNotEmpty() &&
+                            pendingInputQueuedBytes + bytes.size > MAX_PENDING_INPUT_BYTES
+                        ) {
+                            pendingInputQueuedBytes -= pendingInput.removeFirst().size
+                        }
+                    }
                     pendingInput.addLast(bytes)
+                    pendingInputQueuedBytes += bytes.size
                 }
                 diag("input#$localInputSeq queued bytes=${bytes.size} status=${state.value.status} terminal=$terminalId")
                 scheduleReconnect()
@@ -512,11 +546,14 @@ class RemoteTerminalController(
         reconnectScheduled = true
         diag("reconnect scheduled attempt=$reconnectAttempts terminal=$terminalId lastSeen=$lastSeenSeq")
         state.value = RemoteTerminalState(status = RemoteTerminalStatus.Closed)
+        // Exponential backoff: 800ms -> 1.6s -> 3.2s -> ... capped at 10s.
+        val delay = (RECONNECT_DELAY_BASE_MS shl (reconnectAttempts - 1).coerceAtMost(4))
+            .coerceAtMost(RECONNECT_DELAY_CAP_MS)
         main.postDelayed({
             reconnectScheduled = false
             if (manuallyClosed || socket != null || terminalId == null || streamUrl != originalUrl) return@postDelayed
             connectSocket(originalUrl.withFromSeq(lastSeenSeq))
-        }, RECONNECT_DELAY_MS)
+        }, delay)
     }
 
     private fun forgetRemoteTerminal() {
@@ -532,6 +569,7 @@ class RemoteTerminalController(
         outputBuffer.clear()
         synchronized(pendingInputLock) {
             pendingInput.clear()
+            pendingInputQueuedBytes = 0
         }
     }
 
@@ -574,7 +612,10 @@ class RemoteTerminalController(
                 emptyList()
             } else {
                 buildList {
-                    while (pendingInput.isNotEmpty()) add(pendingInput.removeFirst())
+                    while (pendingInput.isNotEmpty()) {
+                        add(pendingInput.removeFirst())
+                        pendingInputQueuedBytes = 0
+                    }
                 }
             }
         }
@@ -763,14 +804,6 @@ class RemoteTerminalController(
         val connectorId: String,
         val terminalId: String,
     )
-
-    private companion object {
-        private const val RECONNECT_DELAY_MS = 800L
-        private const val STREAM_OPEN_GRACE_MS = 1_200L
-        private const val MAX_RECONNECT_ATTEMPTS = 3
-        private const val REMOTE_RESIZE_DEBOUNCE_MS = 160L
-        private const val OUTPUT_DRAIN_DELAY_MS = 16L
-    }
 }
 
 internal fun isUnauthorizedTerminalConnection(
