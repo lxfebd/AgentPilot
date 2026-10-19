@@ -62,3 +62,31 @@ docs/reference/*
 _reference/*
 !_reference/httpx-s3-client/
 !_reference/httpx-s3-client/**
+
+# Local tool/agent scratch state and deployment metadata (regenerated on use).
+.mimosa/
+.zcode/
+.netlify/
+desktop-workbench/build/build/
+
+# Ad-hoc debugging screenshots kept in the repo root (not source assets).
+/cf-challenge.png
+/cf-challenge2.png
+/cf-signup.png
+/cf-signup2.png
+/github-2fa.png
+/github-login.png
+/netlify-captcha.png
+/netlify-email.png
+/netlify-signup.png
+/netlify-submit.png
+/nvidia-provider-page.png
+/pa-error.png
+/pythonanywhere-pricing.png
+/replit-cf.png
+/replit-cf2.png
+/vercel-signup.png
+
+# Local plugin projects kept out of this repo (installed privately on this machine).
+/dsh-sansheng-liubu/
+/plugins/
