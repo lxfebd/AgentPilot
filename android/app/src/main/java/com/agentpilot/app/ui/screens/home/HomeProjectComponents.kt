@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -172,8 +173,8 @@ internal fun HomeProjectList(
                 )
             }
             if (pinnedExpanded) {
-                items(pinnedProjects, key = { "pinned-project-${it.id}" }) { project ->
-                    HomeProjectTreeItem(
+                pinnedProjects.forEach { project ->
+                    projectTree(
                         project = project,
                         agentLabel = agentLabel,
                         sessions = sessionsByProject[project.id].orEmpty(),
@@ -220,8 +221,8 @@ internal fun HomeProjectList(
                     ))
                 }
             } else {
-                items(regularProjects, key = { "project-${it.id}" }) { project ->
-                    HomeProjectTreeItem(
+                regularProjects.forEach { project ->
+                    projectTree(
                         project = project,
                         agentLabel = agentLabel,
                         sessions = sessionsByProject[project.id].orEmpty(),
@@ -256,8 +257,13 @@ internal fun HomeProjectList(
     }
 }
 
-@Composable
-private fun HomeProjectTreeItem(
+/**
+ * Emits one project row plus - when expanded - its session rows as separate
+ * lazy list items, so a large project never composes all of its sessions in a
+ * single non-lazy Column. Sessions are keyed by project+session id and only
+ * present while the project is expanded.
+ */
+private fun LazyListScope.projectTree(
     project: AgentProject,
     agentLabel: String?,
     sessions: List<AgentSession>,
@@ -271,16 +277,19 @@ private fun HomeProjectTreeItem(
     onSessionLongPress: (AgentSession, Rect) -> Unit,
     onOpenSession: (AgentSession) -> Unit,
 ) {
-    HomeProjectRow(
-        project = project,
-        agentLabel = agentLabel,
-        expanded = expanded,
-        onClick = { onExpandedChange(!expanded) },
-        onMenu = onMenu,
-        onNewSession = onNewSession,
-    )
-    if (expanded) {
-        if (error != null) {
+    item(key = "project-${project.id}") {
+        HomeProjectRow(
+            project = project,
+            agentLabel = agentLabel,
+            expanded = expanded,
+            onClick = { onExpandedChange(!expanded) },
+            onMenu = onMenu,
+            onNewSession = onNewSession,
+        )
+    }
+    if (!expanded) return
+    if (error != null) {
+        item(key = "project-${project.id}-retry") {
             Text(
                 text = stringResource(R.string.home_project_load_retry),
                 color = LocalAAColors.current.errorText,
@@ -288,8 +297,10 @@ private fun HomeProjectTreeItem(
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onRetry).padding(start = 34.dp, top = 10.dp, bottom = 10.dp),
             )
         }
-        when {
-            loading && sessions.isEmpty() -> Box(
+    }
+    when {
+        loading && sessions.isEmpty() -> item(key = "project-${project.id}-loading") {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -302,8 +313,10 @@ private fun HomeProjectTreeItem(
                     strokeWidth = 2.dp,
                 )
             }
+        }
 
-            sessions.isEmpty() && error == null -> Box(
+        sessions.isEmpty() && error == null -> item(key = "project-${project.id}-empty") {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(42.dp)
@@ -317,14 +330,14 @@ private fun HomeProjectTreeItem(
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+        }
 
-            else -> sessions.forEach { session ->
-                HomeProjectSessionRow(
-                    session = session,
-                    onClick = { onOpenSession(session) },
-                    onLongPress = { onSessionLongPress(session, it) },
-                )
-            }
+        else -> items(sessions, key = { "project-${project.id}-session-${it.id}" }) { session ->
+            HomeProjectSessionRow(
+                session = session,
+                onClick = { onOpenSession(session) },
+                onLongPress = { onSessionLongPress(session, it) },
+            )
         }
     }
 }

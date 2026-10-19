@@ -670,14 +670,31 @@ private fun HomeProjectModeList(
                     .groupBy { it.projectId.orEmpty() }
                     .mapValues { (_, sessions) -> sessions.sortedWith(sessionListComparator()) }
             }
+            // Derived once per input change, not per recomposition: each filter
+            // and sort here is O(P x S) or O(S log S), so it must not rerun on
+            // every frame while a quick-settings popover or a scroll updates.
+            val projectFiltering = remember(state.projects, allSessions, projectSessionStatus, deviceAgentFilter) {
+                val projects = state.projects.filter { projectHasVisibleSessions(it, allSessions, projectSessionStatus, deviceAgentFilter) }
+                val hasProjectsInOtherStatuses = if (projectSessionStatus == ProjectSessionStatusFilter.All) {
+                    projects.isNotEmpty()
+                } else {
+                    state.projects.any { projectHasVisibleSessions(it, allSessions, ProjectSessionStatusFilter.All, deviceAgentFilter) }
+                }
+                val pinnedSessions = allSessions.filter { it.pinned && !it.archived && deviceAgentFilter.matches(it) }
+                    .sortedWith(sessionListComparator())
+                projects to (hasProjectsInOtherStatuses to pinnedSessions)
+            }
+            val projects = projectFiltering.first
+            val hasProjectsInOtherStatuses = projectFiltering.second.first
+            val pinnedSessions = projectFiltering.second.second
             HomeProjectList(
-                projects = state.projects.filter { projectHasVisibleSessions(it, allSessions, projectSessionStatus, deviceAgentFilter) },
+                projects = projects,
                 devices = state.devices,
                 agentRuntimes = remember(allSessions) {
                     allSessions.map(AgentSession::runtime).filter(String::isNotBlank).distinct().sortedBy(String::runtimeTypeLabel)
                 },
                 deviceAgentFilter = deviceAgentFilter,
-                hasProjectsInOtherStatuses = state.projects.any { projectHasVisibleSessions(it, allSessions, ProjectSessionStatusFilter.All) },
+                hasProjectsInOtherStatuses = hasProjectsInOtherStatuses,
                 allSessions = allSessions,
                 projectPreferences = projectPreferences,
                 projectSessionStatus = projectSessionStatus,
@@ -685,8 +702,7 @@ private fun HomeProjectModeList(
                 projectErrors = projectErrors,
                 onRetryProject = onRetryProject,
                 onCreateProject = onCreateProject,
-                pinnedSessions = allSessions.filter { it.pinned && !it.archived && deviceAgentFilter.matches(it) }
-                    .sortedWith(sessionListComparator()),
+                pinnedSessions = pinnedSessions,
                 sessionsByProject = visibleSessions,
                 loadingProjectIds = loadingProjectIds,
                 expandedProjectIds = expandedProjectIds,

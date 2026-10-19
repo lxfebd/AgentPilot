@@ -929,9 +929,9 @@ private fun ToolRunGroup(
     val haptic = LocalHapticFeedback.current
     val active = messages.any { it.status in setOf("pending", "running", "waiting_approval") }
     val failed = messages.any { it.status in setOf("failed", "cancelled", "interrupted") }
-    var expanded by remember(messages.joinToString(":") { it.id }) { mutableStateOf(false) }
-    var cardTop by remember(messages.joinToString(":") { it.id }) { mutableStateOf<Float?>(null) }
-    var lockedTop by remember(messages.joinToString(":") { it.id }) { mutableStateOf<Float?>(null) }
+    var expanded by remember(messages.identityKey()) { mutableStateOf(false) }
+    var cardTop by remember(messages.identityKey()) { mutableStateOf<Float?>(null) }
+    var lockedTop by remember(messages.identityKey()) { mutableStateOf<Float?>(null) }
 
     fun toggleExpanded() {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1050,7 +1050,7 @@ private fun AgentCallGroup(
     val muted = colors.muted
     val active = messages.any { it.status in setOf("pending", "running", "waiting_approval") }
     val failed = messages.any { it.status in setOf("failed", "cancelled", "interrupted") }
-    var expanded by remember(messages.joinToString(":") { it.id }) { mutableStateOf(false) }
+    var expanded by remember(messages.identityKey()) { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -1168,7 +1168,7 @@ private fun toolRunSummary(messages: List<TimelineMessage>): String {
 @Composable
 private fun ReconnectGroup(messages: List<TimelineMessage>, darkMode: Boolean) {
     val muted = LocalAAColors.current.muted
-    var expanded by remember(messages.joinToString(":") { it.id }) { mutableStateOf(false) }
+    var expanded by remember(messages.identityKey()) { mutableStateOf(false) }
     val attempts = messages.mapNotNull { message ->
         Regex("(\\d+\\s*/\\s*\\d+)").find(message.text)?.groupValues?.getOrNull(1)?.replace(" ", "")
     }
@@ -2494,3 +2494,13 @@ internal fun SessionWelcomeMessage() {
         )
     }
 }
+
+/**
+ * Cheap stable identity for a message group used as a `remember` key. The
+ * previous `joinToString` concatenated every message id on every recomposition
+ * (O(n) string allocation per frame); the first/last id plus the size changes
+ * exactly when the group's membership changes, which is what the collapsed
+ * toggle state actually depends on.
+ */
+private fun List<TimelineMessage>.identityKey(): String =
+    "${firstOrNull()?.id}:${lastOrNull()?.id}:$size"
