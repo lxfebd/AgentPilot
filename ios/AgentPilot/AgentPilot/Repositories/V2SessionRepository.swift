@@ -488,7 +488,9 @@ final class V2SessionRepository {
                     entry.connection = .reconnecting
                     self.emit(entry)
                     attempt += 1
-                    do { try await self.sleep(.seconds(min(1 << min(attempt - 1, 4), 15))) }
+                    // Exponential backoff with jitter so a server or network
+                    // outage does not make every session retry in lockstep.
+                    do { try await self.sleep(.seconds(Self.reconnectDelay(attempt: attempt))) }
                     catch { return }
                 }
             }
@@ -648,6 +650,14 @@ final class V2SessionRepository {
             entries.removeValue(forKey: entry.id)
             dispose(entry)
         }
+    }
+
+    /// Exponential backoff with +/-25% jitter, capped at 15s, so concurrent
+    /// sessions do not retry in lockstep during an outage.
+    static func reconnectDelay(attempt: Int) -> Double {
+        let base = min(1 << min(max(attempt - 1, 0), 4), 15)
+        let jitter = Double.random(in: 0.75...1.25)
+        return min(Double(base) * jitter, 15)
     }
 }
 
