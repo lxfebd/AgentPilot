@@ -22,6 +22,8 @@ function matchesCheckpoint(value: unknown, projection: SessionProjection): boole
 }
 const MAX_BUFFER = 10_000
 const MAX_BYTES = 6 * 1024 * 1024
+/** Queue depth that triggers a mid-inventory drain on large workspaces. */
+const INVENTORY_DRAIN_THRESHOLD = 2_000
 export const SYNC_FLUSH_MS = Math.ceil(1000 / 30)
 
 class SyncTransportError extends Error {}
@@ -40,6 +42,7 @@ export class SyncFeed {
   private waitAck: { seq: number, resolve: () => void, reject: (error: Error) => void } | undefined
   private wake: (() => void) | undefined
   private closed = false
+  private inventorying = false
   private unwatch: () => void
   private abort = new AbortController()
   private lastSentAt = -Infinity
@@ -53,13 +56,23 @@ export class SyncFeed {
     private ackTimeoutMs = 60_000, private durableCheckpoints = false) {
     this.unwatch = native.watch(change => {
       if (this.closed) return
-      try { this.queuedBytes += jsonBytes(change) }
+      let bytes = 0
+      try { bytes = jsonBytes(change) }
       catch (error) {
         this.native.diagnostics.log('error', 'sync.event_failed', { streamId: this.id, sessionId: 'id' in change ? change.id : undefined }, error)
         if (!('id' in change)) return
         change = { type: 'refresh', id: change.id }
       }
-      if (this.queue.length >= MAX_BUFFER || this.queuedBytes > 16 * 1024 * 1024) { this.fail(new Error('DSH event buffer full; resubscribe for a fresh baseline')); return }
+      this.queuedBytes += bytes
+      // Streaming emits one change per delta. Two adjacent deltas of the same block
+      // concatenate identically in the projection, so fold them here: otherwise a
+      // long response alone can fill the buffer and force a full resubscribe, which
+      // resets every shared runtime to "starting".
+      if (mergeStreamDelta(this.queue.at(-1), change)) { this.wake?.(); this.wake = undefined; return }
+      // Overflow is a throughput problem, not a fatal one: collapse the backlog into
+      // one refresh per session so the feed keeps its stream (and the runtime stays
+      // "running") instead of failing and forcing a full resubscribe everywhere.
+      if (this.queue.length >= MAX_BUFFER || this.queuedBytes > 16 * 1024 * 1024) this.collapseQueue()
       this.queue.push(change)
       this.wake?.(); this.wake = undefined
     })
@@ -384,14 +397,23 @@ export class SyncFeed {
     for (const id of capabilities) await this.sessionOperation(id, 'capabilities', async () => {
       if (this.published.has(id)) await this.notification('session.capability.updated', await this.native.capabilities(this.published.get(id), id as SessionId))
     })
-    if (reconcile) await this.reconcile()
+    // The inventory pass baselines every candidate itself, so reconciling here would
+    // only duplicate that work (and can recurse into the same baselines).
+    if (reconcile && !this.inventorying) await this.reconcile()
   }
   private async run(): Promise<void> {
     await this.notification('session.inventory.begin', { scanToken: this.id })
-    await this.native.inventory(this.abort.signal, async entry => {
-      await this.baseline(entry.header.id, true)
-      await this.rememberCheckpoints()
-    })
+    this.inventorying = true
+    try {
+      await this.native.inventory(this.abort.signal, async entry => {
+        await this.baseline(entry.header.id, true)
+        await this.rememberCheckpoints()
+        // Baselining a large workspace takes minutes. Live changes keep arriving the
+        // whole time and this loop is the only consumer, so drain as we go instead of
+        // letting the queue reach MAX_BUFFER and fail the stream.
+        await this.drainDuringInventory()
+      })
+    } finally { this.inventorying = false }
     await this.changes(this.takeChanges())
     await this.rememberCheckpoints()
     const sessions = []
@@ -415,6 +437,39 @@ export class SyncFeed {
       this.bufferedOperations = undefined
     }
   }
+  /** Apply queued live changes between inventory entries so the buffer stays bounded. */
+  private async drainDuringInventory(): Promise<void> {
+    if (this.queue.length < INVENTORY_DRAIN_THRESHOLD) return
+    const pending = this.takeChanges()
+    if (!pending.length) return
+    // Batch transport work into a single frame per drain; per-notification transmits
+    // would each pay the 30 Hz cadence and make the inventory crawl.
+    this.bufferedOperations = []
+    try { await this.changes(pending) }
+    finally {
+      await this.flushOperations()
+      this.bufferedOperations = undefined
+    }
+  }
+  /**
+   * Collapse a saturated backlog to one `refresh` per session. A refresh re-baselines
+   * the whole session, so the collapsed work strictly subsumes the queued deltas while
+   * keeping the stream (and every runtime's "running" health) alive.
+   */
+  private collapseQueue(): void {
+    const sessions = new Set<string>()
+    const other: NativeChange[] = []
+    for (const change of this.queue) {
+      if ('id' in change) sessions.add(change.id)
+      else other.push(change)
+    }
+    const collapsed: NativeChange[] = []
+    for (const id of sessions) collapsed.push({ type: 'refresh', id })
+    collapsed.push(...other)
+    this.queue = collapsed
+    this.queuedBytes = 0
+    this.native.diagnostics.log('warn', 'sync.queue_collapsed', { streamId: this.id, sessions: sessions.size, dropped: other.length })
+  }
   private async rememberCheckpoints(): Promise<void> {
     if (!this.durableCheckpoints) { this.checkpointDirty.clear(); return }
     for (const id of this.checkpointDirty) {
@@ -433,4 +488,25 @@ export class SyncFeed {
 function contentItems(items: TimelineItem[]): TimelineItem[] {
   // Lifecycle belongs to session.state.updated / session.turnEnded in the platform.
   return items.filter(item => item.type !== 'turn.start' && item.type !== 'turn.end')
+}
+
+/**
+ * Fold an incremental stream delta into the tail change when both describe the same
+ * block. The projection concatenates `text`/`reasoning-delta` payloads and
+ * `argumentsDelta`, so the merged change projects to exactly the same timeline value.
+ */
+function mergeStreamDelta(tail: NativeChange | undefined, next: NativeChange): boolean {
+  if (!tail || tail.type !== 'stream' || next.type !== 'stream') return false
+  if (tail.id !== next.id || tail.turn !== next.turn || tail.step !== next.step) return false
+  const current = tail.chunk as unknown as { type?: string, index?: number, text?: string, id?: string, argumentsDelta?: string }
+  const incoming = next.chunk as unknown as { type?: string, index?: number, text?: string, id?: string, argumentsDelta?: string }
+  if (!current || !incoming || current.type !== incoming.type || current.index !== incoming.index) return false
+  if (incoming.type === 'text-delta' || incoming.type === 'reasoning-delta') {
+    tail.chunk = { ...incoming, text: `${current.text ?? ''}${incoming.text ?? ''}` } as typeof tail.chunk
+  } else if (incoming.type === 'tool-call-delta' && current.id === incoming.id) {
+    tail.chunk = { ...incoming, argumentsDelta: `${current.argumentsDelta ?? ''}${incoming.argumentsDelta ?? ''}` } as typeof tail.chunk
+  } else return false
+  tail.time = next.time
+  tail.throughSeq = next.throughSeq
+  return true
 }

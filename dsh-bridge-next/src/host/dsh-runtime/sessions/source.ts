@@ -24,7 +24,14 @@ export class NativeSessionSource {
   private revisions = new Map<string, string>()
   private initialized = false
   private refreshing: Promise<void> | undefined
+  /**
+   * Retained observation cache. Bounded: a page of N sessions would otherwise pin
+   * every full event log (O(sum of all logs)) for the lifetime of the host, which is
+   * the heap-exhaustion path. Eviction is insertion-ordered (oldest read first);
+   * a miss simply re-reads, so correctness never depends on the cache.
+   */
   private readonly logs = new Map<string, { revision: string, observation: SessionObservation }>()
+  private static readonly MAX_CACHED_LOGS = 4
   private readonly reads = new Map<string, Promise<SessionLogSnapshot & { bridgeRevision?: string }>>()
   private closed = false
 
@@ -38,6 +45,20 @@ export class NativeSessionSource {
     if (!cached) return
     this.logs.delete(id)
     cached.observation[Symbol.dispose]()
+  }
+
+  /**
+   * Bound retained observations. The just-read id sits at the tail of the
+   * insertion order, so evicting from the head never drops the caller's cut.
+   * Disposing an observation releases its SDK retain, which is what actually
+   * returns the event log to the GC.
+   */
+  private trimCache(): void {
+    while (this.logs.size > NativeSessionSource.MAX_CACHED_LOGS) {
+      const oldest = this.logs.keys().next()
+      if (oldest.done) break
+      this.evict(oldest.value)
+    }
   }
 
   close(): void {
@@ -69,6 +90,7 @@ export class NativeSessionSource {
       if (!cached && !this.closed && actualRevision !== undefined) {
         // Do not associate a newer live cut with an older event cursor.
         this.logs.set(id, { revision: actualRevision, observation: observation.retain() })
+        this.trimCache()
       }
       return log
     } finally { if (!cached) observation[Symbol.dispose]() }
