@@ -42,6 +42,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardActions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import androidx.compose.runtime.snapshotFlow
 import com.agentpilot.app.feature.sessiondetail.MessageAuthor
 import com.agentpilot.app.feature.sessiondetail.TimelineMessage
 import com.agentpilot.app.R
@@ -58,6 +66,7 @@ import com.composables.icons.lucide.X
  * 会话内消息搜索（2.0.8）：在已加载的消息中按文本过滤，
  * 点击结果跳转到对应消息。query 为空时展示最近搜索词。
  */
+@OptIn(FlowPreview::class)
 @Composable
 internal fun SessionSearchOverlay(
     messages: List<TimelineMessage>,
@@ -72,18 +81,36 @@ internal fun SessionSearchOverlay(
     val colors = LocalAAColors.current
     var query by rememberSaveable { mutableStateOf("") }
     val normalizedQuery = query.trim().lowercase()
-    val results by remember(messages, normalizedQuery) {
-        derivedStateOf {
-            if (normalizedQuery.isEmpty()) {
-                emptyList()
-            } else {
-                messages.filter { message ->
-                    searchableText(message).contains(normalizedQuery)
+    // Index searchable text once per message set, not per keystroke. Joining a
+    // message's fields (including the rawContent JSON) is the expensive part;
+    // redoing it for every keypress on a long timeline is what made typing lag.
+    val searchIndex by remember(messages) {
+        mutableStateOf(messages.associate { message -> message.id to searchableText(message) })
+    }
+    val results = remember { mutableStateOf<List<TimelineMessage>>(emptyList()) }
+    LaunchedEffect(messages, searchIndex) {
+        // snapshotFlow must read snapshot state directly (query, not the
+        // derived normalizedQuery) so typing retriggers the flow; debounce +
+        // Default dispatcher keeps keystrokes responsive on long timelines.
+        val queryFlow: kotlinx.coroutines.flow.Flow<Pair<List<TimelineMessage>, String>> =
+            snapshotFlow { messages to query.trim().lowercase() }
+        queryFlow
+            .map { (currentMessages, queryText) ->
+                if (queryText.isEmpty()) {
+                    emptyList()
+                } else {
+                    currentMessages.filter { message ->
+                        searchIndex[message.id]?.contains(queryText) == true
+                    }
                 }
             }
-        }
+            .debounce(120L)
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.Default)
+            .collectLatest { matches -> results.value = matches }
     }
-    val resultCount by remember(results) { derivedStateOf { results.size } }
+    val visibleResults = results.value
+    val resultCount = visibleResults.size
 
     Column(
         modifier = modifier
@@ -150,7 +177,7 @@ internal fun SessionSearchOverlay(
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 if (normalizedQuery.isNotEmpty()) onRecordSearch(normalizedQuery)
-                                onJumpToMessage(results.firstOrNull()?.id.orEmpty())
+                                onJumpToMessage(visibleResults.firstOrNull()?.id.orEmpty())
                             },
                         ),
                         singleLine = true,
@@ -200,7 +227,7 @@ internal fun SessionSearchOverlay(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
         )
 
-        if (normalizedQuery.isNotEmpty() && results.isEmpty()) {
+        if (normalizedQuery.isNotEmpty() && visibleResults.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -217,7 +244,7 @@ internal fun SessionSearchOverlay(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                items(results, key = { it.id }) { message ->
+                items(visibleResults, key = { it.id }) { message ->
                     SearchResultRow(
                         message = message,
                         query = normalizedQuery,

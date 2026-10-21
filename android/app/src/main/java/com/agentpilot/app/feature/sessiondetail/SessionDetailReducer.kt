@@ -363,8 +363,33 @@ internal fun SessionDetailState.applyRuntimeObservation(
     } else {
         runtime.copy(isLoading = false, errorMessage = null)
     }
-    return copy(runtime = nextRuntime)
+    // A runtime that stops echoing the client message id leaves the local
+    // placeholder pinned as "running" forever, which keeps the turn indicator
+    // on after the turn already ended on the desktop. An inactive runtime
+    // proves the send landed: drop the unmatched placeholder, keeping the
+    // server-confirmed copies the projection merge already carries forward.
+    if (nextRuntime.status !in OPTIMISTIC_SETTLED_STATUSES) {
+        return copy(runtime = nextRuntime)
+    }
+    val stale = messages.filter { it.optimistic && it.status in OPTIMISTIC_ACTIVE_STATUSES }
+    if (stale.isEmpty()) return copy(runtime = nextRuntime)
+    val retired = stale.mapTo(mutableSetOf()) { it.id }
+    return copy(
+        runtime = nextRuntime,
+        timeline = timeline.copy(messages = messages.filterNot { it.id in retired }),
+    )
 }
+
+/** Runtime states that prove an in-flight local placeholder has settled. */
+internal val OPTIMISTIC_SETTLED_STATUSES: Set<SessionRuntimeStatus> = setOf(
+    SessionRuntimeStatus.Idle,
+    SessionRuntimeStatus.Error,
+    SessionRuntimeStatus.Disconnected,
+    SessionRuntimeStatus.Unknown,
+)
+
+/** Placeholder states that would otherwise keep the turn indicator on. */
+internal val OPTIMISTIC_ACTIVE_STATUSES: Set<String> = setOf("running", "pending")
 
 internal fun SessionDetailState.applyCapabilitiesObservation(
     observed: EffectiveCapabilities,

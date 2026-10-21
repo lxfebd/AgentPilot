@@ -63,18 +63,24 @@ import com.agentpilot.app.R
 import com.agentpilot.app.feature.devices.DeviceAgentPreviews
 import com.agentpilot.app.feature.sessions.SessionListIndicator
 import com.agentpilot.app.feature.sessions.SessionsState
+import com.agentpilot.app.feature.sessions.groupSessionsByAgent
 import com.agentpilot.app.feature.sessions.listIndicator
 import com.agentpilot.app.feature.sessions.pinnedSessions
+import com.agentpilot.app.feature.sessions.pinnedSessionsForAgentFilter
+import com.agentpilot.app.feature.sessions.pinnedSectionNeedsAgentNote
 import com.agentpilot.app.feature.sessions.recentSessions
 import com.agentpilot.app.model.AgentDevice
 import com.agentpilot.app.model.AgentProject
 import com.agentpilot.app.model.AgentSession
+import com.agentpilot.app.model.resolveAgentRuntimeKey
+import com.agentpilot.app.model.runtimeTypeLabel
 import com.agentpilot.app.ui.designsystem.AuthErrorNotice
 import com.agentpilot.app.ui.designsystem.AAFont
 import com.agentpilot.app.ui.designsystem.LocalAAColors
 import com.agentpilot.app.ui.screens.common.AppEmptyState
 import com.agentpilot.app.ui.screens.devices.DeviceRow
 import com.agentpilot.app.ui.screens.devices.sortedForDevicesPage
+import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Monitor
@@ -88,6 +94,7 @@ internal fun HomeList(
     tab: HomeTab,
     darkMode: Boolean,
     selectedAgentRuntime: String? = null,
+    onSelectAgentRuntime: (String?) -> Unit = {},
     onSessionLongPress: (AgentSession, Rect) -> Unit,
     onOpenSession: (AgentSession) -> Unit,
     onOpenDevice: (AgentDevice) -> Unit,
@@ -146,6 +153,9 @@ internal fun HomeList(
             onLoadMore = { onLoadMore(tab) },
             onSessionLongPress = onSessionLongPress,
             onOpenSession = onOpenSession,
+            selectedAgentRuntime = selectedAgentRuntime,
+            allSessions = if (tab == HomeTab.Active) state.sessions else state.archivedSessions,
+            onSelectAgentRuntime = onSelectAgentRuntime,
         )
     }
 }
@@ -251,11 +261,19 @@ private fun SessionList(
     onLoadMore: () -> Unit,
     onSessionLongPress: (AgentSession, Rect) -> Unit,
     onOpenSession: (AgentSession) -> Unit,
+    selectedAgentRuntime: String? = null,
+    allSessions: List<AgentSession> = sessions,
+    onSelectAgentRuntime: (String?) -> Unit = {},
 ) {
     var pinnedExpanded by remember { mutableStateOf(true) }
     var recentExpanded by remember { mutableStateOf(true) }
-    val pinned = remember(sessions) { SessionsState(sessions = sessions).pinnedSessions }
+    // 置顶区始终从完整清单取：置顶是用户主动保留的快速入口，
+    // 按 agent 过滤时一并过滤掉会让用户失去置顶的意义。
+    val pinned = remember(allSessions) { pinnedSessionsForAgentFilter(allSessions) }
     val recent = remember(sessions) { SessionsState(sessions = sessions).recentSessions }
+    // 侧边栏按 agent 来源分类：每个 agent 一段，段头带该 agent 的品牌图标。
+    // 组内与组间的排序规则见 groupSessionsByAgent。
+    val agentGroups = remember(recent) { groupSessionsByAgent(recent) }
     val projectsById = remember(projects) { projects.associateBy { it.id } }
     val devicesById = remember(devices) { devices.associateBy { it.id } }
     val listState = rememberLazyListState()
@@ -278,12 +296,27 @@ private fun SessionList(
         if (sessions.isEmpty()) {
             item("empty") { EmptyListText(stringResource(R.string.home_no_sessions_yet)) }
         }
-        item("pinned-title") {
-            HomeListSectionHeader(
-                label = stringResource(R.string.home_pinned),
-                expanded = pinnedExpanded,
-                onClick = { pinnedExpanded = !pinnedExpanded },
-            )
+        // 过滤态下置顶区被过滤空时，连段头一起隐藏：一个空段头加一行「无置顶会话」
+        // 只是噪音，用户此刻要找的是某个 agent 的会话。未过滤时保留段头与空态文案，
+        // 因为空段头提示用户「可以置顶会话」。
+        if (pinned.isNotEmpty() || selectedAgentRuntime == null) {
+            item("pinned-title") {
+                HomeListSectionHeader(
+                    label = stringResource(R.string.home_pinned),
+                    expanded = pinnedExpanded,
+                    onClick = { pinnedExpanded = !pinnedExpanded },
+                )
+            }
+        }
+        // 过滤态下置顶区仍显示全部置顶会话，其中可能有其它 agent 的会话；
+        // 没有这句标注，用户会疑惑为什么过滤后还看到别的来源。
+        if (pinnedExpanded &&
+            pinned.isNotEmpty() &&
+            pinnedSectionNeedsAgentNote(pinned, selectedAgentRuntime)
+        ) {
+            item("pinned-agent-note") {
+                SectionNoteText(stringResource(R.string.home_pinned_agent_note))
+            }
         }
         if (pinnedExpanded) {
             if (pinned.isEmpty()) {
@@ -314,16 +347,48 @@ private fun SessionList(
             if (recent.isEmpty()) {
                 item("recent-empty") { SectionEmptyText(stringResource(R.string.home_no_recent_sessions)) }
             } else {
-                items(recent, key = { "recent-${it.id}" }) { session ->
-                    HomeSessionRow(
-                        session = session,
-                        contextLabel = session.sidebarContextLabel(
-                            projectName = projectsById[session.projectId]?.name,
-                            deviceName = devicesById[session.connectorId]?.name,
-                        ),
-                        onClick = { onOpenSession(session) },
-                        onLongPress = { bounds -> onSessionLongPress(session, bounds) },
-                    )
+                val visibleGroups = if (selectedAgentRuntime == null) {
+                    agentGroups
+                } else {
+                    agentGroups.filter { it.runtime == selectedAgentRuntime }
+                }
+                // 过滤态下只渲染选中的 agent 段，同时给一个「全部」出口，
+                // 否则侧边栏里没有任何入口可以取消过滤。
+                if (selectedAgentRuntime != null) {
+                    item("agent-group-all") {
+                        // 「全部」出口点回去后看到的是最近区的全部 agent 会话，
+                        // 计数取完整清单（不含置顶，置顶单独分区）。
+                        HomeAllAgentsHeader(
+                            count = allSessions.count { !it.pinned },
+                            onClick = { onSelectAgentRuntime(null) },
+                        )
+                    }
+                }
+                visibleGroups.forEach { group ->
+                    item("agent-group-${group.runtime}") {
+                        HomeAgentGroupHeader(
+                            runtime = group.runtime,
+                            count = group.sessions.size,
+                            selected = selectedAgentRuntime == group.runtime,
+                            onClick = {
+                                onSelectAgentRuntime(
+                                    if (selectedAgentRuntime == group.runtime) null else group.runtime,
+                                )
+                            },
+                        )
+                    }
+                    items(group.sessions, key = { "agent-${group.runtime}-${it.id}" }) { session ->
+                        HomeSessionRow(
+                            session = session,
+                            contextLabel = session.sidebarContextLabel(
+                                projectName = projectsById[session.projectId]?.name,
+                                deviceName = devicesById[session.connectorId]?.name,
+                            ),
+                            showDivider = session.id != group.sessions.lastOrNull()?.id,
+                            onClick = { onOpenSession(session) },
+                            onLongPress = { bounds -> onSessionLongPress(session, bounds) },
+                        )
+                    }
                 }
             }
         }
@@ -445,6 +510,109 @@ private fun HomeSectionHeader(
     }
 }
 
+/**
+ * 过滤态下的「全部 agent」出口，与 agent 分段头同一条时间线上。
+ */
+@Composable
+private fun HomeAllAgentsHeader(
+    count: Int,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAAColors.current
+    val haptic = LocalHapticFeedback.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(38.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .padding(top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Lucide.Bot,
+                contentDescription = null,
+                tint = colors.ink,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Text(
+            text = stringResource(R.string.home_project_filter_all_agents),
+            color = colors.ink,
+            fontSize = 13.2.sp,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1,
+        )
+        Text(
+            text = "$count",
+            color = colors.faint.copy(alpha = 0.7f),
+            fontSize = 12.sp,
+            fontFamily = AAFont.Mono,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * 侧边栏的 agent 分类段头：品牌图标 + agent 名称 + 该 agent 的会话数。
+ * 图标与列表行、时间线来源分隔条共用同一套身份解析，保证同一个 agent
+ * 在任何界面都显示同一个标志。段头同时承担 agent 过滤：点击只看该 agent，
+ * 再次点击恢复全部（与原先独立的过滤栏合并为一处）。
+ */
+@Composable
+private fun HomeAgentGroupHeader(
+    runtime: String,
+    count: Int,
+    selected: Boolean = false,
+    onClick: () -> Unit = {},
+) {
+    val colors = LocalAAColors.current
+    val haptic = LocalHapticFeedback.current
+    val tint = if (selected) colors.ink else colors.faint
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(38.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .padding(top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SessionAgentIcon(runtime = runtime, runtimeType = runtime, runtimeId = runtime, tint = tint)
+        Text(
+            text = runtime.runtimeTypeLabel(),
+            color = tint,
+            fontSize = 13.2.sp,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1,
+        )
+        Text(
+            text = "$count",
+            color = tint.copy(alpha = 0.7f),
+            fontSize = 12.sp,
+            fontFamily = AAFont.Mono,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+    }
+}
+
 @Composable
 internal fun HomeSessionRow(
     session: AgentSession,
@@ -477,7 +645,7 @@ internal fun RowScope.HomeSessionRowContent(
 ) {
     val indicator = session.listIndicator()
     Box(modifier = Modifier.size(20.dp), contentAlignment = Alignment.Center) {
-        SessionAgentIcon(runtime = session.runtime, runtimeType = session.runtimeType)
+        SessionAgentIcon(session = session)
     }
     Column(
         modifier = Modifier.weight(1f),
@@ -686,6 +854,20 @@ private fun EmptyListText(message: String) {
             fontWeight = FontWeight.SemiBold,
         )
     }
+}
+
+/** 分区内的一行轻量提示，比空态文案更矮更淡：只解释眼前的内容为何这样排布。 */
+@Composable
+private fun SectionNoteText(message: String) {
+    Text(
+        text = message,
+        color = LocalAAColors.current.faint.copy(alpha = 0.8f),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 6.dp),
+    )
 }
 
 @Composable

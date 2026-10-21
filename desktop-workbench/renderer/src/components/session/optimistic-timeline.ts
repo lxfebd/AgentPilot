@@ -2,11 +2,10 @@
 
 import type { AttachedFile } from "@/components/attachment-input"
 import type { TimelineItem } from "@/features/dashboard/types"
-import { sortTimelineItems } from "@/components/session/session-utils"
-import {
-  incomingTimelineItemCanReplace,
-  mergeSequencedTimelineSnapshot,
-} from "@/components/session/timeline-sequence"
+// Explicit extensions keep this module importable from the plain `node --test`
+// runner, which resolves neither the `@/` alias nor extensionless value imports.
+import { sortTimelineItems } from "./session-utils.ts"
+import { incomingTimelineItemCanReplace, mergeSequencedTimelineSnapshot } from "./timeline-sequence.ts"
 
 export const OPTIMISTIC_ITEM_PREFIX = "optimistic-message:"
 
@@ -127,7 +126,22 @@ function optimisticUserMessageMatchesServerItem(
   if (serverItem.type !== "message" || serverItem.role !== "user") return false
   if (optimisticItem.status !== "pending") return false
   const optimisticClientMessageId = timelineClientMessageId(optimisticItem)
-  return Boolean(serverClientMessageId && optimisticClientMessageId === serverClientMessageId)
+  if (serverClientMessageId && optimisticClientMessageId === serverClientMessageId) return true
+  // A runtime that echoes no client message id (the ZCode database adapter is one)
+  // leaves the placeholder unmatched, and a placeholder pinned as "pending" keeps
+  // the send spinner on forever. The placeholder is appended at the tail of the
+  // timeline, so a real user message that sorts after it proves the send already
+  // landed in the session. The text comparison guards the rare case where the local
+  // order guess was inflated above the real echo's order: a different real user
+  // message (for example one sent on another device) must never be mistaken for
+  // this placeholder's echo.
+  return serverItem.orderSeq > optimisticItem.orderSeq
+    && messageTextOf(serverItem) === messageTextOf(optimisticItem)
+}
+
+function messageTextOf(item: TimelineItem): string {
+  const value = item.content?.text
+  return typeof value === "string" ? value : ""
 }
 
 function mergeOptimisticAttachmentMetadata(serverItem: TimelineItem, optimisticItem: TimelineItem): TimelineItem {

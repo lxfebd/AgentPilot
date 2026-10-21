@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import androidx.compose.runtime.snapshotFlow
 import com.agentpilot.app.R
 import com.agentpilot.app.model.AgentSession
 import com.agentpilot.app.ui.designsystem.LocalAAColors
@@ -45,6 +54,7 @@ import com.composables.icons.lucide.Search
  * 全局会话搜索浮层：输入关键字按标题/项目过滤所有已知会话，点击直达会话详情。
  * 手机和平板共用。
  */
+@OptIn(FlowPreview::class)
 @Composable
 internal fun HomeSearchOverlay(
     sessions: List<AgentSession>,
@@ -54,15 +64,36 @@ internal fun HomeSearchOverlay(
 ) {
     val colors = LocalAAColors.current
     var query by remember { mutableStateOf("") }
-    val results = remember(query, sessions) {
-        val q = query.trim()
-        if (q.isEmpty()) emptyList()
-        else sessions.filter { session ->
-            session.title.contains(q, ignoreCase = true) ||
-                (projectNamesById[session.projectId]?.contains(q, ignoreCase = true) == true) ||
-                session.deviceName.contains(q, ignoreCase = true)
-        }
+    // Precompute a lowercase haystack per session once per inventory change, then
+    // filter off the main thread with a small debounce. A dashboard snapshot
+    // replaces the list reference frequently, so filtering inline on every
+    // keystroke (and every snapshot) is what made typing stutter.
+    val searchIndex by remember(sessions, projectNamesById) {
+        mutableStateOf(
+            sessions.map { session ->
+                session.id to buildString {
+                    append(session.title).append('\n')
+                    append(projectNamesById[session.projectId].orEmpty()).append('\n')
+                    append(session.deviceName)
+                }.lowercase()
+            }.toMap(),
+        )
     }
+    val results = remember { mutableStateOf<List<AgentSession>>(emptyList()) }
+    LaunchedEffect(sessions, searchIndex) {
+        // Read query (a snapshot state) directly so typing retriggers the flow.
+        val queryFlow: kotlinx.coroutines.flow.Flow<String> = snapshotFlow { query.trim() }
+        queryFlow
+            .map { q ->
+                if (q.isEmpty()) emptyList()
+                else sessions.filter { session -> searchIndex[session.id]?.contains(q.lowercase()) == true }
+            }
+            .debounce(120L)
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.Default)
+            .collectLatest { matches -> results.value = matches }
+    }
+    val visibleResults = results.value
 
     Box(
         modifier = Modifier
@@ -121,7 +152,7 @@ internal fun HomeSearchOverlay(
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                 )
             }
-            if (query.isNotEmpty() && results.isEmpty()) {
+            if (query.isNotEmpty() && visibleResults.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -137,7 +168,7 @@ internal fun HomeSearchOverlay(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    items(results, key = { it.id }) { session ->
+                    items(visibleResults, key = { it.id }) { session ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()

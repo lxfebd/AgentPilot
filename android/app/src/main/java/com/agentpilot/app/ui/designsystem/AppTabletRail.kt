@@ -61,9 +61,11 @@ import com.agentpilot.app.feature.sessions.RailStatusRunning
 import com.agentpilot.app.feature.sessions.RailStatusWaiting
 import com.agentpilot.app.feature.sessions.railSessionOrder
 import com.agentpilot.app.feature.sessions.railSessionStatus
+import com.agentpilot.app.feature.sessions.visibleProjectsForAgentFilter
 import com.agentpilot.app.model.AgentProject
 import com.agentpilot.app.model.AgentSession
 import com.agentpilot.app.model.SessionStatus
+import com.agentpilot.app.ui.screens.home.SessionAgentIcon
 import com.agentpilot.app.navigation.AppDestination
 import com.composables.icons.lucide.Archive
 import com.composables.icons.lucide.ChevronDown
@@ -181,6 +183,7 @@ fun AppTabletRail(
                     projects = projects,
                     projectSessionsById = projectSessionsById,
                     expandedProjectIds = expandedProjectIds,
+                    agentFilterActive = selectedAgentRuntime != null,
                     onProjectExpandedChange = onProjectExpandedChange,
                     onOpenSession = onOpenSession,
                     currentSessionId = currentSessionId,
@@ -533,6 +536,7 @@ private fun RailProjects(
     projects: List<AgentProject>,
     projectSessionsById: Map<String, List<AgentSession>>,
     expandedProjectIds: Set<String>,
+    agentFilterActive: Boolean = false,
     onProjectExpandedChange: (String, Boolean) -> Unit,
     onOpenSession: (AgentSession) -> Unit,
     currentSessionId: String?,
@@ -541,7 +545,10 @@ private fun RailProjects(
 ) {
     val colors = LocalAAColors.current
     val scope = rememberCoroutineScope()
-    val attentionSessions = projects
+    val visibleProjects = remember(projects, projectSessionsById, agentFilterActive) {
+        visibleProjectsForAgentFilter(projects, projectSessionsById, agentFilterActive)
+    }
+    val attentionSessions = visibleProjects
         .flatMap { project -> projectSessionsById[project.id].orEmpty() }
         .filter { railSessionStatus(it).attention }
     Column(
@@ -556,15 +563,17 @@ private fun RailProjects(
                 onClick = { onOpenSession(attentionSessions.first()) },
             )
         }
-        if (projects.isEmpty()) {
+        if (visibleProjects.isEmpty()) {
             Text(
-                text = stringResource(R.string.home_no_projects),
+                text = stringResource(
+                    if (agentFilterActive) R.string.rail_no_projects_for_agent else R.string.home_no_projects,
+                ),
                 color = colors.muted,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
         }
-        projects.forEach { project ->
+        visibleProjects.forEach { project ->
             val expanded = project.id in expandedProjectIds
             val sessions = projectSessionsById[project.id].orEmpty()
             val chevronRotation by animateFloatAsState(
@@ -760,6 +769,9 @@ private fun RailSessionRow(
                 .padding(start = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // 与手机侧列表行共用同一套 agent 身份解析，保证同一 agent 在同屏两侧显示同一标志。
+            SessionAgentIcon(session = session)
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = session.title.ifBlank { session.runtime },
                 color = colors.ink,

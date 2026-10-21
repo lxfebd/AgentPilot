@@ -52,7 +52,7 @@ internal fun HomeProjectSessionRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SessionAgentIcon(runtime = session.runtime, runtimeType = session.runtimeType)
+        SessionAgentIcon(session = session)
         Text(
             text = session.title,
             modifier = Modifier.weight(1f),

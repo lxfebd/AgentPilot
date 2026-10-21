@@ -58,6 +58,8 @@ import com.agentpilot.app.feature.sessions.SessionsState
 import com.agentpilot.app.feature.sessions.projectHasVisibleSessions
 import com.agentpilot.app.feature.sessions.projectSessionMatchesStatus
 import com.agentpilot.app.feature.sessions.ProjectDeviceAgentFilter
+import com.agentpilot.app.feature.sessions.agentRuntimesOf
+
 import com.agentpilot.app.feature.sessions.ProjectSessionLoadKey
 import com.agentpilot.app.feature.sessions.ProjectSessionStatusFilter
 import com.agentpilot.app.feature.sessions.sessionListComparator
@@ -67,12 +69,10 @@ import com.agentpilot.app.feature.update.AppUpdateViewModel
 import com.agentpilot.app.model.AgentDevice
 import com.agentpilot.app.model.AgentProject
 import com.agentpilot.app.model.AgentSession
-import com.agentpilot.app.model.runtimeTypeLabel
 import com.agentpilot.app.navigation.AppDestination
 import com.agentpilot.app.ui.designsystem.AAToastHost
 import com.agentpilot.app.ui.designsystem.AAToastVisuals
 import com.agentpilot.app.ui.designsystem.AAWordmark
-import com.agentpilot.app.ui.designsystem.AgentFilterBar
 import com.agentpilot.app.ui.designsystem.AuthErrorNotice
 import com.agentpilot.app.ui.designsystem.LocalAAColors
 import com.agentpilot.app.ui.designsystem.LocalAAWindowSize
@@ -534,19 +534,8 @@ private fun HomeContent(
             onTerminalClick = { navigate(AppDestination.Terminal) },
             onFilesClick = { navigate(AppDestination.Files) },
         )
-        if (!isTablet) {
-            // 手机形态：会话列表顶部的 agent 来源分类栏（平板形态在侧边栏里）。
-            val runtimes = remember(state.sessions, projectSessionsById) {
-                (state.sessions.map(AgentSession::runtime) + projectSessionsById.values.flatten().map(AgentSession::runtime))
-                    .filter(String::isNotBlank).distinct().sortedBy(String::runtimeTypeLabel)
-            }
-            AgentFilterBar(
-                runtimes = runtimes,
-                selected = projectPreferences.selectedAgentRuntime,
-                onSelect = projectPreferences::selectAgent,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        // 手机形态的 agent 分类由会话列表内的分段头承担（见 HomeAgentGroupHeader）：
+        // 段头即分类也即过滤，避免列表顶部再放一条功能重复的过滤栏。
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             state = refreshState,
@@ -598,6 +587,7 @@ private fun HomeContent(
                     tab = HomeTab.Active,
                     darkMode = darkMode,
                     selectedAgentRuntime = projectPreferences.selectedAgentRuntime,
+                    onSelectAgentRuntime = projectPreferences::selectAgent,
                     onSessionLongPress = onSessionLongPress,
                     onOpenSession = onOpenSession,
                     onOpenDevice = onOpenDevice,
@@ -690,9 +680,7 @@ private fun HomeProjectModeList(
             HomeProjectList(
                 projects = projects,
                 devices = state.devices,
-                agentRuntimes = remember(allSessions) {
-                    allSessions.map(AgentSession::runtime).filter(String::isNotBlank).distinct().sortedBy(String::runtimeTypeLabel)
-                },
+                agentRuntimes = remember(allSessions) { agentRuntimesOf(allSessions) },
                 deviceAgentFilter = deviceAgentFilter,
                 hasProjectsInOtherStatuses = hasProjectsInOtherStatuses,
                 allSessions = allSessions,

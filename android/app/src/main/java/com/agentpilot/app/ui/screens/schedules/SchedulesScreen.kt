@@ -46,7 +46,9 @@ import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Trash2
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -132,7 +134,11 @@ internal fun SchedulesScreen(
         scope.launch {
             onListSchedules()
                 .onSuccess { array ->
-                    schedules = (0 until array.length()).map { parseScheduleItem(array.getJSONObject(it)) }
+                    // The call is already IO-bound; parsing the org.json rows is
+                    // pure CPU work, so keep it off the main thread as well.
+                    schedules = withContext(Dispatchers.Default) {
+                        (0 until array.length()).map { parseScheduleItem(array.getJSONObject(it)) }
+                    }
                     errorMessage = null
                 }
                 .onFailure { error -> errorMessage = error.message }

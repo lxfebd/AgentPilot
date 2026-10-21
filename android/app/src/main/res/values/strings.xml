@@ -132,6 +132,8 @@
     <string name="home_new_session">New session</string>
     <string name="home_projects">Projects</string>
     <string name="home_no_projects">No projects yet.</string>
+    <string name="rail_no_projects_for_agent">No projects have sessions for this agent.</string>
+    <string name="home_pinned_agent_note">Pinned sessions stay visible across agents.</string>
     <string name="home_project_no_sessions">No sessions yet.</string>
     <string name="home_new_session_in_project">New session in %1$s</string>
     <string name="home_project_edit">Edit</string>

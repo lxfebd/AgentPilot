@@ -38,6 +38,7 @@ import com.agentpilot.app.feature.sessions.NewSessionPermissionCatalog
 import com.agentpilot.app.feature.sessions.NewSessionRuntimeCapabilities
 import com.agentpilot.app.feature.sessions.SessionBatchUpdate
 import com.agentpilot.app.feature.sessions.SessionsState
+import com.agentpilot.app.feature.sessions.agentRuntimesOf
 import com.agentpilot.app.feature.sessions.filterSessionMapByRuntime
 import com.agentpilot.app.feature.terminal.RemoteTerminalPool
 import com.agentpilot.app.feature.update.AppUpdateViewModel
@@ -45,7 +46,6 @@ import com.agentpilot.app.model.AgentDevice
 import com.agentpilot.app.model.AgentProject
 import com.agentpilot.app.model.AgentSession
 import com.agentpilot.app.model.MobileLoginQrPayload
-import com.agentpilot.app.model.runtimeTypeLabel
 import com.agentpilot.app.navigation.AppDestination
 import com.agentpilot.app.ui.designsystem.AppTabletRail
 import com.agentpilot.app.ui.designsystem.LocalAAColors
@@ -199,10 +199,9 @@ internal fun AgentPilotNavHost(
     }
 
     // 平板侧边栏：按选中的 agent 过滤项目会话（与手机首页过滤一致）。
+    // agent 来源清单与手机侧共用同一选择器，避免三处各写一遍去重/排序逻辑。
     val railRuntimes = remember(railProjectSessionsById) {
-        railProjectSessionsById.values.flatten()
-            .map(AgentSession::runtime).filter(String::isNotBlank).distinct()
-            .sortedBy(String::runtimeTypeLabel)
+        agentRuntimesOf(railProjectSessionsById.values.flatten())
     }
     val railProjectSessionsFiltered = remember(railProjectSessionsById, projectPreferences.selectedAgentRuntime) {
         filterSessionMapByRuntime(railProjectSessionsById, projectPreferences.selectedAgentRuntime)

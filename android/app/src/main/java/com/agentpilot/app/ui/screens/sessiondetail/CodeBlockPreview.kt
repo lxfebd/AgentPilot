@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -59,6 +63,10 @@ import io.github.rosemoe.sora.widget.SymbolPairMatch
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import org.eclipse.tm4e.core.registry.IGrammarSource
 import org.eclipse.tm4e.core.registry.IThemeSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 import com.agentpilot.app.ui.designsystem.AAShapes
@@ -87,6 +95,13 @@ internal fun SoraCodeBlock(
     val viewModifier = (fixedHeight?.let { modifier.fillMaxWidth().height(it) }
         ?: modifier.fillMaxWidth().heightIn(min = 64.dp, max = maxHeight))
         .then(if (framed) Modifier.clip(shape).border(1.dp, border, shape) else Modifier)
+    val languageKey = SoraTextMate.languageKeyFor(languageHint)
+    // Reading readiness subscribes recomposition so AndroidView.update re-runs
+    // (and upgrades the language) as soon as the async TextMate load finishes.
+    SoraTextMate.readiness
+    LaunchedEffect(languageKey, darkMode) {
+        SoraTextMate.asyncPrepare(context, languageHint)
+    }
     AndroidView(
         modifier = viewModifier,
         factory = { ctx ->
@@ -106,11 +121,12 @@ internal fun SoraCodeBlock(
         },
         update = { editor ->
             val previous = editor.tag as? SoraEditorState
-            val languageKey = SoraTextMate.languageKeyFor(languageHint)
+            val currentLanguageKey = SoraTextMate.languageKeyFor(languageHint)
             val highlights = diffHighlights.toMap()
             val textChanged = editor.text.toString() != text
-            SoraTextMate.ensureReady(context)
-            if (previous?.darkMode != darkMode) {
+            val prepared = SoraTextMate.isPreparedFor(currentLanguageKey)
+            val becamePrepared = prepared && previous?.prepared == false
+            if (previous?.darkMode != darkMode || becamePrepared) {
                 editor.colorScheme = SoraTextMate.colorScheme(darkMode)
             }
             editor.configureReadOnlyCodeEditor(
@@ -123,7 +139,10 @@ internal fun SoraCodeBlock(
             if (textChanged) {
                 editor.setText(text)
             }
-            if (previous?.languageKey != languageKey || previous.highlights != highlights) {
+            val languageChanged = previous?.languageKey != currentLanguageKey ||
+                previous?.highlights != highlights ||
+                becamePrepared
+            if (languageChanged) {
                 val language = TracingLanguage(
                     base = SoraTextMate.languageFor(languageHint),
                     label = languageHint.orEmpty().substringAfterLast('/').ifBlank { "unknown" },
@@ -141,7 +160,12 @@ internal fun SoraCodeBlock(
                     },
                 )
             }
-            editor.tag = SoraEditorState(darkMode = darkMode, languageKey = languageKey, highlights = highlights)
+            editor.tag = SoraEditorState(
+                darkMode = darkMode,
+                languageKey = currentLanguageKey,
+                highlights = highlights,
+                prepared = prepared,
+            )
         },
     )
 }
@@ -158,6 +182,12 @@ internal fun SoraFilePreview(
     editorBackground: Color? = null,
 ) {
     val context = LocalContext.current
+    val languageKey = SoraTextMate.languageKeyFor(languageHint)
+    // Subscribe recomposition to the async TextMate load so update re-runs once ready.
+    SoraTextMate.readiness
+    LaunchedEffect(languageKey, darkMode) {
+        SoraTextMate.asyncPrepare(context, languageHint)
+    }
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
@@ -178,12 +208,13 @@ internal fun SoraFilePreview(
         },
         update = { editor ->
             val previous = editor.tag as? SoraFileEditorState
-            val languageKey = SoraTextMate.languageKeyFor(languageHint)
+            val currentLanguageKey = SoraTextMate.languageKeyFor(languageHint)
             val textChanged = editor.text.toString() != text
             val backgroundArgb = editorBackground?.toArgb()
                 ?: if (darkMode) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
-            SoraTextMate.ensureReady(context)
-            if (previous?.darkMode != darkMode) {
+            val prepared = SoraTextMate.isPreparedFor(currentLanguageKey)
+            val becamePrepared = prepared && previous?.prepared == false
+            if (previous?.darkMode != darkMode || becamePrepared) {
                 editor.colorScheme = SoraTextMate.colorScheme(darkMode)
             }
             if (previous == null || previous.darkMode != darkMode || previous.backgroundArgb != backgroundArgb) {
@@ -198,7 +229,7 @@ internal fun SoraFilePreview(
             if (textChanged) {
                 editor.setText(text)
             }
-            if (previous?.languageKey != languageKey) {
+            if (previous?.languageKey != currentLanguageKey || becamePrepared) {
                 editor.setEditorLanguage(
                     TracingLanguage(
                         base = SoraTextMate.languageFor(languageHint),
@@ -212,9 +243,10 @@ internal fun SoraFilePreview(
             }
             editor.tag = SoraFileEditorState(
                 darkMode = darkMode,
-                languageKey = languageKey,
+                languageKey = currentLanguageKey,
                 searchQuery = searchQuery,
                 backgroundArgb = backgroundArgb,
+                prepared = prepared,
             )
         },
     )
@@ -304,12 +336,14 @@ private data class SoraFileEditorState(
     val languageKey: String,
     val searchQuery: String,
     val backgroundArgb: Int,
+    val prepared: Boolean,
 )
 
 private data class SoraEditorState(
     val darkMode: Boolean,
     val languageKey: String,
     val highlights: Map<Int, DiffLineTone>,
+    val prepared: Boolean,
 )
 
 internal enum class DiffLineTone {
@@ -385,29 +419,63 @@ private fun CodeEditor.configureReadOnlyCodeEditor(
 internal object SoraTextMate {
     private var ready = false
     private var selectedTheme: String? = null
+    private val prepareLock = Any()
+    private val prepareScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * Monotonic counter bumped every time a background TextMate load (themes or
+     * grammar) completes. Reading it in composition subscribes recomposition, so
+     * `AndroidView.update` re-runs and upgrades the editor language as soon as
+     * the asset load finishes instead of blocking the first frame on it.
+     */
+    var readiness: Int by mutableStateOf(0)
+        private set
+
+    /** Whether the theme/grammar the given hint needs are already parsed. */
+    fun isPreparedFor(languageKey: String): Boolean {
+        if (!ready) return false
+        if (languageKey == "plain") return true
+        return specsByName[languageKey]?.let { spec ->
+            GrammarRegistry.getInstance().findGrammar(spec.scopeName) != null
+        } ?: true
+    }
+
+    /** Preload themes and the grammar for [languageHint] off the main thread. */
+    fun asyncPrepare(context: Context, languageHint: String?) {
+        val spec = specFor(languageHint)
+        if (ready && (spec == null || GrammarRegistry.getInstance().findGrammar(spec.scopeName) != null)) return
+        prepareScope.launch {
+            ensureReady(context)
+            if (spec != null) load(spec)
+            readiness += 1
+        }
+    }
 
     fun ensureReady(context: Context) {
         if (ready) return
-        FileProviderRegistry.getInstance().addFileProvider(AssetsFileResolver(context.applicationContext.assets))
-        val themeRegistry = ThemeRegistry.getInstance()
-        listOf(LIGHT_THEME to false, DARK_THEME to true).forEach { (name, dark) ->
-            val path = "textmate/$name.json"
-            val input = FileProviderRegistry.getInstance().tryGetInputStream(path)
-            if (input == null) {
-                Log.w(TEXTMATE_LOG_TAG, "Missing TextMate theme asset: $path")
-                return@forEach
+        synchronized(prepareLock) {
+            if (ready) return
+            FileProviderRegistry.getInstance().addFileProvider(AssetsFileResolver(context.applicationContext.assets))
+            val themeRegistry = ThemeRegistry.getInstance()
+            listOf(LIGHT_THEME to false, DARK_THEME to true).forEach { (name, dark) ->
+                val path = "textmate/$name.json"
+                val input = FileProviderRegistry.getInstance().tryGetInputStream(path)
+                if (input == null) {
+                    Log.w(TEXTMATE_LOG_TAG, "Missing TextMate theme asset: $path")
+                    return@forEach
+                }
+                runCatching {
+                    themeRegistry.loadTheme(
+                        ThemeModel(IThemeSource.fromInputStream(input, path, null), name).apply {
+                            isDark = dark
+                        },
+                    )
+                }.onFailure { error ->
+                    Log.e(TEXTMATE_LOG_TAG, "Failed to load TextMate theme: $path", error)
+                }
             }
-            runCatching {
-                themeRegistry.loadTheme(
-                    ThemeModel(IThemeSource.fromInputStream(input, path, null), name).apply {
-                        isDark = dark
-                    },
-                )
-            }.onFailure { error ->
-                Log.e(TEXTMATE_LOG_TAG, "Failed to load TextMate theme: $path", error)
-            }
+            ready = true
         }
-        ready = true
     }
 
     fun setTheme(darkMode: Boolean) {
@@ -431,6 +499,13 @@ internal object SoraTextMate {
         val spec = specFor(languageHint)
         if (spec == null) {
             Log.w(TEXTMATE_LOG_TAG, "TextMate hint=$languageHint -> plain; no grammar spec")
+            return EmptyLanguage()
+        }
+        // The caller (AndroidView.update) runs on the main thread. If the async
+        // preload has not finished parsing this grammar yet, do not block the
+        // first frame on the asset read; the readiness bump re-runs update and
+        // upgrades to TextMate as soon as the load completes.
+        if (GrammarRegistry.getInstance().findGrammar(spec.scopeName) == null) {
             return EmptyLanguage()
         }
         Log.d(TEXTMATE_LOG_TAG, "TextMate hint=$languageHint -> ${spec.name} (${spec.scopeName})")

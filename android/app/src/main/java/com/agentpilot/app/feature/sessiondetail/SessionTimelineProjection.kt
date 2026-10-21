@@ -45,11 +45,18 @@ internal fun mergeRemoteTimelineItems(
         item.toTimelineMessages().map { it.copy(orderSeq = orderSeq) }
     }
     val messages = if (replace) {
+        // Index old versions once per snapshot instead of scanning currentMessages
+        // for every incoming message (O(incoming x current) -> O(incoming + current)).
+        val previousBySource = currentMessages
+            .filter { previous -> previous.sourceItemId.isNotBlank() }
+            .groupBy { it.sourceItemId }
+        val previousByClient = currentMessages
+            .filter { previous -> !previous.clientMessageId.isNullOrBlank() }
+            .groupBy { it.clientMessageId.orEmpty() }
         val previewAwareIncoming = incomingMessages.map { incomingMessage ->
-            val previousVersions = currentMessages.filter { previousMessage ->
-                previousMessage.sourceItemId == incomingMessage.sourceItemId ||
-                    incomingMessage.clientMessageId?.let { it == previousMessage.clientMessageId } == true
-            }
+            val previousVersions = (previousBySource[incomingMessage.sourceItemId].orEmpty() +
+                incomingMessage.clientMessageId?.let { previousByClient[it].orEmpty() }.orEmpty())
+                .distinctBy { it.id }
             incomingMessage.inheritLocalAttachmentPreviews(previousVersions)
         }
         reconcileDshAssistantActivity(sortTimelineMessages(previewAwareIncoming, orderingItems))
@@ -740,14 +747,51 @@ internal fun mergeOptimisticTimelineMessages(
             realMessage.inheritLocalAttachmentPreviews(listOf(optimisticMessage))
         }
     }
-    val pending = optimistic.filter { optimisticMessage ->
-        real.none { realMessage -> realMessage.matchesClientMessage(optimisticMessage.id) }
+    val echoed = optimistic.filter { optimisticMessage ->
+        real.any { realMessage -> realMessage.matchesClientMessage(optimisticMessage.id) }
     }
+    // A runtime that echoes no client message id (the ZCode database adapter is one)
+    // leaves the local placeholder unmatched, and a placeholder pinned as "running"
+    // keeps the turn indicator on forever. The placeholder is appended at the tail,
+    // so a real user message that sorts after it proves the send already landed in
+    // the session: retire it and carry its attachment previews forward.
+    val realOrderByMessage = reconciledReal.associateWith { message ->
+        timelineOrderSeq(message, orderingItems)
+    }
+    // A placeholder appended at the tail is retired when a real user message that
+    // sorts after it proves the send landed. The text comparison guards the rare
+    // case where the local order guess was inflated above the real echo's order:
+    // a different real user message (for example one sent on another device) must
+    // never be mistaken for this placeholder's echo.
+    val superseded = optimistic.filter { candidate ->
+        candidate.author == MessageAuthor.User &&
+            realOrderByMessage.any { (message, order) ->
+                message.author == MessageAuthor.User &&
+                    order > timelineOrderSeq(candidate, orderingItems) &&
+                    message.text == candidate.text
+            }
+    }
+    val realWithSupersededPreviews = reconciledReal.map { message ->
+        val order = realOrderByMessage[message] ?: message.orderSeq
+        val carried = superseded.filter { candidate ->
+            message.author == MessageAuthor.User &&
+                order > timelineOrderSeq(candidate, orderingItems)
+        }
+        if (carried.isEmpty()) message else message.inheritLocalAttachmentPreviews(carried)
+    }
+    val retired = (echoed + superseded).map { it.id }.toSet()
+    val pending = optimistic.filter { it.id !in retired }
     return OptimisticTimelineMerge(
-        messages = sortTimelineMessages(reconciledReal + pending, orderingItems),
+        messages = sortTimelineMessages(realWithSupersededPreviews + pending, orderingItems),
         pending = pending,
     )
 }
+
+/** Order a message occupies in the timeline, preferring the shared ordering map. */
+private fun timelineOrderSeq(
+    message: TimelineMessage,
+    orderingItems: List<TimelineOrderingItem>,
+): Int = orderingItems.firstOrNull { it.id == message.sourceItemId }?.orderSeq ?: message.orderSeq
 
 private fun TimelineMessage.inheritLocalAttachmentPreviews(
     previousMessages: List<TimelineMessage>,

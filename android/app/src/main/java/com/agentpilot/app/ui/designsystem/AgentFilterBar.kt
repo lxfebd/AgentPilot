@@ -72,6 +72,7 @@ internal fun AgentFilterBar(
                     SessionAgentIcon(
                         runtime = runtime,
                         runtimeType = runtime,
+                        runtimeId = runtime,
                         tint = tint,
                         modifier = Modifier.size(size),
                     )

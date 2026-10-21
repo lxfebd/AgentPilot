@@ -895,7 +895,7 @@ private fun RuntimeSourceDivider(
                     .clip(AAShapes.tinyShape)
                     .background(accent),
             )
-            SessionAgentIcon(runtime = runtime, runtimeType = runtime)
+            SessionAgentIcon(runtime = runtime, runtimeType = runtime, runtimeId = runtime)
             Text(
                 text = runtime.runtimeTypeLabel(),
                 color = colors.faint,
