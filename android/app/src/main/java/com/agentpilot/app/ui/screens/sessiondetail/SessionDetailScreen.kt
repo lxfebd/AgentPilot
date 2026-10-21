@@ -1294,13 +1294,21 @@ fun SessionDetailScreen(
             cursor = { withContext(Dispatchers.Main.immediate) { state.realtime.cursor } },
             onEvents = { events ->
                 if (sessionId != id || !appVisible) return@start
+                // Timeline projection re-serializes every item's JSON (content.toString(2))
+                // and redacts diagnostics; a 30 Hz batch can be hundreds of items. Compute
+                // the immutable next state off the main thread and commit only the result.
+                val before = withContext(Dispatchers.Main.immediate) { state }
+                val devicesSnapshot = withContext(Dispatchers.Main.immediate) { currentDevices }
+                val next = withContext(Dispatchers.Default) {
+                    controller.applyRealtimeEvents(before, events, devicesSnapshot)
+                }
                 withContext(Dispatchers.Main.immediate) {
-                    val before = state
-                    state = controller.applyRealtimeEvents(state, events, currentDevices)
-                    if (latestTimelineItemChanged(before.messages, state.messages) || before.notices != state.notices) {
+                    if (sessionId != id || !appVisible) return@withContext
+                    state = next
+                    if (latestTimelineItemChanged(before.messages, next.messages) || before.notices != next.notices) {
                         streamLatestRequest += 1
                     }
-                    if (state.session != before.session) state.session?.let(currentOnSessionChanged)
+                    if (next.session != before.session) next.session?.let(currentOnSessionChanged)
                 }
             },
             onCursorAdvanced = { cursor ->
@@ -2431,21 +2439,30 @@ private fun Context.pendingAttachment(uri: Uri): PendingAttachment? {
 }
 
 private fun Context.uploadPart(attachment: PendingAttachment): UploadFilePart {
-    val bytes = contentResolver.openInputStream(attachment.uri)?.use { input ->
-        input.readBytes()
-    } ?: throw IllegalStateException(getString(R.string.session_upload_file_read_failed, attachment.name))
-    if (bytes.isEmpty()) throw IllegalStateException(getString(R.string.session_upload_file_empty, attachment.name))
-    if (bytes.size > MAX_ATTACHMENT_BYTES) {
+    // Reject oversized files from the picker metadata before touching the file
+    // contents, so a huge pick is not read into the heap first.
+    if (attachment.size > MAX_ATTACHMENT_BYTES) {
         throw IllegalStateException(getString(R.string.session_attachment_file_too_large, attachment.name))
     }
     val mediaType = attachment.mediaType.trim().lowercase()
     if (!isValidAttachmentMediaType(mediaType)) {
         throw IllegalStateException(getString(R.string.session_attachment_media_type_invalid, attachment.name))
     }
+    val bytes = contentResolver.openInputStream(attachment.uri)?.use { input ->
+        input.readBytes()
+    } ?: throw IllegalStateException(getString(R.string.session_upload_file_read_failed, attachment.name))
+    if (bytes.isEmpty()) throw IllegalStateException(getString(R.string.session_upload_file_empty, attachment.name))
+    // The byte copy above is required for the SHA-256/local preview metadata;
+    // keep the stream handle so uploads can avoid re-reading it if the caller
+    // only needs the bytes once.
     return UploadFilePart(
         name = attachment.name,
         mediaType = mediaType,
         bytes = bytes,
+        openStream = {
+            contentResolver.openInputStream(attachment.uri)
+                ?: throw IllegalStateException(getString(R.string.session_upload_file_read_failed, attachment.name))
+        },
     )
 }
 

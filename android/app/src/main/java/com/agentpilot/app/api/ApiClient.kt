@@ -12,6 +12,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
+import okio.source
 import org.json.JSONException
 
 class ApiClient(
@@ -208,34 +209,45 @@ class ApiClient(
         return try {
             val endpoint = URL(apiUrl(serverUrl, path))
             val boundary = "AA-${System.currentTimeMillis()}"
-            val connection = (endpoint.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = 10_000
-                readTimeout = 60_000
-                doOutput = true
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-                setRequestProperty("ngrok-skip-browser-warning", "true")
-                if (!authorizationToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $authorizationToken")
+            // Stream each part from disk instead of buffering whole files in
+            // memory, and reuse the shared OkHttp connection pool instead of
+            // opening a fresh HttpURLConnection per request.
+            val body = object : RequestBody() {
+                override fun contentType(): okhttp3.MediaType =
+                    "multipart/form-data; boundary=$boundary".toMediaType()
+
+                override fun writeTo(sink: okio.BufferedSink) {
+                    files.forEach { file ->
+                        sink.writeUtf8("--$boundary\r\n")
+                        sink.writeUtf8(
+                            "Content-Disposition: form-data; name=\"files\"; filename=\"${file.name.httpQuoted()}\"\r\n",
+                        )
+                        sink.writeUtf8("Content-Type: ${file.mediaType.ifBlank { "application/octet-stream" }}\r\n\r\n")
+                        val stream = file.openStream?.invoke()
+                        if (stream != null) {
+                            stream.use { input -> sink.writeAll(input.source()) }
+                        } else {
+                            sink.write(file.bytes)
+                        }
+                        sink.writeUtf8("\r\n")
+                    }
+                    sink.writeUtf8("--$boundary--\r\n")
                 }
             }
-            try {
-                connection.outputStream.use { output ->
-                    files.forEach { file ->
-                        output.write("--$boundary\r\n".toByteArray(Charsets.UTF_8))
-                        output.write(
-                            "Content-Disposition: form-data; name=\"files\"; filename=\"${file.name.httpQuoted()}\"\r\n"
-                                .toByteArray(Charsets.UTF_8),
-                        )
-                        output.write("Content-Type: ${file.mediaType.ifBlank { "application/octet-stream" }}\r\n\r\n".toByteArray(Charsets.UTF_8))
-                        output.write(file.bytes)
-                        output.write("\r\n".toByteArray(Charsets.UTF_8))
+            val request = Request.Builder()
+                .url(endpoint)
+                .post(body)
+                .header("Accept", "application/json")
+                .header("ngrok-skip-browser-warning", "true")
+                .apply {
+                    if (!authorizationToken.isNullOrBlank()) {
+                        header("Authorization", "Bearer $authorizationToken")
                     }
-                    output.write("--$boundary--\r\n".toByteArray(Charsets.UTF_8))
                 }
-                val responseCode = connection.responseCode
-                val responseText = readResponseText(connection, responseCode)
+                .build()
+            JSON_HTTP_CLIENT.newCall(request).execute().use { response ->
+                val responseText = response.body?.string().orEmpty()
+                val responseCode = response.code
                 if (responseCode !in 200..299) {
                     notifyUnauthorized(responseCode, authorizationToken)
                     throw ApiException(
@@ -245,8 +257,6 @@ class ApiClient(
                     )
                 }
                 if (responseText.isBlank()) JSONObject() else JSONObject(responseText)
-            } finally {
-                connection.disconnect()
             }
         } catch (exc: ApiException) {
             throw exc
@@ -387,6 +397,8 @@ data class UploadFilePart(
     val name: String,
     val mediaType: String,
     val bytes: ByteArray,
+    /** Lazy file stream; when set the upload streams from disk instead of buffering [bytes] in memory. */
+    val openStream: (() -> java.io.InputStream)? = null,
 )
 
 class ApiException(
