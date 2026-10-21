@@ -228,6 +228,9 @@ fun AgentPilotApp(
     var projectSessionsLoadedAt by remember { mutableStateOf<Map<ProjectSessionLoadKey, Long>>(emptyMap()) }
     val projectLoadSlots = remember { Semaphore(3) }
     var projectsRequestVersion by remember { mutableStateOf(0L) }
+    // Tracks whether the dashboard WebSocket is currently connected. When it is,
+    // the fallback HTTP polling below is redundant and can be skipped.
+    var dashboardWsConnected by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     var appVisible by remember(lifecycleOwner) {
@@ -584,6 +587,9 @@ fun AgentPilotApp(
         // 应用在后台时也保持实时连接，否则状态变化（等待回答/出错等）无法触发通知
         dashboardRealtimeController.start(
             scope = this,
+            onConnectionChanged = { connected, _ ->
+                dashboardWsConnected = connected
+            },
             onSnapshot = { snapshot ->
                 scope.launch {
                     if (sessionStore.readServerUrl() != realtimeServerUrl ||
@@ -649,7 +655,8 @@ fun AgentPilotApp(
     }
 
     // 兜底轮询：WebSocket 推送断连或丢帧时，周期性静默刷新让会话状态最终收敛
-    // （进行中→已结束、待处理→已完成 等不会一直停留在旧值）。
+    // （进行中→已结束、待处理→已完成 等不会一直停留在旧值）。只在 WebSocket
+    // 掉线时轮询，并且应用退到后台时降频，避免前台/后台持续的全量刷新。
     LaunchedEffect(hasAuthSession, realtimeServerUrl, realtimeAccessToken) {
         if (!hasAuthSession) return@LaunchedEffect
         val serverUrl = realtimeServerUrl
@@ -659,6 +666,12 @@ fun AgentPilotApp(
             if (sessionStore.readServerUrl() != serverUrl ||
                 sessionStore.readAccessToken() != accessToken
             ) return@LaunchedEffect
+            // The dashboard WebSocket already carries authoritative snapshots;
+            // a poll only adds value as a fallback while it is down.
+            if (dashboardWsConnected) continue
+            // In the background, slow the poll down: state only converges via
+            // notifications there, and a frequent full refresh is wasted work.
+            if (!appVisible) kotlinx.coroutines.delay(60_000)
             refreshSessions(showInitialLoading = false, showRefreshIndicator = false)
         }
     }
