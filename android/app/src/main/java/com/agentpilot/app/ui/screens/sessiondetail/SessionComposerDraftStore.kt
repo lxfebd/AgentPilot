@@ -2,6 +2,8 @@ package com.agentpilot.app.ui.screens.sessiondetail
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import com.agentpilot.app.feature.sessiondetail.TimelineAttachment
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,6 +23,18 @@ class SessionComposerDraftStore(
         "session-composer-drafts-${userId.hashCode()}",
         Context.MODE_PRIVATE,
     )
+    // Debounce disk persistence: typing fires save() per keystroke, and the
+    // in-memory copy is authoritative for restore, so the JSON encode + apply()
+    // only needs to land on a quiet edge. A single pending write covers bursts.
+    private val flushHandler = Handler(Looper.getMainLooper())
+    private val pendingFlush = mutableSetOf<String>()
+    private val flushRunnable = object : Runnable {
+        override fun run() {
+            val targets = pendingFlush.toList()
+            pendingFlush.clear()
+            for (sessionId in targets) persist(sessionId)
+        }
+    }
 
     internal fun restore(sessionId: String?, uploadCancelledMessage: String): SessionComposerDraft {
         if (sessionId == null) return SessionComposerDraft()
@@ -64,14 +78,30 @@ class SessionComposerDraftStore(
                 clientMessageId = clientMessageId?.takeIf(String::isNotBlank),
             )
             drafts[sessionId] = draft
-            preferences?.edit()?.putString(sessionId, encodeDraft(draft))?.apply()
+            schedulePersist(sessionId)
         }
     }
 
     internal fun clear(sessionId: String?) {
         if (sessionId == null) return
         drafts.remove(sessionId)
+        pendingFlush.remove(sessionId)
         preferences?.edit()?.remove(sessionId)?.apply()
+    }
+
+    private fun schedulePersist(sessionId: String) {
+        pendingFlush.add(sessionId)
+        flushHandler.removeCallbacks(flushRunnable)
+        flushHandler.postDelayed(flushRunnable, PERSIST_DEBOUNCE_MS)
+    }
+
+    /** Encode + write the draft for one session, off the caller's thread. */
+    private fun persist(sessionId: String) {
+        val draft = drafts[sessionId] ?: return
+        val encoded = encodeDraft(draft)
+        Thread {
+            preferences?.edit()?.putString(sessionId, encoded)?.apply()
+        }.apply { isDaemon = true; start() }
     }
 
     private fun encodeDraft(draft: SessionComposerDraft): String {
@@ -140,3 +170,6 @@ class SessionComposerDraftStore(
         )
     }.getOrNull()
 }
+
+/** Quiet-edge delay before the debounced draft write lands on disk. */
+private const val PERSIST_DEBOUNCE_MS = 400L
