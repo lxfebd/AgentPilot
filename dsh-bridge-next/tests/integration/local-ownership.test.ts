@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { once } from 'node:events'
-import { tmpdir } from 'node:os'
+import os, { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { localRuntimePath, readLocalState } from '../../src/host/desktop/local-runtime.js'
-import { launchConnector } from '../helpers/python-connector.js'
+import { launchConnector, runtimePid } from '../helpers/python-connector.js'
 
 const config = (id: string) => ({ serverUrl: 'https://example.test', connectorId: id, connectorToken: 'fixture' })
 
@@ -28,7 +28,7 @@ test('Python Desktop and plugin race, CLI is excluded, and the same RPC channel 
   const winnerId = winner === desktop ? 'desktop-id' : 'plugin-id'
   const loserId = winner === desktop ? 'plugin-id' : 'desktop-id'
   const file = localRuntimePath(home)
-  assert.equal(readLocalState(file).runtime?.pid, winner.child.pid)
+  assert.equal(readLocalState(file).runtime?.pid, await runtimePid(winner.child))
   assert.equal(readLocalState(file).runtime?.childPid, undefined)
   assert.deepEqual(readLocalState(file).connectorIds, [winnerId])
   const cli = launchConnector(home, 'cli', 'start')
@@ -47,10 +47,16 @@ test('Python Desktop and plugin race, CLI is excluded, and the same RPC channel 
     assert.equal(next.child.exitCode, null)
     await delay(20)
   }
-  assert.equal(readLocalState(file).runtime?.pid, next.child.pid)
+  assert.equal(readLocalState(file).runtime?.pid, await runtimePid(next.child))
   assert.deepEqual(readLocalState(file).connectorIds, [winnerId, loserId, 'cli-id'])
   await next.close()
-  assert.equal(readLocalState(file).runtime, undefined)
+  // On POSIX the CLI's graceful SIGINT shutdown runs lease.release() and clears
+  // the record. On Windows Node's child.kill('SIGINT') is a hard terminate, so
+  // Python's cleanup never runs; the durable guarantee there is process exit,
+  // which close() already awaited.
+  if (os.platform() !== 'win32') {
+    assert.equal(readLocalState(file).runtime, undefined)
+  }
 })
 
 test('CLI ownership blocks both RPC launchers without killing their control channels', { timeout: 15000 }, async t => {

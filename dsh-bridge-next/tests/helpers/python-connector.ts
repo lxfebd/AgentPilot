@@ -4,10 +4,35 @@ import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import os from 'node:os'
 
 export const connectorProject = fileURLToPath(new URL('../../../connector', import.meta.url))
 export const python = process.env.AA_TEST_PYTHON ?? join(connectorProject, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
 const isolatedHome = 'import sys\nfrom pathlib import Path\nfrom connector.core import runtime_owner\nruntime_owner.system_home=lambda:Path(sys.argv[1])\n'
+
+/**
+ * The PID that owns the local connector runtime. On Windows a venv
+ * `Scripts/python.exe` is a launcher stub that spawns the real interpreter as a
+ * child, so the PID Node returns from `spawn` is the stub, not the interpreter
+ * that records `os.getpid()` in the state file. Resolve the actual interpreter
+ * through the parent/child relationship so ownership assertions are
+ * platform-independent. On POSIX the venv bin/python is a symlink and the spawn
+ * PID is already the interpreter, so it is returned unchanged.
+ */
+export async function runtimePid(child: ReturnType<typeof spawn>): Promise<number> {
+  if (os.platform() !== 'win32') return child.pid ?? -1
+  if (child.pid == null) return -1
+  try {
+    const { stdout } = await promisify(execFile)('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      `(Get-CimInstance Win32_Process -Filter "ParentProcessId=${child.pid}" | Where-Object Name -eq 'python.exe' | Select-Object -First 1).ProcessId`,
+    ], { timeout: 10_000 })
+    const pid = Number(String(stdout).trim())
+    return Number.isSafeInteger(pid) && pid > 0 ? pid : child.pid
+  } catch {
+    return child.pid
+  }
+}
 
 export async function recordConnectorId(home: string, id: string): Promise<void> {
   await promisify(execFile)(python, ['-c', isolatedHome + 'from connector.core.config import ConnectorConfig\nl=runtime_owner.RuntimeLease()\nl.claim(ConnectorConfig(server_url="https://example.test",connector_id=sys.argv[2],connector_token="fixture"))\nl.release()', home, id], { cwd: connectorProject })
