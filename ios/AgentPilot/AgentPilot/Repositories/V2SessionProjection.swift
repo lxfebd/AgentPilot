@@ -136,6 +136,30 @@ struct V2SessionProjection {
     }
 
     private mutating func merge(_ incoming: [V2TimelineItem], history: Bool) {
+        // Fast path for the streaming hot path: one in-place update of an
+        // existing row (same orderSeq, so the sort position cannot move), or
+        // one new row appended strictly after the current last row. Both avoid
+        // rebuilding the id dictionary and re-sorting the whole timeline on
+        // every event.
+        if !history, incoming.count == 1, let item = incoming.first, item.sessionId == data.session.id {
+            if let index = data.items.firstIndex(where: { $0.id == item.id }) {
+                let old = data.items[index]
+                if item.orderSeq == old.orderSeq,
+                   item.revision > old.revision || (item.revision == old.revision && item.updatedSeq >= old.updatedSeq) {
+                    data.items[index] = item
+                    return
+                }
+            } else if !data.hasNewerItems, let last = data.items.last,
+                      (last.orderSeq, last.id) < (item.orderSeq, item.id) {
+                data.items.append(item)
+                if data.items.count > maximumItems {
+                    data.items.removeFirst(data.items.count - maximumItems)
+                    data.hasOlderItems = true
+                }
+                return
+            }
+        }
+
         var byID = Dictionary(uniqueKeysWithValues: data.items.map { ($0.id, $0) })
         let start = data.items.first?.orderSeq ?? 0
         let end = data.items.last?.orderSeq ?? 0
