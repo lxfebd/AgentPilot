@@ -459,14 +459,14 @@ class DshRuntime(AgentRuntime):
             self._client = client
             self._sync_mode = "events" if result.get("features", {}).get("syncMode") == "events" else "polling"
             if self._sync_mode == "events":
-                await self.host.runtime_health_update("starting", {
-                    "code": "runtime_initializing", "message": "正在同步 DSH 会话…", "retryable": True,
-                })
                 self._sync = SyncRelay(client, self.host)
                 self._sync.start()
-            else:
-                with suppress(Exception):
-                    await self.host.runtime_health_update("running")
+            # The bridge RPC surface is usable as soon as initialization completes;
+            # session history keeps backfilling in the background. Waiting for the
+            # inventory to settle left the runtime stuck on "starting" whenever a
+            # slow baseline or a sync hiccup kept that transition from landing.
+            with suppress(Exception):
+                await self.host.runtime_health_update("running")
         except BaseException:
             await client.close()
             raise

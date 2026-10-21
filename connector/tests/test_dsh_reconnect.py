@@ -180,14 +180,13 @@ def test_initially_offline_runtime_recovers_through_supervisor(monkeypatch):
                     break
                 await asyncio.sleep(0.01)
             relay.start.assert_called_once()
-            assert supervisor.entry("dsh").status == "starting"
-            assert "running" not in statuses
-            # The real relay reports healthy only after inventory ingestion completes.
-            await bound.native_runtime.host.runtime_health_update("running")
+            # The bridge RPC surface is usable as soon as initialization completes, so
+            # the runtime reports running without waiting for the inventory to settle.
             await asyncio.wait_for(recovered.wait(), timeout=1)
             assert supervisor.entry("dsh").status == "running"
             assert supervisor.entry("dsh").error is None
             assert supervisor.resolve_runtime("dsh") is bound
+            assert statuses[-1] == "running"
             assert endpoints == [False, True]
             host.runtime_capabilities_update.assert_awaited_once()
             relay.start.assert_called_once()

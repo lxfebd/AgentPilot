@@ -133,8 +133,11 @@ def test_dsh_provider_canonicalizes_home_and_endpoint_claims(
         )
         linked = await provider.validate_config({"dshHome": str(linked_home)})
 
-        assert direct.values["dshHome"] == str(real_home.resolve())
-        assert linked.values["dshHome"] == str(real_home.resolve())
+        # Windows canonicalization lowercases the drive/path; normcase keeps the
+        # comparison case-insensitive there and exact on POSIX.
+        expected_home = os.path.normcase(str(real_home.resolve()))
+        assert os.path.normcase(direct.values["dshHome"]) == expected_home
+        assert os.path.normcase(linked.values["dshHome"]) == expected_home
         assert provider.resource_claims(direct) == provider.resource_claims(linked)
         source = provider.session_source_key(direct)
         assert source == provider.session_source_key(linked)

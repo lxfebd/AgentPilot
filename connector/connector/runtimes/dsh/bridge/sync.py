@@ -275,9 +275,9 @@ class SyncRelay:
                     raise
                 except Exception as error:  # noqa: BLE001 - isolate and recover a failed feed
                     logger.warning("DSH event sync interrupted; resubscribing for history calibration ({})", type(error).__name__)
-                    await self.host.runtime_health_update("starting", {
-                        "code": "runtime_sync_interrupted", "message": "DSH 会话同步中断，正在重试…", "retryable": True,
-                    })
+                    # The bridge RPC surface is independent of this feed, so a sync
+                    # hiccup must not take the runtime back to "starting": the phone
+                    # would lose every session call while history recalibrates.
                     if not self.client.connected:
                         return
                     self.clear_snapshot()
@@ -291,9 +291,6 @@ class SyncRelay:
         # Subscription replaces only this feed. Concurrent RPC requests keep
         # their connection and are never cancelled by an ingest/sync failure.
         try:
-            await self.host.runtime_health_update("starting", {
-                "code": "runtime_initializing", "message": "正在同步 DSH 会话…", "retryable": True,
-            })
             subscription = await self.client.request("runtime.sync.subscribe", {"checkpointVersion": 1})
             projection_version = subscription.get("projectionVersion")
             if projection_version not in (2, 3):
