@@ -28,7 +28,8 @@ async def main(home: Path) -> None:
     runtime._client = client
     session = stable_runtime_session_id("wire", "dsh", "commands-wire")
     try:
-        assert [c.id for c in await runtime.list_commands(session, "commands-wire")] == ["compact"]
+        catalog_ids = [c.id for c in await runtime.list_commands(session, "commands-wire")]
+        assert "compact" in catalog_ids and len(catalog_ids) == len(set(catalog_ids))
         catalog = await runtime.list_commands(session, "commands-wire", query="compact", limit=1)
         assert len(catalog) == 1 and catalog[0].id == "compact"
         assert catalog[0].metadata["ui"]["acceptsMultiline"] is True
@@ -42,9 +43,11 @@ async def main(home: Path) -> None:
         assert not unknown.ok and unknown.code == "unknown_command"
         error = await runtime.execute_command(session, "compact", "commands-wire", raw="/compact invalid")
         assert not error.ok and error.result["kind"] == "error" and error.result["executionState"] == "completed"
+        # The connector no longer whitelists compact: every name reaches the
+        # native registry, which executes it or rejects with unknown_command.
         for command in ["permission", "export", "goal", "plan", "model", "file"]:
-            rejected = await runtime.execute_command(session, command, "commands-wire", raw=f"/{command}")
-            assert not rejected.ok and rejected.code == "unknown_command"
+            outcome = await runtime.execute_command(session, command, "commands-wire", raw=f"/{command}")
+            assert outcome.ok or outcome.code == "unknown_command", (command, outcome.code)
         permissions = await runtime.list_permission_catalog()
         selection = next(p.selection_id for p in permissions.permissions if p.metadata.get("preset") == "workspace-write")
         assert selection

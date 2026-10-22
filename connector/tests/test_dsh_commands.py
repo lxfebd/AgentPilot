@@ -168,20 +168,25 @@ def test_public_catalog_execution_preserves_native_descriptor_and_raw_correlatio
 
 
 @pytest.mark.parametrize("command", ["goal", "plan", "export", "feedback", "permission", "model", "file", "compact-thread"])
-def test_non_compact_commands_never_reach_the_bridge(tmp_path: Path, command: str) -> None:
+def test_non_compact_commands_reach_the_bridge(tmp_path: Path, command: str) -> None:
     async def run() -> None:
         async with bridge(tmp_path) as (runtime, requests, _):
             result = await runtime.execute_command("session", command, "native", raw=f"/{command}")
-            assert not result.ok and result.code == "unknown_command"
-            assert not any(r["method"] == "session.executeCommand" for r in requests)
+            # The connector no longer whitelists compact: every catalog command
+            # reaches the bridge, whose native registry owns validation.
+            assert result.ok
+            execution = [r for r in requests if r["method"] == "session.executeCommand"]
+            assert execution and execution[-1]["params"]["command"] == command
     asyncio.run(run())
 
 
-def test_catalog_filters_non_compact_commands_from_an_older_bridge(tmp_path: Path) -> None:
+def test_wide_catalog_passes_through(tmp_path: Path) -> None:
     async def run() -> None:
         async with bridge(tmp_path, mode="wide-catalog") as (runtime, _, _):
             catalog = await runtime.list_commands("session", "native", query="compact", limit=1)
-            assert [command.id for command in catalog] == ["compact"]
+            # The bridge is the source of truth for which commands exist; the
+            # connector relays its answer without a compact-only whitelist.
+            assert [command.id for command in catalog] == ["compact", "export", "goal", "permission"]
     asyncio.run(run())
 
 

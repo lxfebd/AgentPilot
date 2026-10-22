@@ -38,11 +38,14 @@ status when the native snapshot omits item status.
 
 ## DeepSeek Harness
 
-AA exposes only `/compact` for DSH. The bridge filters the current session
-Agent's native registry before applying search and limits. If that Agent has no
-registered `compact` command, the catalog is empty. Both the bridge and Python
-connector reject other command names, including commands that depend on DSH's
-client UI. The connector also filters catalogs returned by older bridges.
+AA exposes the current session Agent's full native command registry for DSH
+(`/compact`, `/goal`, `/plan`, `/export`, ... as registered). The bridge applies
+search and limits to that registry; the Python connector relays the bridge's
+answer without its own whitelist, so both ends expose the same catalog. If the
+Agent has no registered commands, the catalog is empty. Commands that depend on
+DSH's client UI still run headless: the native registry's parser and handler own
+validation, so anything they cannot validate is rejected with `unknown_command`
+before dispatch.
 
 Compaction still runs through the native registry's parser and handler, preserving
 the exact submitted line and native result text. The shipped DSH command takes

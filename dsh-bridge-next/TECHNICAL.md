@@ -184,10 +184,11 @@ Bridge 的独占锁决定端点文件的写入权。获得锁后会重建残留�
 私有 runtime 端点提供 `session.listCommands` 与 `session.executeCommand`。两者使用现有
 `sessionId` / `externalSessionId` 身份检查和原生 source 可用性，通过 Session Controller
 取得该会话的权威 Agent，再调用真实 `commands.list` / `commands.execute`；命令文本不会
-作为普通 prompt 发送。AA 仅开放 `/compact`：目录先过滤出当前 Agent 注册的 `compact`，
-再执行搜索和数量限制；没有注册时返回空列表。Bridge 和 Python Connector 均拒绝其他
-命令名，Connector 还会过滤旧 Bridge 返回的其他命令，避免暴露依赖 DSH 客户端 UI 的入口。
-模型和权限选择继续走现有会话控件及其独立接口。
+作为普通 prompt 发送。AA 放行当前 Agent 注册的全部原生命令（`/compact`、`/goal`、
+`/plan`、`/export` 等）：目录对 registry 直接执行搜索和数量限制；没有注册时返回空
+列表。Bridge 和 Python Connector 不再各自维护 compact 白名单，两端目录一致；无法通过
+原生 parser/handler 校验的命令在派发前以 `unknown_command` 拒绝。模型和权限选择继续
+走现有会话控件及其独立接口。
 
 目录每次从 registry 读取，包含 Agent 的 scoped override，列表
 支持 `query` 和 1–1000 的 `limit`（默认 50）。未提供 registry/controller 的 Host 不启用

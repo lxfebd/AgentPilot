@@ -24,32 +24,38 @@ async function fixture(run: (f: Awaited<ReturnType<typeof commandRuntime>>) => P
   try { await run(f) } finally { await f.close(); await rm(home, { recursive: true, force: true }) }
 }
 
-test('AA exposes and executes only compact even when UI-dependent commands are registered', async () => fixture(async f => {
-  const { agent, params } = await f.create('compact-only')
+test('AA exposes every registered native command and executes each through its own handler', async () => fixture(async f => {
+  const { agent, params } = await f.create('full-catalog')
   const calls: string[] = []
   for (const name of ['about', 'compact', 'export', 'goal', 'plan', 'model', 'file', 'feedback']) {
     f.ctx.commands.register({ name, description: name, handler: () => { calls.push(name); return { kind: 'success' } } })
   }
   const list = async (values = {}) => (await f.router.request('session.listCommands', { ...params, ...values }, signal()) as { commands: Descriptor[] }).commands
-  assert.deepEqual((await list()).map(c => c.id), ['compact'])
-  assert.deepEqual((await list({ limit: 1 })).map(c => c.id), ['compact'])
-  assert.deepEqual(await list({ query: 'export' }), [])
-  for (const command of ['about', 'export', 'goal', 'plan', 'model', 'file', 'feedback', 'permission', 'compact-thread']) {
+  assert.deepEqual((await list()).map(c => c.id).sort(), ['about', 'compact', 'export', 'feedback', 'file', 'goal', 'model', 'permission', 'plan'])
+  assert.deepEqual((await list({ limit: 1 })).length, 1)
+  assert.deepEqual((await list({ query: 'export' })).map(c => c.id), ['export'])
+  for (const command of ['about', 'export', 'goal', 'plan', 'model', 'file', 'feedback']) {
     const result = await f.router.request('session.executeCommand', { ...params, command, raw: `/${command}` }, signal()) as Result
-    assert.equal(result.ok, false)
-    assert.equal(result.code, 'unknown_command')
+    assert.equal(result.ok, true, `/${command} should execute`)
   }
-  assert.deepEqual(calls, [])
-  assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'command/run').length, 0)
+  assert.deepEqual(calls.sort(), ['about', 'export', 'feedback', 'file', 'goal', 'model', 'plan'])
+  assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'command/run').length, 7)
   const result = await f.router.request('session.executeCommand', { ...params, command: 'compact', raw: '/compact' }, signal()) as Result
   assert.equal(result.ok, true)
-  assert.deepEqual(calls, ['compact'])
+  assert.ok(calls.includes('compact'))
+  const before = agent.session.snapshotEvents().filter(e => e.type === 'command/run').length
+  const unknown = await f.router.request('session.executeCommand', { ...params, command: 'absent', raw: '/absent' }, signal()) as Result
+  assert.equal(unknown.ok, false)
+  assert.equal(unknown.code, 'unknown_command')
+  assert.equal(agent.session.snapshotEvents().filter(e => e.type === 'command/run').length, before)
 }))
 
-test('AA does not invent compact when the native Agent has no compact command', async () => fixture(async f => {
+test('catalog mirrors only what the native Agent registered and never invents compact', async () => fixture(async f => {
   const { params } = await f.create('without-compact')
   const result = await f.router.request('session.listCommands', params, signal()) as { commands: Descriptor[] }
-  assert.deepEqual(result.commands, [])
+  // The host ships its own registry (e.g. permission presets); compact is absent
+  // because this Agent never registered it, and the bridge must not add it.
+  assert.ok(!result.commands.some(c => c.id === 'compact'))
   const execution = await f.router.request('session.executeCommand', { ...params, command: 'compact', raw: '/compact' }, signal()) as Result
   assert.equal(execution.ok, false)
   assert.equal(execution.code, 'unknown_command')
