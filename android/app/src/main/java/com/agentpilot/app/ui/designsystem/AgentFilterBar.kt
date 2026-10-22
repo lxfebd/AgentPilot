@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -92,11 +94,16 @@ private fun AgentFilterChip(
 ) {
     val colors = LocalAAColors.current
     val haptic = LocalHapticFeedback.current
-    val background = if (selected) colors.primaryAction else colors.secondaryActionSurface
-    val foreground = if (selected) colors.onPrimaryAction else colors.inkSoft
+    val isSelected = selected
+    val background = if (isSelected) colors.primaryAction else colors.secondaryActionSurface
+    val foreground = if (isSelected) colors.onPrimaryAction else colors.inkSoft
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
+            // 选中态必须暴露给无障碍与自动化：语义必须放在最外层才会把
+            // 内部 icon/label 子节点合并掉，读屏与 UI 测试才能读到当前筛选
+            // 项（selected），而不是一串互不相干的纯文本节点。
+            .semantics(mergeDescendants = true) { this.selected = isSelected }
             .background(background)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },

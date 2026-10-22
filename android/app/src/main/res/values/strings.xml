@@ -692,6 +692,8 @@
     <string name="schedules_weekday_6">Sat</string>
     <string name="schedules_weekday_7">Sun</string>
     <string name="files_edit_hint">Edit remote file</string>
+    <string name="profile_schedules">Scheduled tasks</string>
+    <string name="profile_schedules_hint">View and create timed or recurring tasks</string>
     <string name="profile_archived_sessions">Archived sessions</string>
     <string name="profile_archived_sessions_hint">View archived sessions</string>
     <string name="profile_updates">Updates</string>

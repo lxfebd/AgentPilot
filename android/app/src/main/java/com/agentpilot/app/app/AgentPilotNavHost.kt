@@ -270,6 +270,7 @@ internal fun AgentPilotNavHost(
                     profileOpen = profileOpen,
                     onProfileOpenChange = { profileOpen = it },
                     onOpenArchivedSessions = { navigate(AppDestination.ArchivedSessions) },
+                    onOpenSchedules = { navigate(AppDestination.Schedules) },
                     onLoadAccount = onLoadAccount,
                     onLoadAccountAuthConfig = onLoadAccountAuthConfig,
                     onUpdateDisplayName = onUpdateDisplayName,

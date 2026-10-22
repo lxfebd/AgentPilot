@@ -17,7 +17,7 @@ Native Android client for AgentPilot.
 4. Connect an Android phone with USB debugging enabled.
 5. Run the `app` configuration.
 
-## Install 2.0.0
+## Install 2.3.2
 
 Download the Android APK from the [release download table](../README.md#下载与入口).
 The client supports Android 8.0+ (API 26), sessions, devices, runtime configuration,

@@ -52,8 +52,30 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(newBase.withSavedLanguage())
     }
 
+    /**
+     * 向系统申请面板的最高刷新率。
+     *
+     * 不显式指定 preferredDisplayModeId 时，OEM 定制（含 HyperOS）常把应用窗口
+     * 钉在 60Hz，即便面板是 120/144Hz，Compose 动画就会按 60fps 节流。只接受
+     * 与当前分辨率相同的 mode：切换分辨率会引发全量布局重排。
+     */
+    private fun requestHighRefreshRate() {
+        @Suppress("DEPRECATION")
+        val display = window.windowManager.defaultDisplay ?: return
+        @Suppress("DEPRECATION")
+        val current = display.mode ?: return
+        @Suppress("DEPRECATION")
+        val best = display.supportedModes
+            .filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+            .maxByOrNull { it.refreshRate } ?: return
+        if (best.refreshRate <= current.refreshRate) return
+        @Suppress("DEPRECATION")
+        window.attributes = window.attributes.apply { preferredDisplayModeId = best.modeId }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestHighRefreshRate()
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
                 .memoryCache {

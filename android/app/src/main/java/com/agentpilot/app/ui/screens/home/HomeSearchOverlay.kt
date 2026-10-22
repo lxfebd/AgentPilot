@@ -29,7 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +67,17 @@ internal fun HomeSearchOverlay(
 ) {
     val colors = LocalAAColors.current
     var query by remember { mutableStateOf("") }
+    // 打开即聚焦：浮层的目的就是输入关键词。不主动聚焦时焦点可能停在
+    // 底层列表上，点击输入框收不到 IME 文本（真机复现：adb 注入与软键盘
+    // 均不进字），键盘也不会自动弹出。
+    val keyboard = LocalSoftwareKeyboardController.current
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        runCatching {
+            searchFocus.requestFocus()
+            keyboard?.show()
+        }
+    }
     // Precompute a lowercase haystack per session once per inventory change, then
     // filter off the main thread with a small debounce. A dashboard snapshot
     // replaces the list reference frequently, so filtering inline on every
@@ -138,7 +152,7 @@ internal fun HomeSearchOverlay(
                             singleLine = true,
                             textStyle = TextStyle(color = colors.ink, fontSize = 15.sp),
                             cursorBrush = SolidColor(colors.ink),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().focusRequester(searchFocus),
                         )
                     }
                 }

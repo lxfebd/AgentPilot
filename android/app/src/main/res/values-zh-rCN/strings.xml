@@ -690,6 +690,8 @@
     <string name="schedules_weekday_6">六</string>
     <string name="schedules_weekday_7">日</string>
     <string name="files_edit_hint">编辑远程文件</string>
+    <string name="profile_schedules">定时任务</string>
+    <string name="profile_schedules_hint">查看与创建定时、周期任务</string>
     <string name="profile_archived_sessions">已归档会话</string>
     <string name="profile_archived_sessions_hint">查看已归档的会话</string>
     <string name="profile_updates">更新</string>

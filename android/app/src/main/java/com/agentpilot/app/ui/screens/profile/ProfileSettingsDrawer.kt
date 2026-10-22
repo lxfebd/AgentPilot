@@ -35,6 +35,7 @@ import com.agentpilot.app.feature.update.AppUpdateViewModel
 import com.agentpilot.app.ui.designsystem.LocalAAColors
 import com.composables.icons.lucide.Archive
 import com.composables.icons.lucide.Archive
+import com.composables.icons.lucide.Bell
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.Lucide
@@ -82,6 +83,7 @@ fun ProfileSettingsDrawer(
     onClearAvatar: suspend () -> Result<AuthMeResponse>,
     onChangePassword: suspend (String) -> Result<Unit>,
     onOpenArchivedSessions: () -> Unit,
+    onOpenSchedules: () -> Unit,
     onSignOut: () -> Unit,
     onClose: () -> Unit,
     onNotice: (String, Boolean) -> Unit,
@@ -349,6 +351,17 @@ fun ProfileSettingsDrawer(
                                         appUpdateViewModel.checkForUpdate(showPrompt = false)
                                     }
                                 },
+                            )
+                        }
+                    }
+                    item("schedules") {
+                        ProfileCard {
+                            ProfileRow(
+                                icon = Lucide.Bell,
+                                title = stringResource(R.string.profile_schedules),
+                                subtitle = stringResource(R.string.profile_schedules_hint),
+                                showChevron = false,
+                                onClick = onOpenSchedules,
                             )
                         }
                     }
