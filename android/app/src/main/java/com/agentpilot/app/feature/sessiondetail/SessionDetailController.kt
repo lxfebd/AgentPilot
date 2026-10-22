@@ -326,7 +326,18 @@ class SessionDetailController(
                     )
                 },
                 onFailure = { error ->
-                    next = next.copy(capabilities = next.capabilities.copy(errorMessage = error.userMessage()))
+                    // 能力事实已经被 UI 消费过；connector RPC 抖动会把
+                    // /runtime/capabilities 打成一次 409/500（重试即 200）。
+                    // 此时覆盖 errorMessage 会让 capabilityFactsFresh 变
+                    // false，整个 composer 被锁死成"无法发送"。保留最近
+                    // 已知事实——服务端每次操作仍会重新校验能力，客户端
+                    // 只是提示层，过期的"可用"最多让服务端先报错。
+                    val capabilities = next.capabilities
+                    next = if (capabilities.isLoaded) {
+                        next.copy(capabilities = capabilities.copy(errorMessage = null))
+                    } else {
+                        next.copy(capabilities = capabilities.copy(errorMessage = error.userMessage()))
+                    }
                 },
             )
             noticesRequest.await().fold(
