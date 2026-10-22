@@ -90,7 +90,7 @@ export async function ensureBinding(root: string, account: Account, api: Account
     && owned.get(binding.connectorId)!.connectorKind === 'desktop' && verified
   const cliCandidate = shared.find(id => owned.get(id)!.connectorKind !== 'desktop')
   const matchedId = !options.renew && binding?.connectorId ? binding.connectorId
-    : (keepDesktopBinding ? binding.connectorId : cliCandidate)
+    : (keepDesktopBinding ? binding?.connectorId ?? null : cliCandidate)
   if (matchedId) {
     const device = owned.get(matchedId)!
     const cached = binding?.connectorId === matchedId ? binding : null
