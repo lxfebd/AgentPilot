@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,16 +5,23 @@ plugins {
 }
 
 // Open-source build ships without a bundled official server: users self-host /
-// connect to their own instance from the login screen. Inject your own default
-// via gradle property agentPilot.serverUrl (or android/local.properties, gitignored).
-val localSettings = Properties().apply {
-    rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
-}
-val officialServerUrl = providers.gradleProperty("agentPilot.officialServerUrl")
-    .orElse(localSettings.getProperty("agentPilot.officialServerUrl", ""))
-    .get()
-val debugServerUrl = providers.gradleProperty("agentPilot.serverUrl")
-    .orElse(localSettings.getProperty("agentPilot.serverUrl", officialServerUrl))
+// connect to their own instance from the login screen.
+//
+// Two build intents share this project, and the release variant must stay
+// server-free so a public APK never embeds a private endpoint:
+//   - private/self-use  -> debug variant, may pin the operator's own server
+//   - public release    -> release variant, ships with no default server at all
+//
+// The pinned address for a private build comes from an explicit Gradle property
+// only. `local.properties` is machine-local and gitignored, so reading it here
+// would bake whatever this workstation happens to hold into any release built on
+// it. Pass it explicitly instead, e.g.
+//   ./gradlew assembleDebug -PagentPilot.officialServerUrl=https://host
+//
+// A public release deliberately ignores both sources and stays empty.
+val pinnedServerUrl = providers.gradleProperty("agentPilot.officialServerUrl")
+    .orElse(providers.gradleProperty("agentPilot.serverUrl"))
+    .orElse("")
     .get()
 
 fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\")
@@ -34,7 +39,6 @@ android {
         targetSdk = 36
         versionCode = 24
         versionName = "2.3.3"
-        buildConfigField("String", "OFFICIAL_SERVER_URL", officialServerUrl.asBuildConfigString())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -44,7 +48,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "OFFICIAL_SERVER_URL", debugServerUrl.asBuildConfigString())
+            // Private builds: the pinned server is opt-in per invocation, so a
+            // workstation's gitignored local.properties can never leak into a
+            // shared artifact.
+            buildConfigField("String", "OFFICIAL_SERVER_URL", pinnedServerUrl.asBuildConfigString())
         }
         release {
             isMinifyEnabled = false
@@ -52,6 +59,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Public release: no server is bundled. Users enter their own address
+            // in the login flow, and the official-cloud entry stays disabled.
+            buildConfigField("String", "OFFICIAL_SERVER_URL", "\"\"")
         }
     }
 

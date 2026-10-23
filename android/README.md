@@ -22,9 +22,10 @@ Native Android client for AgentPilot.
 Download the Android APK from the [release download table](../README.md#下载与入口).
 The client supports Android 8.0+ (API 26), sessions, devices, runtime configuration,
 approvals, files and terminals through the v2 API. No server is bundled: enter
-your own service address in the login flow. A build can pin a default address
-with the `agentPilot.officialServerUrl` Gradle property (or `local.properties`),
-which also enables the official-cloud entry.
+your own service address in the login flow. A private build can pin a default
+address with the `agentPilot.officialServerUrl` Gradle property, which also
+enables the official-cloud entry; see
+[Private build vs public release](#private-build-vs-public-release).
 
 ## Build from the command line
 
@@ -46,6 +47,34 @@ prevents an in-place update of an installed app signed with another key.
 
 `local.properties` remains machine-specific and ignored. The manifest allows
 HTTP for local/self-hosted addresses; use HTTPS for public service endpoints.
+
+### Private build vs public release
+
+`BuildConfig.OFFICIAL_SERVER_URL` decides whether the app starts with a pinned
+server and shows the official-cloud entry. Two build intents share this project:
+
+- **Public release** — `assembleRelease`, and `assembleDebug` with no extra
+  property, ships with **no server pinned**. Users type their own address in the
+  login flow. Never publish such an artifact with a private endpoint baked in.
+- **Private/self-use build** — pin your own address explicitly per invocation:
+
+```bash
+./gradlew assembleDebug -PagentPilot.officialServerUrl=https://your-host
+```
+
+The pinned address comes from that Gradle property **only**.
+`local.properties` is deliberately not read for it: it is machine-local and
+gitignored, so relying on it would bake whatever one workstation happens to hold
+into any artifact built there, including one meant for publication.
+
+To confirm an artifact is safe to publish, check the generated file:
+
+```bash
+grep OFFICIAL_SERVER_URL \
+  app/build/generated/source/buildConfig/release/com/agentpilot/app/BuildConfig.java
+```
+
+It must read `""`.
 
 ## Application updates
 
