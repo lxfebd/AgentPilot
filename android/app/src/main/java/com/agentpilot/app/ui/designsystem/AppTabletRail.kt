@@ -550,7 +550,7 @@ private fun RailProjects(
     }
     val attentionSessions = visibleProjects
         .flatMap { project -> projectSessionsById[project.id].orEmpty() }
-        .filter { railSessionStatus(it).attention }
+        .filter { !it.archived && railSessionStatus(it).attention }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -575,7 +575,7 @@ private fun RailProjects(
         }
         visibleProjects.forEach { project ->
             val expanded = project.id in expandedProjectIds
-            val sessions = projectSessionsById[project.id].orEmpty()
+            val sessions = projectSessionsById[project.id].orEmpty().filterNot { it.archived }
             val chevronRotation by animateFloatAsState(
                 if (expanded) 180f else 0f,
                 label = "railProjectChevron",

@@ -49,8 +49,8 @@ internal fun HomeTaskDashboard(
     onPairDevice: () -> Unit,
 ) {
     val colors = LocalAAColors.current
-    val allSessions = remember(projectSessionsById, state.sessions, selectedAgentRuntime) {
-        (projectSessionsById.values.flatten() + state.sessions)
+    val allSessions = remember(projectSessionsById, state.sessions, state.archivedSessions, selectedAgentRuntime) {
+        (projectSessionsById.values.flatten() + state.sessions + state.archivedSessions)
             .associateBy { it.id }
             .values
             .filter { !it.archived }
