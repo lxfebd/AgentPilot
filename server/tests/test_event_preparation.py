@@ -6,6 +6,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+
 from agent_server.infra import event_preparation
 from agent_server.infra.event_preparation import (
     EventPreparationCapacityError,

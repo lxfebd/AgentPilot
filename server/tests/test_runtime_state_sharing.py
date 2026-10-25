@@ -3,11 +3,12 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from fakeredis import FakeServer
+from fakeredis.aioredis import FakeRedis
+
 from agent_server.core.models import SessionRuntimeState
 from agent_server.infra.redis_coordinator import RedisCoordinator
 from agent_server.services.session_runtime_state_cache import SessionRuntimeStateCache
-from fakeredis import FakeServer
-from fakeredis.aioredis import FakeRedis
 
 
 def caches(distributed):

@@ -933,7 +933,7 @@ class TerminalBroker:
         try:
             await relay.websocket.send_json(payload)
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             await self.detach_connector(terminal_id, relay.websocket)
             return False
 
@@ -1014,7 +1014,7 @@ class TerminalBroker:
         try:
             await websocket.send_json(payload)
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     @staticmethod

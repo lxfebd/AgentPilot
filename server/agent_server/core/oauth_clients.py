@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
-
+from dataclasses import dataclass
 
 # Loopback redirect for the DSH plugin: the OS allocates the port, so the host,
 # scheme and path must match exactly and only the port is free.  No credentials,

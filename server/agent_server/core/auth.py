@@ -136,7 +136,7 @@ def verify_signed_token(kind: str, token: str) -> dict[str, Any] | None:
 def verify_user_access_token(token: str) -> str | None:
     try:
         header, payload, signature = token.split(".", 2)
-        expected = _b64_bytes(hmac.new(resolve_secret(), f"{header}.{payload}".encode("utf-8"), hashlib.sha256).digest())
+        expected = _b64_bytes(hmac.new(resolve_secret(), f"{header}.{payload}".encode(), hashlib.sha256).digest())
         if not hmac.compare_digest(expected, signature):
             return None
         data = json.loads(_b64_decode(payload).decode("utf-8"))

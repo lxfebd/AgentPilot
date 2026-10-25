@@ -4,12 +4,13 @@ import asyncio
 from datetime import datetime
 
 import pytest
+from test_backend_mvp import auth_headers, make_client
+
 from agent_server.core.announcement import AnnouncementUpdate
 from agent_server.services.announcements import (
     AnnouncementService,
     next_publication_time,
 )
-from test_backend_mvp import auth_headers, make_client
 
 
 def test_public_announcement_is_available_before_login_and_hides_drafts(tmp_path):

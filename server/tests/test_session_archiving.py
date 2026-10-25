@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from conftest import ApiV2TestClient as TestClient
@@ -32,7 +32,7 @@ class ArchiveClient:
     def sync(self, session_id, runtime, state, *, mode="meta", cwd="/repo"):
         self.tick += 1
         observed_at = (
-            datetime(2026, 9, 6, tzinfo=timezone.utc) + timedelta(seconds=self.tick)
+            datetime(2026, 9, 6, tzinfo=UTC) + timedelta(seconds=self.tick)
         ).isoformat()
         source = {
             "availability": state,

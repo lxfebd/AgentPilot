@@ -9,12 +9,11 @@ from __future__ import annotations
 import posixpath
 import secrets
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import PurePosixPath, PureWindowsPath
 
 import sqlalchemy as sa
 from alembic import op
-
 
 revision: str = "v2_29"
 down_revision: str | None = "v2_28"
@@ -66,7 +65,7 @@ def _next_project_name(base: str, names: set[str]) -> str:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _project_foreign_key() -> dict | None:

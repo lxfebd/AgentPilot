@@ -26,6 +26,10 @@ for key in tuple(os.environ):
         os.environ.pop(key)
 sys.path[:0] = [str(REPO / "server"), str(REPO / "server/tests")]
 
+from loguru import logger
+from sqlalchemy import event, insert, select, text, update
+from test_backend_mvp import create_connector_and_session, make_client
+
 from agent_server.api.connector_ingress import _ConnectorNotificationPump
 from agent_server.api.connectors import delete_connector
 from agent_server.app import create_app
@@ -38,9 +42,6 @@ from agent_server.services.connector_realtime import ConnectorRealtimeService
 from agent_server.services.effective_capabilities import (
     publish_connector_session_capabilities,
 )
-from loguru import logger
-from sqlalchemy import event, insert, select, text, update
-from test_backend_mvp import create_connector_and_session, make_client
 
 logger.remove()
 

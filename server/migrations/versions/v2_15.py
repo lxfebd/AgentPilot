@@ -12,7 +12,6 @@ from datetime import UTC, datetime
 import sqlalchemy as sa
 from alembic import op
 
-
 revision: str = "v2_15"
 down_revision: str | None = "v2_14"
 branch_labels: str | Sequence[str] | None = None

@@ -4,9 +4,9 @@ from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
 import pytest
+from test_auth import admin_token, bearer, make_client, pkce_challenge, register
 
 from agent_server.core.oauth_clients import DSH_PLUGIN_OAUTH_CLIENT
-from test_auth import admin_token, bearer, make_client, pkce_challenge, register
 
 
 @pytest.mark.parametrize("uri", [

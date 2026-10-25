@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from agent_server.infra.db import instance_settings as instance_settings_t
 from agent_server.core.utc import utc_now
+from agent_server.infra.db import instance_settings as instance_settings_t
 
 
 class InstanceSettingsRepository:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 API_V2_PREFIX = "/api/v2"
 
 

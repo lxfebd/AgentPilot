@@ -90,7 +90,7 @@ async def read_session_capability_facts(
         session.connectorId, "session.capabilities", params, timeout=10,
     )
     if not isinstance(result, dict) or not isinstance(result.get("capabilitySet"), dict):
-        raise ValueError("connector did not return a capability set")
+        raise TypeError("connector did not return a capability set")
     try:
         return ProtocolCapabilitySet.model_validate(result["capabilitySet"])
     except ValueError as exc:

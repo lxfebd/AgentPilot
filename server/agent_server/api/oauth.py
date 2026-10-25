@@ -5,9 +5,8 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from agent_server.core.auth import DEFAULT_USER_EXPIRES_IN, create_user_access_token
 from agent_server.core.api_namespace import api_v2_path
-from agent_server.core.oauth_clients import first_party_oauth_client
+from agent_server.core.auth import DEFAULT_USER_EXPIRES_IN, create_user_access_token
 from agent_server.core.models import (
     OAuthAuthorizeRequest,
     OAuthAuthorizeResponse,
@@ -15,10 +14,10 @@ from agent_server.core.models import (
     OAuthTokenResponse,
     UserView,
 )
+from agent_server.core.oauth_clients import first_party_oauth_client
 from agent_server.core.utc import utc_now
 from agent_server.deps import current_user, get_store
 from agent_server.infra.repositories.facade import Store
-
 
 router = APIRouter(tags=["oauth"])
 

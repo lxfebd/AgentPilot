@@ -8,11 +8,12 @@ import datetime as dt
 import hashlib
 from urllib.parse import parse_qs, urlparse
 
-from agent_server.app import create_app
+from conftest import ApiV2TestClient as TestClient
+from conftest import make_test_client
+
 from agent_server.core.auth import hash_password
 from agent_server.core.setup_token import SetupToken
 from agent_server.services.oauth import OAuthIdentity, create_pending_token
-from conftest import ApiV2TestClient as TestClient, make_test_client
 
 
 def make_client(tmp_path) -> TestClient:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 from agent_server import app
 from agent_server.core.process_settings import ProcessSettings
 

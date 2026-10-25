@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 
+from fakeredis import FakeServer
+from fakeredis.aioredis import FakeRedis
+
 from agent_server.core.events import events_from_invalidation, revisions_are_complete
 from agent_server.infra.fs_downloads import FsDownloadRelayManager
 from agent_server.infra.redis_coordinator import RedisCoordinator
@@ -11,8 +14,6 @@ from agent_server.infra.terminal_stream_hub import TerminalStreamHub
 from agent_server.infra.timeline_broker import TimelineBroker
 from agent_server.infra.ws_tickets import ClientWsTicketManager
 from agent_server.services.shell_tasks import ShellTaskManager
-from fakeredis import FakeServer
-from fakeredis.aioredis import FakeRedis
 
 
 def _coordinator(server: FakeServer) -> RedisCoordinator:

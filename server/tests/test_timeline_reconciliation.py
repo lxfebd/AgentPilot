@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from session_fixtures import create_session_with_project
 
 from agent_server.core.models import TimelineItem, TimelineItemIn
 from agent_server.core.timeline import (
@@ -9,7 +10,6 @@ from agent_server.core.timeline import (
 )
 from agent_server.infra.db.migrations import upgrade_database
 from agent_server.infra.repositories.facade import Store
-from session_fixtures import create_session_with_project
 
 
 def timeline_input(

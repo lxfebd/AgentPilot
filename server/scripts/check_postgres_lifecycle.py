@@ -38,8 +38,9 @@ def main():
     sys.path[:0] = [str(REPO / "server"), str(REPO / "server/tests")]
     os.chdir(REPO / "server")
 
-    from agent_server.infra.db import engine
     from sqlalchemy.pool import NullPool
+
+    from agent_server.infra.db import engine
 
     original_engine = engine.create_async_engine
 
@@ -52,6 +53,7 @@ def main():
     engine.create_async_engine = test_engine
     import conftest
     import pytest
+
     from agent_server.app import create_app
 
     def pg_client(destination):

@@ -445,14 +445,14 @@ class ConnectorRpcManager:
     ) -> None:
         connection = self._connections.get(connector_id)
         if connection is None:
-            return None
+            return
         request_id = message.get("id")
         if not isinstance(request_id, str):
-            return None
+            return
         future = connection.pending.get(request_id)
         if future is not None and not future.done():
             future.set_result(message)
-        return None
+        return
 
     async def _request_local(
         self,

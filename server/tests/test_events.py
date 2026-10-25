@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from session_fixtures import create_session_with_project
 
 from agent_server.core.events import (
     EventCursorError,
@@ -18,7 +19,6 @@ from agent_server.infra.connector_rpc import ConnectorRpcManager
 from agent_server.infra.db.migrations import upgrade_database
 from agent_server.infra.repositories.facade import Store
 from agent_server.services.event_recovery import EventRecoveryService
-from session_fixtures import create_session_with_project
 
 
 def test_event_cursor_is_a_strict_durable_revision_token() -> None:

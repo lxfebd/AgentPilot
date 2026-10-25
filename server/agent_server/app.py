@@ -321,14 +321,14 @@ def create_app(
                 "status": "ok",
                 "schemaVersion": app.state.database_schema_version,
             }
-        except Exception as exc:  # readiness must report dependency failures
+        except Exception as exc:  # noqa: BLE001 - readiness must report dependency failures
             ready = False
             checks["database"] = {"status": "error", "message": str(exc)}
         if app.state.redis.distributed:
             try:
                 await app.state.redis.ping(timeout_seconds=2)
                 checks["redis"] = {"status": "ok"}
-            except Exception as exc:  # readiness must report dependency failures
+            except Exception as exc:  # noqa: BLE001 - readiness must report dependency failures
                 ready = False
                 checks["redis"] = {"status": "error", "message": str(exc)}
         else:

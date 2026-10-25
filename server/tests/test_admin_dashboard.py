@@ -5,11 +5,11 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from conftest import ApiV2TestClient as TestClient, make_test_client
+from conftest import ApiV2TestClient as TestClient
+from conftest import make_test_client
+from runtime_fixtures import seed_runtime_inventory
 from sqlalchemy import insert, update
 
-from agent_server.app import create_app
-from runtime_fixtures import seed_runtime_inventory
 from agent_server.core.models import TimelineItemIn
 from agent_server.infra.db import dashboard_daily_metrics as dashboard_daily_metrics_t
 from agent_server.infra.db import sessions as sessions_t

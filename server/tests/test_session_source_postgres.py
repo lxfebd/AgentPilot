@@ -6,9 +6,10 @@ import asyncio
 import os
 
 import pytest
-from agent_server.infra.db import sessions
 from sqlalchemy import delete, select, text, update
 from test_backend_mvp import create_connector_and_session, make_client
+
+from agent_server.infra.db import sessions
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("AGENT_SERVER_DB_URL", "").startswith("postgresql"),

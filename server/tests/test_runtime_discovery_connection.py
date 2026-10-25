@@ -6,12 +6,12 @@ from typing import Any
 
 import pytest
 from conftest import ApiV2TestClient as TestClient
+from test_runtime_instances_lifecycle import _v2_discovery
 
 from agent_server.app import create_app
 from agent_server.core.device_runtime import RuntimeDiscoveryResponse
 from agent_server.infra.connector_rpc import ConnectorOfflineError
 from agent_server.services.device_runtimes import DeviceRuntimeOfflineError
-from test_runtime_instances_lifecycle import _v2_discovery
 
 ADMIN_USER = "user1"
 ADMIN_PASSWORD = "secret"

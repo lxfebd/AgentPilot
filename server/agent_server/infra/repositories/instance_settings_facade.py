@@ -56,9 +56,7 @@ class InstanceSettingsRepositoryMixin:
 
     async def set_oauth_provider_config(self, patch: dict[str, Any]) -> dict[str, Any] | None:
         current = await self.get_oauth_provider_config()
-        if patch.get("clientSecret") == "":
-            patch = {key: val for key, val in patch.items() if key != "clientSecret"}
-        elif patch.get("clientSecret") is None:
+        if patch.get("clientSecret") == "" or patch.get("clientSecret") is None:
             patch = {key: val for key, val in patch.items() if key != "clientSecret"}
         next_value = {**current, **patch}
         if "enabled" not in next_value:

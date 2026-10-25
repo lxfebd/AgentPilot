@@ -14,7 +14,6 @@ from agent_server.deps import get_store, require_admin
 from agent_server.infra.repositories.facade import Store
 from agent_server.services.admin_dashboard import AdminDashboardService
 
-
 router = APIRouter(
     prefix="/admin/dashboard",
     tags=["admin-dashboard"],

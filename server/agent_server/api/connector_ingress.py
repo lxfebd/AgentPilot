@@ -358,7 +358,7 @@ class _ConnectorNotificationPump:
                 params=params,
                 connection_id=self._connection_id,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "connector notification rejected connector_id={} method={}",
                 self._connector_id,
@@ -885,7 +885,7 @@ async def connector_terminal_relay_ws(
                 if isinstance(data_b64, str) and isinstance(seq, int):
                     try:
                         data = base64.b64decode(data_b64)
-                    except Exception:
+                    except (ValueError, TypeError):
                         data = b""
                     if data:
                         await broker.on_output(terminal_id, data=data, seq=seq)

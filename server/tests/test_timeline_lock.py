@@ -8,11 +8,11 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from session_fixtures import create_session_with_project
 
 from agent_server.core.models import TimelineItemIn
 from agent_server.infra.db.migrations import upgrade_database
 from agent_server.infra.repositories.facade import Store
-from session_fixtures import create_session_with_project
 
 
 def _make_item(session_id: str, item_id: str, order: int) -> TimelineItemIn:
