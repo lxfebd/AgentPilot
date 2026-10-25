@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { readFile, readdir, mkdir, unlink, writeFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
@@ -42,6 +43,25 @@ await mkdir(generatedDir, { recursive: true })
 const currentFiles = (await readdir(generatedDir)).filter((file) => file.endsWith(".ts"))
 
 if (checkOnly) {
+  // The manifest records each schema sha256; a schema edited without
+  // re-exporting would otherwise leave protocol:check green while the
+  // generated types drift from the contract.
+  const staleHashes = []
+  for (const artifact of manifest.artifacts) {
+    // Hash with LF line endings: the manifest is generated from LF text and
+    // core.autocrlf checkouts may have CRLF on disk for some artifacts.
+    const raw = await readFile(path.join(contractDir, artifact.path), "utf8")
+    const digest = createHash("sha256")
+      .update(raw.replace(/\r\n/g, "\n"))
+      .digest("hex")
+    if (digest !== artifact.sha256) {
+      staleHashes.push(`${artifact.path}: manifest ${artifact.sha256}, on disk ${digest}`)
+    }
+  }
+  if (staleHashes.length > 0) {
+    console.error(`schema sha256 mismatch (${staleHashes.length}):\n${staleHashes.join("\n")}`)
+    process.exitCode = 1
+  }
   const problems = []
   for (const [file, output] of expected) {
     try {
