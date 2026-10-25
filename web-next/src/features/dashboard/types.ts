@@ -1,9 +1,11 @@
 import type { AuthMe } from "@/features/auth";
 import type {
-  ProtocolCapability,
-  ProtocolCapabilitySet,
   ProtocolCapabilitiesResponse,
 } from "@/generated/protocol/v1/capabilities-response";
+import type {
+  ProtocolCapability,
+  ProtocolCapabilitySet,
+} from "@/generated/protocol/v1/capability-set";
 import type { ProtocolModelCatalog } from "@/generated/protocol/v1/model-catalog-response";
 import type { ProtocolPermissionCatalog } from "@/generated/protocol/v1/permission-catalog-response";
 import type { ProtocolSessionSnapshotResponse } from "@/generated/protocol/v1/session-snapshot-response";
@@ -11,6 +13,8 @@ import type { ProtocolWsTicketResponse } from "@/generated/protocol/v1/ws-ticket
 
 export type {
   ProtocolEventEnvelope,
+} from "@/generated/protocol/v1/event-envelope";
+export type {
   ProtocolEventRecoveryResponse,
 } from "@/generated/protocol/v1/event-recovery-response";
 export type {
@@ -25,7 +29,11 @@ export type {
   ProtocolPermissionItem,
 } from "@/generated/protocol/v1/permission-catalog-response";
 
-export type { ProtocolCapability, ProtocolCapabilitySet, ProtocolCapabilitiesResponse };
+export type {
+  ProtocolCapability,
+  ProtocolCapabilitySet,
+} from "@/generated/protocol/v1/capability-set";
+export type { ProtocolCapabilitiesResponse };
 
 export type ConnectorStatus = "offline" | "online";
 

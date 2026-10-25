@@ -25,7 +25,7 @@ export function findCapability(
   capabilityId: string,
   runtime?: RuntimeCapabilityScope,
 ): ProtocolCapability | null {
-  const matches = capabilitySet?.capabilities.filter(
+  const matches = (capabilitySet?.capabilities ?? []).filter(
     (capability) => capability.capabilityId === capabilityId,
   ) ?? []
   if (!runtime) return matches[0] ?? null
