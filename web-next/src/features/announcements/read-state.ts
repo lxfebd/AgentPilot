@@ -1,4 +1,5 @@
 import type { PublicAnnouncement } from "./types"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 
 export const ANNOUNCEMENT_READ_KEY = "aa.announcement.read.v1"
 export const ANNOUNCEMENT_READ_EVENT = "aa:announcement-read"
@@ -19,12 +20,8 @@ export function announcementPageEnabled(page: string | null): boolean {
 
 export function readAnnouncementTimestamp(): string | null {
   if (typeof window === "undefined") return null
-  try {
-    const stored = window.localStorage.getItem(ANNOUNCEMENT_READ_KEY)
-    if (timestamp(stored) > timestamp(memoryReadAt)) memoryReadAt = stored
-  } catch {
-    // Private browsing and storage restrictions must not block authentication.
-  }
+  const stored = safeGet(ANNOUNCEMENT_READ_KEY)
+  if (timestamp(stored) > timestamp(memoryReadAt)) memoryReadAt = stored
   return memoryReadAt
 }
 
@@ -32,10 +29,6 @@ export function markAnnouncementRead(publishedAt: string): void {
   if (typeof window === "undefined" || !timestamp(publishedAt)) return
   if (timestamp(publishedAt) <= timestamp(readAnnouncementTimestamp())) return
   memoryReadAt = publishedAt
-  try {
-    window.localStorage.setItem(ANNOUNCEMENT_READ_KEY, publishedAt)
-  } catch {
-    // Retain the read marker for this tab even if persistent storage is unavailable.
-  }
+  safeSet(ANNOUNCEMENT_READ_KEY, publishedAt)
   window.dispatchEvent(new Event(ANNOUNCEMENT_READ_EVENT))
 }

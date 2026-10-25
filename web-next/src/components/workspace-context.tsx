@@ -35,6 +35,7 @@ import {
 } from "@/components/session/optimistic-timeline"
 import { sortSessionViews } from "@/components/session/session-list-order"
 import { isApiError } from "@/lib/api/errors"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 
 // ─── Panel / page types ───────────────────────────────────────
 
@@ -359,7 +360,7 @@ const PANEL_IDS: PanelId[] = ["files", "terminal"]
 function readStoredPanelModes(): Record<PanelId, PanelMode> {
   if (typeof window === "undefined") return DEFAULT_PANEL_MODES
   try {
-    const raw = window.localStorage.getItem(PANEL_MODE_STORAGE_KEY)
+    const raw = safeGet(PANEL_MODE_STORAGE_KEY)
     if (!raw) return DEFAULT_PANEL_MODES
     const parsed = JSON.parse(raw) as Partial<Record<PanelId, PanelMode>>
     const next = { ...DEFAULT_PANEL_MODES }
@@ -379,53 +380,33 @@ function persistedPanelMode(mode: PanelMode): PanelMode {
 
 function writeStoredPanelModes(panels: Record<PanelId, PanelMode>) {
   if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(
-      PANEL_MODE_STORAGE_KEY,
-      JSON.stringify({
-        files: persistedPanelMode(panels.files),
-        terminal: persistedPanelMode(panels.terminal),
-      }),
-    )
-  } catch {
-    // Persisting the panel preference is best-effort.
-  }
+  safeSet(
+    PANEL_MODE_STORAGE_KEY,
+    JSON.stringify({
+      files: persistedPanelMode(panels.files),
+      terminal: persistedPanelMode(panels.terminal),
+    }),
+  )
 }
 
 function readStoredSidebarShowsSessions(): boolean {
   if (typeof window === "undefined") return false
-  try {
-    return window.localStorage.getItem(SIDEBAR_SHOW_SESSIONS_STORAGE_KEY) === "1"
-  } catch {
-    return false
-  }
+  return safeGet(SIDEBAR_SHOW_SESSIONS_STORAGE_KEY) === "1"
 }
 
 function writeStoredSidebarShowsSessions(show: boolean) {
   if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(SIDEBAR_SHOW_SESSIONS_STORAGE_KEY, show ? "1" : "0")
-  } catch {
-    // Persisting the sidebar preference is best-effort.
-  }
+  safeSet(SIDEBAR_SHOW_SESSIONS_STORAGE_KEY, show ? "1" : "0")
 }
 
 function readStoredSidebarCompactSessions(): boolean {
   if (typeof window === "undefined") return false
-  try {
-    return window.localStorage.getItem(SIDEBAR_COMPACT_SESSIONS_STORAGE_KEY) === "1"
-  } catch {
-    return false
-  }
+  return safeGet(SIDEBAR_COMPACT_SESSIONS_STORAGE_KEY) === "1"
 }
 
 function writeStoredSidebarCompactSessions(compact: boolean) {
   if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(SIDEBAR_COMPACT_SESSIONS_STORAGE_KEY, compact ? "1" : "0")
-  } catch {
-    // Persisting the sidebar preference is best-effort.
-  }
+  safeSet(SIDEBAR_COMPACT_SESSIONS_STORAGE_KEY, compact ? "1" : "0")
 }
 
 export function useWorkspace() {

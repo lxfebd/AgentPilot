@@ -1,4 +1,5 @@
 import type { AuthResponse, StoredSession } from "@/features/auth/types";
+import { safeGet, safeRemove, safeSet } from "@/lib/safe-storage";
 
 const SESSION_KEY = "aa.session.v1";
 
@@ -13,7 +14,7 @@ export function authResponseToSession(auth: AuthResponse): StoredSession {
 export function loadStoredSession(): StoredSession | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
+    const raw = safeGet(SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredSession>;
     if (!parsed.accessToken || !parsed.userId || !parsed.role) return null;
@@ -28,10 +29,10 @@ export function loadStoredSession(): StoredSession | null {
 }
 
 export function saveStoredSession(session: StoredSession): void {
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  safeSet(SESSION_KEY, JSON.stringify(session));
 }
 
 export function clearStoredSession(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(SESSION_KEY);
+  safeRemove(SESSION_KEY);
 }

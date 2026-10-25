@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { createClientId } from "@/lib/id"
+import { safeGet, safeRemove, safeSet } from "@/lib/safe-storage"
 import { isApiError } from "@/lib/api/errors"
 import { cn } from "@/lib/utils"
 import { dashboardApi } from "@/features/dashboard/api"
@@ -298,21 +299,13 @@ function composerDraftStorageKey(sessionId: string): string {
 }
 
 function readComposerDraft(sessionId: string): string {
-  try {
-    return window.localStorage.getItem(composerDraftStorageKey(sessionId)) ?? ""
-  } catch {
-    return ""
-  }
+  return safeGet(composerDraftStorageKey(sessionId)) ?? ""
 }
 
 function writeComposerDraft(sessionId: string, value: string) {
-  try {
-    const key = composerDraftStorageKey(sessionId)
-    if (value) window.localStorage.setItem(key, value)
-    else window.localStorage.removeItem(key)
-  } catch {
-    // Draft persistence is best-effort; private contexts can still use the composer.
-  }
+  const key = composerDraftStorageKey(sessionId)
+  if (value) safeSet(key, value)
+  else safeRemove(key)
 }
 
 export function SessionDetail({

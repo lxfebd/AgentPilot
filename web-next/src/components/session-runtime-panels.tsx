@@ -21,6 +21,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { NativeWindow } from "@/components/native-window"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 import { FilesPanelBody } from "@/components/panels/files-panel"
 import { TerminalPanelBody } from "@/components/panels/terminal-panel"
 import { useWorkspace, type PanelId } from "@/components/workspace-context"
@@ -267,7 +268,7 @@ export function readSavedLayout(
   if (typeof window === "undefined") return fallback
 
   try {
-    const raw = window.localStorage.getItem(key)
+    const raw = safeGet(key)
     if (!raw) return fallback
     const parsed = JSON.parse(raw)
     const stored = normalizeLayout(parsed, storagePanelIds, fallback)
@@ -295,7 +296,7 @@ export function writeSavedLayout(
   let storageLayout: Layout = normalized
   if (storagePanelIds.length !== panelIds.length || storagePanelIds.some((id) => !panelIds.includes(id))) {
     try {
-      const existing = window.localStorage.getItem(key)
+      const existing = safeGet(key)
       const parsed = existing ? JSON.parse(existing) : {}
       storageLayout = {
         ...(parsed && typeof parsed === "object" ? parsed as Layout : {}),
@@ -310,18 +311,10 @@ export function writeSavedLayout(
 
   if (typeof requestIdleCallback === "function") {
     requestIdleCallback(() => {
-      try {
-        window.localStorage.setItem(key, payload)
-      } catch {
-        // localStorage can be unavailable in private contexts. Resizing should still work.
-      }
+      safeSet(key, payload)
     })
     return
   }
 
-  try {
-    window.localStorage.setItem(key, payload)
-  } catch {
-    // localStorage can be unavailable in private contexts. Resizing should still work.
-  }
+  safeSet(key, payload)
 }

@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/components/auth/auth-context"
 import { INITIAL_SESSION_TOOL_TABS_STATE } from "@/components/session-tool-tabs"
 import { API_NAMESPACE } from "@/lib/api/client"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 import { readTerminalPreferences, terminalPreferenceKey, writeTerminalPreferences } from "./session-terminal-preferences"
 
 const SessionToolSidebarStateContext = React.createContext<SessionToolSidebarStore | null>(null)
@@ -19,10 +20,10 @@ const SessionToolSidebarStateContext = React.createContext<SessionToolSidebarSto
 export function SessionToolSidebarStateProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth()
   const [store] = React.useState(() => {
-    let storage: Storage | null = null
-    try {
-      if (typeof window !== "undefined") storage = window.localStorage
-    } catch { /* Browser storage may be disabled. Inventory queries remain available. */ }
+    const storage: Pick<Storage, "getItem" | "setItem"> = {
+      getItem: safeGet,
+      setItem: safeSet,
+    }
     const server = JSON.stringify([process.env.NEXT_PUBLIC_AGENT_PILOT_API ?? "", API_NAMESPACE])
     const key = terminalPreferenceKey(server, session?.userId ?? "signed-out")
     return createSessionToolSidebarStore({
