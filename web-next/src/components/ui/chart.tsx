@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils'
 const THEMES = { light: "", dark: ".dark" } as const
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const
+// Chart config keys are spliced into the generated CSS rule verbatim;
+// reject keys that could break out of the rule or inject markup.
+const CHART_STYLE_KEY_RE = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 type TooltipNameType = number | string
 
 export type ChartConfig = Record<
@@ -83,7 +86,8 @@ function ChartContainer({
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme ?? config.color
+    ([key, config]) =>
+      CHART_STYLE_KEY_RE.test(key) && (config.theme ?? config.color)
   )
 
   if (!colorConfig.length) {
