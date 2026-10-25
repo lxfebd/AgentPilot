@@ -11,6 +11,7 @@ from agent_server.core.models import (
     DashboardSnapshotResponse,
 )
 from agent_server.deps import get_store, require_admin
+from agent_server.infra.repositories.admin_dashboard import AdminDashboardRepositoryImpl
 from agent_server.infra.repositories.facade import Store
 from agent_server.services.admin_dashboard import AdminDashboardService
 
@@ -22,7 +23,7 @@ router = APIRouter(
 
 
 def _service(db: Store = Depends(get_store)) -> AdminDashboardService:
-    return AdminDashboardService(db)
+    return AdminDashboardService(AdminDashboardRepositoryImpl(db.engine, db.list_connectors))
 
 
 @router.get("/settings", response_model=DashboardSettingsView)

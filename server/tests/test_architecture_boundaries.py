@@ -44,6 +44,7 @@ def test_services_do_not_depend_on_transport_or_repositories() -> None:
         "services",
         (
             "agent_server.api",
+            "agent_server.infra.db",
             "agent_server.infra.repositories",
             "fastapi",
             "starlette",
