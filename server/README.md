@@ -45,7 +45,7 @@ migration tests.
 The Server requires the database to be at its exact Alembic schema revision and
 does not mutate a production database during startup. `upgrade` fingerprints an
 unversioned v1 database, archives required legacy data, and applies every revision
-through the current schema (`v2_35`). Inspect the installed revision with:
+through the current schema (`v2_43`). Inspect the installed revision with:
 
 ```bash
 uv run python -m agent_server.infra.db.migrations current --verbose
@@ -71,7 +71,7 @@ by `v2_3`.
 
 Do not mix `v2.23` (or older) and `v2.24` writers against one database. Stop every old
 Server and other process that can write sessions or Timeline data, migrate the
-database through `v2_24` to the current head (`v2_35`), and only then start the
+database through `v2_24` to the current head (`v2_43`), and only then start the
 new writers. The PostgreSQL advisory
 lock serializes migration processes; it does not fence application writers that
 are already running.
@@ -244,7 +244,7 @@ The `/client-releases/check` and `/admin/client-releases` APIs and the release
 management page have been retired.
 
 The release-table retirement was introduced in `v2_32`. Existing deployments
-must apply the full current chain through `v2_35` before restart:
+must apply the full current chain through `v2_43` before restart:
 
 ```bash
 uv run python -m agent_server.infra.db.migrations upgrade
