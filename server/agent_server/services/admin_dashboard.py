@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import and_, delete, func, insert, select
 
+from agent_server.core.jsonutil import json_loads
 from agent_server.core.models import (
     DashboardBreakdownItem,
     DashboardHistogramBucket,
@@ -51,7 +52,6 @@ from agent_server.infra.db import (
 from agent_server.infra.db import (
     users as users_t,
 )
-from agent_server.infra.repositories.store_support import _json_loads
 from agent_server.services.repository_ports import AdminDashboardRepository
 
 DASHBOARD_SETTINGS_KEY = "settings"
@@ -139,7 +139,7 @@ class AdminDashboardService:
             settings = DashboardSettingsView()
             customized = False
         else:
-            settings = DashboardSettingsView.model_validate(_json_loads(row.value_json) or {})
+            settings = DashboardSettingsView.model_validate(json_loads(row.value_json) or {})
             customized = True
         return _normalized_settings(settings), customized
 

@@ -23,7 +23,7 @@ from agent_server.core.protocol import (
     ProtocolPermissionCatalog,
 )
 from agent_server.core.runtime_identity import RuntimeIdentity, RuntimeIdentityError
-from agent_server.infra.repositories.projects import MissingWorkspaceError
+from agent_server.core.workspace import MissingWorkspaceError
 from agent_server.services.connector_realtime import ConnectorRealtimeService
 from agent_server.services.ingest_effects import IngestEffect
 from agent_server.services.repository_ports import ConnectorNotificationRepository

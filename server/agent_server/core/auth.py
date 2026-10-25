@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import time
 from typing import Any
@@ -13,6 +14,10 @@ from agent_server.core.secret import resolve_secret
 
 DEFAULT_EXPIRES_IN = 900
 DEFAULT_USER_EXPIRES_IN = 60 * 60 * 24 * 7
+
+# Username format: 3-32 chars, lowercase letters / digits / hyphen / underscore.
+# Stored lowercase regardless of input.
+USERNAME_RE = re.compile(r"^[a-z0-9_-]{3,32}$")
 
 
 def create_connector_access_token(

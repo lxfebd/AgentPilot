@@ -19,7 +19,7 @@ def _imports(path: Path) -> set[str]:
 
 def _violations(layer: str, forbidden: tuple[str, ...]) -> list[str]:
     result: list[str] = []
-    for path in sorted((PACKAGE_ROOT / layer).glob("*.py")):
+    for path in sorted((PACKAGE_ROOT / layer).rglob("*.py")):
         for module in sorted(_imports(path)):
             if module == forbidden or module.startswith(forbidden):
                 result.append(f"{path.relative_to(PACKAGE_ROOT)} -> {module}")
@@ -39,12 +39,12 @@ def test_core_does_not_depend_on_outer_layers() -> None:
     ) == []
 
 
-def test_services_do_not_depend_on_transport_or_store_facade() -> None:
+def test_services_do_not_depend_on_transport_or_repositories() -> None:
     assert _violations(
         "services",
         (
             "agent_server.api",
-            "agent_server.infra.repositories.facade",
+            "agent_server.infra.repositories",
             "fastapi",
             "starlette",
         ),

@@ -9,7 +9,6 @@ import functools
 import hashlib
 import inspect
 import json
-import re
 import secrets
 import shutil
 from contextlib import asynccontextmanager
@@ -23,11 +22,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
 from agent_server.core.auth import (
+    USERNAME_RE,
     hash_password,
     password_salt,
     verify_password,
     verify_password_verifier,
 )
+from agent_server.core.jsonutil import json_loads as _json_loads
 from agent_server.infra.db import (
     build_engine,
     connector_protocol_capabilities as connector_protocol_capabilities_t,
@@ -76,10 +77,6 @@ from agent_server.infra.timeline_store import SqlTimelineStore
 
 DERIVED_SESSION_TITLE_MAX_CHARS = 48
 
-# Username format: 3-32 chars, lowercase letters / digits / hyphen / underscore.
-# Stored lowercase regardless of input.
-USERNAME_RE = re.compile(r"^[a-z0-9_-]{3,32}$")
-
 # instance_settings keys
 SETTING_REGISTRATION_OPEN = "registration_open"
 SETTING_OAUTH_REGISTRATION_OPEN = "oauth_registration_open"
@@ -93,12 +90,6 @@ MEMBER_ROLE = "member"
 
 def _json_dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-
-
-def _json_loads(value: str | None) -> Any:
-    if not value:
-        return None
-    return json.loads(value)
 
 
 def session_revision_fenced(method: Any) -> Any:

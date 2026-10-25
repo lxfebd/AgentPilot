@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from sqlalchemy import case, literal_column
 from pydantic import BaseModel
+from sqlalchemy import case, literal_column
 
-from agent_server.infra.repositories.store_support import *
-from agent_server.infra.repositories.projects import _clean_workspace_path
 from agent_server.core.models import ConnectorSessionResolution
-
+from agent_server.core.workspace import clean_workspace_path
+from agent_server.infra.repositories.store_support import *
 
 SESSION_CURSOR_VERSION = 1
 _SESSION_INVENTORY_UPDATE_CHUNK_SIZE = 4_000
@@ -309,7 +308,7 @@ class SessionRepositoryMixin:
             if cwd is None:
                 cwd = project.workspace_path
             else:
-                cleaned_cwd, cwd_key = _clean_workspace_path(
+                cleaned_cwd, cwd_key = clean_workspace_path(
                     cwd,
                     connector.device_os,
                 )
