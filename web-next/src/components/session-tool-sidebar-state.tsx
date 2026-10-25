@@ -11,7 +11,7 @@ import {
 } from "@/components/session-tool-sidebar-store"
 import { useAuth } from "@/components/auth/auth-context"
 import { INITIAL_SESSION_TOOL_TABS_STATE } from "@/components/session-tool-tabs"
-import { API_NAMESPACE } from "@/lib/api"
+import { API_NAMESPACE } from "@/lib/api/client"
 import { readTerminalPreferences, terminalPreferenceKey, writeTerminalPreferences } from "./session-terminal-preferences"
 
 const SessionToolSidebarStateContext = React.createContext<SessionToolSidebarStore | null>(null)

@@ -13,7 +13,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { dashboardApi } from "@/features/dashboard/api"
 import type { TerminalView } from "@/features/dashboard/types"
-import { apiPath } from "@/lib/api"
+import { apiPath } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 
 type TerminalPanelBodyProps = {

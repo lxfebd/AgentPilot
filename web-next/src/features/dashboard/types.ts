@@ -1,4 +1,4 @@
-import type { AuthMe } from "@/features/auth";
+import type { AuthMe } from "@/features/auth/types";
 import type {
   ProtocolCapabilitiesResponse,
 } from "@/generated/protocol/v1/capabilities-response";

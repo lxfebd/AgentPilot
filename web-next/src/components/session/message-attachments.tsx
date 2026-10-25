@@ -38,7 +38,7 @@ import {
 } from "@/features/dashboard/attachments"
 import { dashboardApi } from "@/features/dashboard/api"
 import type { SessionView } from "@/features/dashboard/types"
-import { apiPath } from "@/lib/api"
+import { apiPath } from "@/lib/api/client"
 import { openNativeFilePreviewWindow } from "@/lib/file-preview-window"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"

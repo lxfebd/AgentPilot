@@ -1,4 +1,4 @@
-import { ApiClient, apiClient, apiPath } from "@/lib/api";
+import { ApiClient, apiClient, apiPath } from "@/lib/api/client";
 import { shouldAuthorizeDownloadUrl } from "@/lib/api/download-auth";
 import type {
   AdminDashboardOverviewResponse,

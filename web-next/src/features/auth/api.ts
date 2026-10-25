@@ -1,5 +1,5 @@
 import { normalizeEmail } from "./account-profile";
-import { ApiClient, apiClient } from "@/lib/api";
+import { ApiClient, apiClient } from "@/lib/api/client";
 import {
   createPasswordVerifier,
   derivePasswordVerifier

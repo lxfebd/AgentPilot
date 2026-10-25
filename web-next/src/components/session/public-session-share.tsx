@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { dashboardApi } from "@/features/dashboard/api"
 import type { PublicSessionShareResponse, SessionView } from "@/features/dashboard/types"
-import { apiPath } from "@/lib/api"
+import { apiPath } from "@/lib/api/client"
 import { isVisibleTimelineItem, runtimeLabel } from "@/components/session/session-utils"
 
 export function PublicSessionShare({ shareId: initialShareId }: { shareId?: string } = {}) {
