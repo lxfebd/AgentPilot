@@ -5,9 +5,11 @@ import { authApi } from "@/features/auth/api"
 import {
   authResponseToSession,
   clearStoredSession,
+  isSessionExpired,
   loadStoredSession,
   saveStoredSession,
 } from "@/features/auth/session"
+import { ApiError } from "@/lib/api/errors"
 import type { AuthMe, OAuthFinalizePayload, StoredSession } from "@/features/auth/types"
 import { useTranslations } from "next-intl"
 import { authFlowHash, clearAuthFlow, rememberAuthFlow, takeAuthFlow } from "@/features/auth/continuation"
@@ -404,6 +406,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.hash = "#/signed-out"
     setScreenState("signed-out")
   }, [])
+
+  // The access token is persisted in localStorage in plain text, so enforce its
+  // JWT expiry locally and re-validate it against the server regularly; a token
+  // the server rejected (401) must not linger until the next page load.
+  React.useEffect(() => {
+    if (!session?.accessToken) return
+    const current = session
+    let cancelled = false
+    const expiryTimer = window.setInterval(() => {
+      if (isSessionExpired(current)) signOut()
+    }, 60_000)
+    async function validate() {
+      try {
+        await authApi.me(current.accessToken)
+      } catch (err) {
+        if (!cancelled && err instanceof ApiError && err.kind === "unauthorized") {
+          signOut()
+        }
+      }
+    }
+    void validate()
+    const validationTimer = window.setInterval(() => {
+      void validate()
+    }, 300_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(expiryTimer)
+      window.clearInterval(validationTimer)
+    }
+  }, [session, signOut])
 
   return (
     <AuthContext.Provider

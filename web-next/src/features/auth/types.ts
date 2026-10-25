@@ -166,6 +166,8 @@ export type StoredSession = {
   accessToken: string;
   userId: string;
   role: UserRole;
+  /** Absolute expiry of accessToken (ISO 8601); absent on legacy stored entries. */
+  expiresAt?: string;
 };
 
 // ─── Mobile sign-in ──────────────────────────────────────────────
