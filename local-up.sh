@@ -413,6 +413,7 @@ printf '%s[setup]%s Applying database migrations...\n' "${CYAN}" "${RESET}"
     AGENT_SERVER_DB_BACKEND=postgres \
     AGENT_SERVER_DB_URL="${AGENT_SERVER_DB_URL}" \
     AGENT_SERVER_REDIS_URL="${AGENT_SERVER_REDIS_URL}" \
+    AGENT_SERVER_ALLOW_DEV_SECRET=1 \
     uv run python -m agent_server.infra.db.migrations upgrade
 )
 
@@ -424,6 +425,7 @@ SERVER_COMMAND=(
   "AGENT_SERVER_FILES_LOCAL_ROOT=${AGENT_SERVER_FILES_LOCAL_ROOT}"
   "AGENT_SERVER_PUBLIC_ORIGIN=${SERVER_PUBLIC_ORIGIN}"
   "AGENT_SERVER_CORS_ORIGINS=${SERVER_CORS_ORIGINS}"
+  "AGENT_SERVER_ALLOW_DEV_SECRET=1"
   "LOGURU_LEVEL=${LOGURU_LEVEL:-INFO}"
   uv run uvicorn agent_server.app:create_app
   --factory

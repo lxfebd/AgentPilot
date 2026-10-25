@@ -497,6 +497,7 @@ printf '%s[setup]%s Applying database migrations...\n' "${CYAN}" "${RESET}"
     AGENT_SERVER_FILES_LOCAL_ROOT="${LOCAL_DIR}/files" \
     AGENT_SERVER_PUBLIC_ORIGIN="${WEB_URL}" \
     AGENT_SERVER_CORS_ORIGINS="${SERVER_CORS_ORIGINS}" \
+    AGENT_SERVER_ALLOW_DEV_SECRET=1 \
     "${SERVER_DIR}/.venv/bin/python" -m agent_server.infra.db.migrations upgrade
 )
 
@@ -508,6 +509,7 @@ start_service server "${CYAN}" "${SERVER_DIR}" \
   AGENT_SERVER_FILES_LOCAL_ROOT="${LOCAL_DIR}/files" \
   AGENT_SERVER_PUBLIC_ORIGIN="${WEB_URL}" \
   AGENT_SERVER_CORS_ORIGINS="${SERVER_CORS_ORIGINS}" \
+  AGENT_SERVER_ALLOW_DEV_SECRET=1 \
   LOGURU_LEVEL="${LOGURU_LEVEL:-INFO}" \
   "${SERVER_DIR}/.venv/bin/uvicorn" \
   agent_server.app:create_app \
