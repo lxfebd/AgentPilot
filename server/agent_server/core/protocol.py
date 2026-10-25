@@ -218,11 +218,17 @@ class ProtocolSessionSnapshotResponse(ProtocolWireModel):
 class ProtocolWsTicketScope(ProtocolWireModel):
     sessionId: str | None = None
     dashboard: bool = False
+    connectorId: str | None = None
+    terminalId: str | None = None
 
     @model_validator(mode="after")
     def validate_single_scope(self) -> ProtocolWsTicketScope:
         has_session = self.sessionId is not None
-        if has_session == self.dashboard:
+        has_connector = self.connectorId is not None or self.terminalId is not None
+        if has_connector and (self.connectorId is None or self.terminalId is None):
+            raise ValueError("connectorId and terminalId must be provided together")
+        scope_count = int(has_session) + int(self.dashboard) + int(has_connector)
+        if scope_count != 1:
             raise ValueError("exactly one WebSocket ticket scope is required")
         return self
 

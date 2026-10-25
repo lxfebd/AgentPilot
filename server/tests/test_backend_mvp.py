@@ -1820,6 +1820,25 @@ def dashboard_ws_ticket(
     return response.json()["ticket"]
 
 
+def terminal_ws_ticket(
+    client: TestClient,
+    connector_id: str,
+    terminal_id: str,
+    headers: dict[str, str],
+    client_id: str = "web_terminal_test",
+) -> str:
+    response = client.post(
+        "/ws-ticket",
+        headers=headers,
+        json={
+            "clientId": client_id,
+            "scope": {"connectorId": connector_id, "terminalId": terminal_id},
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["ticket"]
+
+
 async def _receive_ws_test_message(ws: Any, timeout: float) -> dict[str, Any]:
     with anyio.fail_after(timeout):
         return await ws._send_rx.receive()
@@ -6635,7 +6654,7 @@ def test_connector_terminal_v2_forwards_lifecycle_to_connector(tmp_path):
     assert asyncio.run(client.app.state.terminal_broker.get(other.id)) is not None
 
 
-def test_connector_terminal_v2_stream_uses_websocket_protocol(tmp_path):
+def test_connector_terminal_v2_stream_requires_ticket_or_bearer(tmp_path):
     client = make_client(tmp_path)
     connector_id, _, _, headers = create_connector_and_session(client)
     token = headers["Authorization"].removeprefix("Bearer ")
@@ -6652,8 +6671,52 @@ def test_connector_terminal_v2_stream_uses_websocket_protocol(tmp_path):
     assert created.status_code == 200, created.text
     terminal_id = created.json()["result"]["terminalId"]
 
+    # No ticket and no Authorization header -> rejected before accept.
+    with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
+        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream"
+    ):
+        pass
+    assert exc_info.value.code == 4401
+
+    # A ticket is single-use: the second connect with the same ticket is rejected.
+    ticket = terminal_ws_ticket(client, connector_id, terminal_id, headers)
     with client.websocket_connect(
-        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream?token={token}"
+        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream?ticket={ticket}"
+    ) as websocket:
+        assert websocket.receive_json() == {"type": "replay", "data": "b2s=", "seq": 1}
+    with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
+        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream?ticket={ticket}"
+    ):
+        pass
+    assert exc_info.value.code == 4401
+
+    # Non-browser clients authenticate with the Authorization header instead of a ticket.
+    with client.websocket_connect(
+        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as websocket:
+        assert websocket.receive_json() == {"type": "replay", "data": "b2s=", "seq": 1}
+
+
+def test_connector_terminal_v2_stream_uses_websocket_protocol(tmp_path):
+    client = make_client(tmp_path)
+    connector_id, _, _, headers = create_connector_and_session(client)
+    fake_rpc = FakeLocalRpc()
+    client.app.state.rpc = fake_rpc
+    fake_rpc.terminal_relay_broker = client.app.state.terminal_broker
+    asyncio.run(client.app.state.store.set_connector_status(connector_id, "online"))
+
+    created = client.post(
+        f"/connectors/{connector_id}/terminals-v2?root=/repo",
+        headers=headers,
+        json={"cols": 80, "rows": 24, "label": "Shell"},
+    )
+    assert created.status_code == 200, created.text
+    terminal_id = created.json()["result"]["terminalId"]
+
+    ticket = terminal_ws_ticket(client, connector_id, terminal_id, headers)
+    with client.websocket_connect(
+        f"/connectors/{connector_id}/terminals-v2/{terminal_id}/stream?ticket={ticket}"
     ) as websocket:
         assert websocket.receive_json() == {"type": "replay", "data": "b2s=", "seq": 1}
 
