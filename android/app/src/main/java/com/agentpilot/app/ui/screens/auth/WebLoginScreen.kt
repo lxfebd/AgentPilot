@@ -1,7 +1,11 @@
 package com.agentpilot.app.ui.screens.auth
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.http.SslError
 import android.os.Bundle
 import android.webkit.CookieManager
@@ -290,6 +294,8 @@ private fun EmbeddedWebLogin(
                             return@apply
                         }
                         webViewClient = SecureLoginWebViewClient(
+                            allowedOrigin = session.oauthWebOrigin,
+                            context = context,
                             onLoadingChanged = { loading = it },
                             onCallback = onCallback,
                             onError = onWebError,
@@ -326,6 +332,8 @@ private fun EmbeddedWebLogin(
 }
 
 private class SecureLoginWebViewClient(
+    private val allowedOrigin: String,
+    private val context: Context,
     private val onLoadingChanged: (Boolean) -> Unit,
     private val onCallback: (String) -> Unit,
     private val onError: (String) -> Unit,
@@ -362,8 +370,24 @@ private class SecureLoginWebViewClient(
             return true
         }
         val scheme = runCatching { java.net.URI(url).scheme?.lowercase() }.getOrNull()
-        if (scheme == "http" || scheme == "https") return false
+        if (scheme == "http" || scheme == "https") {
+            // Stay in the WebView only while the page remains on the login
+            // origin; anything else is opened externally (see isSameLoginOrigin).
+            if (isSameLoginOrigin(url, allowedOrigin)) return false
+            openExternally(url)
+            return true
+        }
         onError("This link cannot be opened inside the sign-in page.")
         return true
+    }
+
+    private fun openExternally(url: String) {
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        } catch (_: ActivityNotFoundException) {
+            onError("This link cannot be opened on this device.")
+        }
     }
 }
