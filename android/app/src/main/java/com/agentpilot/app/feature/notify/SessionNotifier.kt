@@ -1,6 +1,7 @@
 package com.agentpilot.app.feature.notify
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -75,6 +76,7 @@ object SessionNotifier {
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
 
+    @SuppressLint("MissingPermission") // canNotify() gates POST_NOTIFICATIONS; a revoke may still race.
     fun notifySession(
         context: Context,
         session: AgentSession,

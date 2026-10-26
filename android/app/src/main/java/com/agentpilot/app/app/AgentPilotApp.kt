@@ -1,5 +1,6 @@
 package com.agentpilot.app.app
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -1176,6 +1177,7 @@ private val NewSessionDraftSaver = listSaver<NewSessionDraft?, Any>(
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
+@SuppressLint("ViewModelConstructorInComposable") // Preview only; real hosts construct view models via factories.
 private fun AgentPilotAppPreview() {
     AgentPilotTheme {
         val context = LocalContext.current
