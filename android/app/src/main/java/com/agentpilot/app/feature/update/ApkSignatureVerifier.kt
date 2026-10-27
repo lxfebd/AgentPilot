@@ -76,9 +76,15 @@ object ApkSignatureVerifier {
         if (info == null) return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val signingInfo = info.signingInfo ?: return null
-            val keys = signingInfo.publicKeys ?: return null
-            if (keys.isEmpty()) return null
-            return keys.map { sha256Hex(it.encoded) }.toSet()
+            // SigningInfo.publicKeys exists only from API 35; below it, fall
+            // through to the deprecated signature array, which is still
+            // populated on those releases. The comparison always runs on one
+            // device, so both sides take the same branch.
+            if (Build.VERSION.SDK_INT >= 35) {
+                val keys = signingInfo.publicKeys ?: return null
+                if (keys.isEmpty()) return null
+                return keys.map { sha256Hex(it.encoded) }.toSet()
+            }
         }
         @Suppress("DEPRECATION")
         val signatures = info.signatures ?: return null
