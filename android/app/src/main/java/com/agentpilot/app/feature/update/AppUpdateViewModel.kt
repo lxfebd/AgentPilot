@@ -37,6 +37,7 @@ data class AppUpdateUiState(
     val totalBytes: Long? = null,
     val preparingInstall: Boolean = false,
     val downloadFailed: Boolean = false,
+    val signatureBlocked: Boolean = false,
     val checkFailed: Boolean = false,
     val ignoring: Boolean = false,
     val ignoreFailed: Boolean = false,
@@ -192,6 +193,7 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
             totalBytes = null,
             preparingInstall = false,
             downloadFailed = false,
+            signatureBlocked = false,
             downloadUnavailable = false,
         )
         downloadJob = viewModelScope.launch {
@@ -199,6 +201,18 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
                 val file = downloadRelease(release, serverUrl, generation)
                 if (!isCurrentSession(serverUrl, generation)) {
                     file.delete()
+                    return@launch
+                }
+                if (ApkSignatureVerifier.verifyAgainstInstalled(getApplication(), file) != ApkSignatureVerifier.Verdict.Verified) {
+                    file.delete()
+                    state = state.copy(
+                        downloading = false,
+                        downloadedBytes = 0,
+                        totalBytes = null,
+                        preparingInstall = false,
+                        downloadFailed = false,
+                        signatureBlocked = true,
+                    )
                     return@launch
                 }
                 state = state.copy(
@@ -245,6 +259,7 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
             installFile = null,
             preparingInstall = false,
             downloadFailed = true,
+            signatureBlocked = false,
         )
     }
 

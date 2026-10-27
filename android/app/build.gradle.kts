@@ -126,7 +126,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     // Compose UI test artifacts resolve versions from the BOM, and the
     // androidTestImplementation configuration does not inherit the platform
-    // constraint from implementation() — without this, lintDebug fails on
+    // constraint from implementation() - without this, lintDebug fails on
     // an empty ui-test-junit4 version during generateDebugAndroidTestLintModel.
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

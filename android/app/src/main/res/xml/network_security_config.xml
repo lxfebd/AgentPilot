@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Default configuration: cleartext HTTP is denied.
+
+    The release variant inherits this file, so a public APK can no longer load
+    plain-HTTP endpoints (login WebView included). Private self-hosted builds
+    opt back in through src/debug/res/xml/network_security_config.xml, which
+    exists so a debug APK can talk to a LAN server over plain HTTP.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
