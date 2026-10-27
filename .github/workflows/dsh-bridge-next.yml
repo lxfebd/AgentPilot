@@ -302,3 +302,6 @@ jobs:
       - name: Run unit tests
         working-directory: android
         run: ./gradlew testDebugUnitTest --console=plain
+      - name: Run lint
+        working-directory: android
+        run: ./gradlew lintDebug --console=plain
