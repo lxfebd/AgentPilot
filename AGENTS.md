@@ -39,6 +39,13 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 - Headless 检查通过，不等于真实安装、OAuth 回调或远程 Runtime 会话已经验证。汇报时要说明哪些验证没有做。
 - CI（`.github/workflows/dsh-bridge-next.yml`）按改动路径触发，覆盖 DSH 插件、Connector、Server、Web、Desktop 与 Android 单测；iOS 与真实安装 / OAuth 回调 / 远程 Runtime 会话仍要靠本地检查。
 
+### 上下文与长会话纪律
+
+- 工具与构建命令只回结论、异常行和文件路径；完整日志先写工作区文件，不要全文贴进对话。
+- 大文件先 grep 定位，再用 offset/limit 精读；不要整文件 read。
+- 一个假设验证完（无论成败）立刻 compress 对应区间，不要等系统自动折叠；拆分会话的判据是该任务需要超过约 30 轮工具交互。
+- 重复调用同一命令前先确认上一次的结果。
+
 ## 跨端修改的规则
 
 - **契约优先**：修改 API 字段、实时事件或 Runtime 协议时，先更新 `contracts/`，再同步修改 Server、Connector 和所有受影响的客户端。Web / Desktop 的 `protocol:check` 用来发现契约偏差。
