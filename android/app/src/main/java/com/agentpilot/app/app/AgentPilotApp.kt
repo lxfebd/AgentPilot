@@ -493,6 +493,18 @@ fun AgentPilotApp(
         }
     }
 
+    /** 单会话/批量归档成功后同步按项目缓存，否则仪表盘与侧栏会继续渲染旧的 archived=false 副本。 */
+    fun syncProjectSessionsCache(updated: List<AgentSession>) {
+        if (updated.isEmpty() || projectSessionsById.isEmpty()) return
+        var next = projectSessionsById
+        updated.forEach { session ->
+            val projectId = session.projectId ?: return@forEach
+            val cached = next[projectId] ?: return@forEach
+            next = next + (projectId to (cached.filterNot { it.id == session.id } + session))
+        }
+        projectSessionsById = next
+    }
+
     fun loadProjectSessions(projectId: String, status: ProjectSessionStatusFilter = ProjectSessionStatusFilter.Active) {
         if (projectId.isBlank()) return
         val token = sessionStore.readAccessToken()
@@ -609,7 +621,8 @@ fun AgentPilotApp(
                         val next = current.replacedByDashboardSnapshot(snapshotState)
                         val snapshotSessions = snapshotState.sessions
                             .filterNot { it.archived }
-                        val mergedProjects = if (snapshotSessions.isNotEmpty()) {
+                        val archivedById = snapshotState.archivedSessions.associateBy { it.id }
+                        val mergedProjects = if (snapshotSessions.isNotEmpty() || archivedById.isNotEmpty()) {
                             val snapshotById = snapshotSessions.associateBy { it.id }
                             val merged = currentProjects.mapValues { (projectId, cached) ->
                                 val mergedById = cached.associateBy { it.id }.toMutableMap()
@@ -617,6 +630,16 @@ fun AgentPilotApp(
                                     if (incoming.projectId == projectId) {
                                         val existing = mergedById[id]
                                         if (existing == null || incoming.updatedSeq >= existing.updatedSeq) {
+                                            mergedById[id] = incoming
+                                        }
+                                    }
+                                }
+                                // 归档只发生在服务器侧（电脑端操作）：把缓存里的旧副本更新成
+                                // archived=true，否则手机端会一直显示已归档的会话。
+                                archivedById.forEach { (id, incoming) ->
+                                    if (incoming.projectId == projectId) {
+                                        val existing = mergedById[id]
+                                        if (existing != null && incoming.updatedSeq >= existing.updatedSeq) {
                                             mergedById[id] = incoming
                                         }
                                     }
@@ -875,6 +898,7 @@ fun AgentPilotApp(
                         sessionsState = sessionsState
                             .withPatchedSessions(update.sessions, request.generation)
                             .withMissingSessionsRemoved(update.notFound, request.generation)
+                        syncProjectSessionsCache(update.sessions)
                         reloadProjects()
                     }
             }
@@ -897,6 +921,7 @@ fun AgentPilotApp(
                 sessionsController.archiveAllDeviceSessions(connectorId, archived, scope, sessionsState.devices)
                     .onSuccess { sessions ->
                         sessionsState = sessionsState.withPatchedSessions(sessions, request.generation)
+                        syncProjectSessionsCache(sessions)
                         reloadProjects()
                     }
             }
@@ -935,6 +960,7 @@ fun AgentPilotApp(
                 sessionsController.setSessionArchived(sessionId, archived, sessionsState.devices)
                     .onSuccess { session ->
                         sessionsState = sessionsState.withPatchedSession(session, request.generation)
+                        syncProjectSessionsCache(listOf(session))
                         reloadProjects()
                     }
             }
