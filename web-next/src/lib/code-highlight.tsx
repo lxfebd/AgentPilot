@@ -110,6 +110,13 @@ function registerLanguages() {
 
 export function highlightCode(code: string, language: string): ReactNode {
   registerLanguages()
+  // Security note: this component intentionally renders hljs output via
+  // dangerouslySetInnerHTML. The safety boundary is hljs, which HTML-escapes
+  // the source text (`escapeHTML`) before emitting token spans, so the code
+  // itself can never introduce markup. The language name is only used as an
+  // hljs language key (never interpolated into HTML); unknown languages fall
+  // back to plaintext. Do not wrap `highlighted` in further HTML without
+  // re-escaping it.
   const normalized = normalizeLanguage(language)
   try {
     const highlighted = hljs.getLanguage(normalized)
