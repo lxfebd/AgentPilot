@@ -1,0 +1,73 @@
+{
+  "$comment": "Host 与 Python Connector 之间的 RPC 面清单。改 connector/cli.py 的 rpc 处理器或 desktop-workbench 的调用点时必须同步本文件：connector/tests/test_rpc_contract_manifest.py 与 desktop-workbench/electron/connector-rpc-contract.test.ts 各自校验一侧。",
+  "version": 1,
+  "transport": {
+    "stream": "stdio",
+    "framing": "ndjson",
+    "encoding": "utf-8",
+    "json": {
+      "ensureAscii": false,
+      "separators": [
+        ",",
+        ":"
+      ]
+    },
+    "jsonrpc": "2.0",
+    "stdout": "仅 RPC 行（请求响应与通知），一行一个 JSON",
+    "stderr": "日志文本，不是协议的一部分"
+  },
+  "methods": [
+    "connector.acquireOwnership",
+    "connector.cancelPairing",
+    "connector.getConfig",
+    "connector.getPaths",
+    "connector.getState",
+    "connector.restart",
+    "connector.saveConfig",
+    "connector.start",
+    "connector.startPairing",
+    "connector.stop"
+  ],
+  "notifications": [
+    "connector/state",
+    "connector/log"
+  ],
+  "errors": [
+    {
+      "code": -32700,
+      "reason": "parse_error"
+    },
+    {
+      "code": -32600,
+      "reason": "invalid_request"
+    },
+    {
+      "code": -32601,
+      "reason": "method_not_found"
+    },
+    {
+      "code": -32000,
+      "reason": "handler_error"
+    },
+    {
+      "code": -32009,
+      "reason": "connector_already_running"
+    }
+  ],
+  "hosts": {
+    "desktop-workbench": {
+      "methods": [
+        "connector.acquireOwnership",
+        "connector.getState",
+        "connector.restart",
+        "connector.saveConfig",
+        "connector.start",
+        "connector.stop"
+      ],
+      "notifications": [
+        "connector/state",
+        "connector/log"
+      ]
+    }
+  }
+}
