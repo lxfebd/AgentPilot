@@ -50,7 +50,8 @@
       "!dist/electron/backend/*.test.js",
       "!node_modules/agent-pilot-desktop-renderer/**",
       "renderer/out/**",
-      "package.json"
+      "package.json",
+      "!node_modules/**"
     ],
     "extraResources": [
       {
