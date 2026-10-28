@@ -1,4 +1,5 @@
 import { routing } from "@/i18n/routing"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 
 export const LOCALE_STORAGE_KEY = "agent-pilot.locale"
 const LOCALE_SOURCE_STORAGE_KEY = "agent-pilot.locale.source"
@@ -17,33 +18,21 @@ export function localeFromPathname(pathname: string): AppLocale | null {
 }
 
 export function readStoredLocale(): AppLocale | null {
-  try {
-    const value = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-    if (!value || !isAppLocale(value)) return null
-    return value
-  } catch {
-    return null
-  }
+  const value = safeGet(LOCALE_STORAGE_KEY)
+  if (!value || !isAppLocale(value)) return null
+  return value
 }
 
 export function hasManualStoredLocale() {
-  try {
-    return window.localStorage.getItem(LOCALE_SOURCE_STORAGE_KEY) === "manual"
-  } catch {
-    return false
-  }
+  return safeGet(LOCALE_SOURCE_STORAGE_KEY) === "manual"
 }
 
 export function writeStoredLocale(locale: AppLocale, options: { manual?: boolean } = {}) {
-  try {
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-    if (options.manual) {
-      window.localStorage.setItem(LOCALE_SOURCE_STORAGE_KEY, "manual")
-    } else if (!window.localStorage.getItem(LOCALE_SOURCE_STORAGE_KEY)) {
-      window.localStorage.setItem(LOCALE_SOURCE_STORAGE_KEY, "auto")
-    }
-  } catch {
-    // localStorage can be unavailable in private contexts. Locale routing still works.
+  safeSet(LOCALE_STORAGE_KEY, locale)
+  if (options.manual) {
+    safeSet(LOCALE_SOURCE_STORAGE_KEY, "manual")
+  } else if (!safeGet(LOCALE_SOURCE_STORAGE_KEY)) {
+    safeSet(LOCALE_SOURCE_STORAGE_KEY, "auto")
   }
   writeLocaleCookie(locale)
 }

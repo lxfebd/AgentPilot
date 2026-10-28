@@ -38,6 +38,7 @@ import {
 import { WorkspacePicker, type WorkspaceSelection } from "@/components/workspace-picker"
 import { useWorkspace } from "@/components/workspace-context"
 import { useAuth } from "@/components/auth/auth-context"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 import { dashboardApi } from "@/features/dashboard/api"
 import { createClientId } from "@/lib/id"
 import { sessionTitleFromPrompt } from "@/lib/session-title"
@@ -1237,7 +1238,7 @@ function useTypewriterTitle(titles: string[], paused: boolean) {
 function readNewSessionPreference(): NewSessionPreference | null {
   if (typeof window === "undefined") return null
   try {
-    const raw = window.localStorage.getItem(NEW_SESSION_PREFERENCE_KEY)
+    const raw = safeGet(NEW_SESSION_PREFERENCE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<NewSessionPreference>
     if (typeof parsed.connectorId !== "string" || typeof parsed.agent !== "string") {
@@ -1277,9 +1278,5 @@ function readNewSessionSelectionPreferences(value: unknown): Record<string, NewS
 
 function writeNewSessionPreference(preference: NewSessionPreference) {
   if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(NEW_SESSION_PREFERENCE_KEY, JSON.stringify(preference))
-  } catch {
-    // localStorage may be unavailable in private contexts. The composer can still fall back.
-  }
+  safeSet(NEW_SESSION_PREFERENCE_KEY, JSON.stringify(preference))
 }

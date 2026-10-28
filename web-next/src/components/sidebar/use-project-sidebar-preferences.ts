@@ -2,16 +2,17 @@
 
 import * as React from "react"
 import { API_NAMESPACE } from "@/lib/api/client"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 import { createProjectSidebarPreferenceStore, projectSidebarPreferenceKey } from "./project-sidebar-preferences"
 
 export function useProjectSidebarPreferences(userId: string) {
   const server = JSON.stringify([process.env.NEXT_PUBLIC_AGENT_PILOT_API ?? "", API_NAMESPACE])
   const key = projectSidebarPreferenceKey(server, userId)
   const store = React.useMemo(() => {
-    let storage: Storage | null = null
-    try {
-      if (typeof window !== "undefined") storage = window.localStorage
-    } catch { /* Storage is optional for the sidebar to work. */ }
+    const storage: Pick<Storage, "getItem" | "setItem"> = {
+      getItem: safeGet,
+      setItem: safeSet,
+    }
     return createProjectSidebarPreferenceStore(storage, key)
   }, [key])
   const preferences = React.useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot)

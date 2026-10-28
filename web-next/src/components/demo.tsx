@@ -24,6 +24,7 @@ import { PairDeviceDialog } from "@/components/pair-device-dialog"
 import { AgentSetupProvider } from "@/components/agent-setup-provider"
 import { useAuth } from "@/components/auth/auth-context"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { safeGet, safeSet } from "@/lib/safe-storage"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,7 +94,7 @@ function DesktopResizableShell() {
   const [defaultLayout] = React.useState(() => {
     if (typeof window === "undefined") return DEFAULT_DESKTOP_LAYOUT
 
-    const stored = window.localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)
+    const stored = safeGet(SIDEBAR_LAYOUT_STORAGE_KEY)
     if (!stored) return DEFAULT_DESKTOP_LAYOUT
 
     try {
@@ -195,7 +196,7 @@ function DesktopResizableShell() {
           defaultLayout={defaultLayout}
           onLayoutChanged={(layout, meta) => {
             if (meta.isUserInteraction) {
-              window.localStorage.setItem(SIDEBAR_LAYOUT_STORAGE_KEY, JSON.stringify(layout))
+              safeSet(SIDEBAR_LAYOUT_STORAGE_KEY, JSON.stringify(layout))
             }
           }}
           direction="horizontal"
