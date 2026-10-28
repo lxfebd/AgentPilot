@@ -15,6 +15,7 @@
     "protocol:check": "node scripts/generate-protocol-types.mjs --check"
   },
   "dependencies": {
+    "@agentpilot/ui-core": "portal:../packages/ui-core",
     "@base-ui/react": "^1.6.0",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-cpp": "^6.0.3",
