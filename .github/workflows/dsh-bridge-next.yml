@@ -189,6 +189,9 @@ jobs:
       - name: Lint Server
         working-directory: server
         run: uv run --frozen ruff check . --exclude .venv
+      - name: Check protocol contract freshness
+        working-directory: server
+        run: uv run --frozen python -m scripts.export_protocol_schemas --check
       - name: Test Server runtime, onboarding and attachment flows
         working-directory: server
         run: >-
