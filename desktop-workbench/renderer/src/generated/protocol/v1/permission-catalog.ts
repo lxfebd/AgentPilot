@@ -1,33 +1,3 @@
-/* eslint-disable */
-/**
- * Generated from protocol 1.0 artifact permission-catalog.
- * Do not edit by hand; run `yarn protocol:generate`.
- */
-
-export type Default = boolean
-export type Description = string | null
-export type Displayname = string
-export type Id = string
-export type Selectionid = string
-export type Permissions = ProtocolPermissionItem[]
-export type Revision = number
-export type Runtime = "codex" | "claude" | "opencode" | "acp" | "dsh" | "zcode"
-
-export interface ProtocolPermissionCatalog {
-  permissions?: Permissions
-  revision: Revision
-  runtime: Runtime
-  [k: string]: unknown
-}
-export interface ProtocolPermissionItem {
-  default?: Default
-  description?: Description
-  displayName: Displayname
-  id: Id
-  metadata?: Metadata
-  selectionId: Selectionid
-  [k: string]: unknown
-}
-export interface Metadata {
-  [k: string]: unknown
-}
+// The generated protocol types live in packages/ui-core so both clients read one copy.
+// Do not edit here; run `yarn protocol:generate` in either client.
+export * from "@agentpilot/ui-core/generated/protocol/v1/permission-catalog";

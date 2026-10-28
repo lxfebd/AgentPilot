@@ -38,3 +38,16 @@ a prebuilt `dist`.
   no node_modules, so `react`/`clsx`/etc. do not resolve from this directory.
   Framework-coupled or alias-importing modules stay in-app until the repo gains
   a workspace root.
+## Generated protocol types
+
+`src/generated/protocol/v1/` holds the TypeScript types compiled from
+`contracts/protocol/1.0`. Both clients used to generate their own copy; the
+generator now writes here, so there is one artifact instead of two.
+
+- Regenerate from either client: `yarn protocol:generate` (`web-next` or
+  `desktop-workbench/renderer`); both scripts resolve the same output directory
+  and the same `contracts/` input.
+- `yarn protocol:check` (run by CI for both clients) compares the files in this
+  directory with what the manifest says they should be.
+- The per-client `src/generated/protocol/v1/*.ts` files are one-line re-export
+  shims; do not edit them, and do not hand-edit the generated files either.

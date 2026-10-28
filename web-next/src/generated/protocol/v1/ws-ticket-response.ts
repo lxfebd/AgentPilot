@@ -1,16 +1,3 @@
-/* eslint-disable */
-/**
- * Generated from protocol 1.0 artifact ws-ticket-response.
- * Do not edit by hand; run `yarn protocol:generate`.
- */
-
-export type Expiresat = string
-export type Servertime = string
-export type Ticket = string
-
-export interface ProtocolWsTicketResponse {
-  expiresAt: Expiresat
-  serverTime: Servertime
-  ticket: Ticket
-  [k: string]: unknown
-}
+// The generated protocol types live in packages/ui-core so both clients read one copy.
+// Do not edit here; run `yarn protocol:generate` in either client.
+export * from "@agentpilot/ui-core/generated/protocol/v1/ws-ticket-response";
