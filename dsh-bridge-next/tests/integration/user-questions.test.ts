@@ -232,6 +232,9 @@ test('questions cross the Python adapter and existing backend notice/respond end
   try {
     const result = await promisify(execFile)('uv', ['run', '--with-editable', '../connector', 'python', '../connector/tests/dsh_question_probe.py', f.home], {
       cwd: new URL('../../../server/', import.meta.url), timeout: 45_000,
+      // The probe boots the real FastAPI app, which refuses to start without a
+      // secret; the test opts into the development secret like server conftest.py.
+      env: { ...process.env, AGENT_SERVER_ALLOW_DEV_SECRET: '1' },
     })
     assert.match(result.stdout, /DSH question pipeline passed/)
   } finally { await f.close() }
