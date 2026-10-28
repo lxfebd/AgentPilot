@@ -114,23 +114,36 @@ http() { # http METHOD URL [DATA] -> 打印状态码, body 落 $TMP/body
 }
 
 # --- 1. 契约一致性 ---------------------------------------------------------
-run_contract_check() {
-  local app="$1"
-  if [ ! -d "$ROOT_DIR/$app/node_modules" ]; then
-    skip "$app protocol:check" "未安装依赖（cd $app && yarn install）"
+run_contract_check() { # run_contract_check <label> <dir> [workspace]
+  local label="$1" dir="$2" workspace="${3:-}"
+  if [ ! -d "$ROOT_DIR/$dir/node_modules" ]; then
+    skip "$label protocol:check" "未安装依赖（cd $dir && yarn install）"
     return 0
   fi
-  if (cd "$ROOT_DIR/$app" && yarn -s protocol:check >"$TMP/pc.log" 2>&1); then
-    pass "$app protocol:check"
+  if [ -n "$workspace" ]; then
+    enter="$ROOT_DIR/$dir"; cmd=(yarn workspace "$workspace" run protocol:check)
   else
-    fail "$app protocol:check" "$(tail -n 3 "$TMP/pc.log" | tr '\n' ' ' | cut -c1-300)"
+    enter="$ROOT_DIR/$dir"; cmd=(yarn protocol:check)
+  fi
+  if (cd "$enter" && "${cmd[@]}" >"$TMP/pc.log" 2>&1); then
+    pass "$label protocol:check"
+  else
+    fail "$label protocol:check" "$(tail -n 3 "$TMP/pc.log" | tr '\n' ' ' | cut -c1-300)"
   fi
 }
 
-[ "$SKIP_CONTRACTS" = true ] && skip "contracts protocol:check" "--skip-contracts" || {
-  run_contract_check web-next
-  run_contract_check desktop-workbench/renderer
-}
+if [ "$SKIP_CONTRACTS" = true ]; then
+  skip "contracts protocol:check" "--skip-contracts"
+else
+  run_contract_check web-next web-next
+  if [ -d "$ROOT_DIR/desktop-workbench/renderer/node_modules" ]; then
+    run_contract_check desktop-workbench/renderer desktop-workbench/renderer
+  elif [ -d "$ROOT_DIR/desktop-workbench/node_modules" ]; then
+    run_contract_check desktop-workbench/renderer desktop-workbench agent-pilot-desktop-renderer
+  else
+    skip "desktop-workbench/renderer protocol:check" "未安装依赖（cd desktop-workbench && yarn install）"
+  fi
+fi
 
 # --- 2. Server 健康 -------------------------------------------------------
 SERVER_UP=false
