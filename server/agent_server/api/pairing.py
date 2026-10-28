@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from agent_server.deps import current_user_id, get_store
 from agent_server.core.models import (
     PairingClaimRequest,
     PairingClaimResponse,
@@ -11,9 +10,9 @@ from agent_server.core.models import (
     PairingStartRequest,
     PairingStartResponse,
 )
-from agent_server.infra.repositories.facade import Store
 from agent_server.core.utc import utc_now
-
+from agent_server.deps import current_user_id, get_store
+from agent_server.infra.repositories.facade import Store
 
 router = APIRouter(prefix="/pairing", tags=["pairing"])
 

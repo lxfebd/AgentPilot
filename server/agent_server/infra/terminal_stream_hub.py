@@ -215,7 +215,7 @@ class TerminalStreamHub:
                         continue
                     state.last_seq = seq
                 await asyncio.wait_for(websocket.send_json(payload), timeout=5)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         finally:
             await self.detach(connector_id, terminal_id, websocket)

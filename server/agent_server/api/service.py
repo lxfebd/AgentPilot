@@ -5,11 +5,10 @@ from urllib.parse import urlunsplit
 
 from fastapi import APIRouter, Depends, Request
 
-from agent_server.deps import get_store, require_admin
 from agent_server.core.models import ServiceInfoResponse
-from agent_server.infra.repositories.facade import Store
 from agent_server.core.utc import utc_now
-
+from agent_server.deps import get_store, require_admin
+from agent_server.infra.repositories.facade import Store
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 

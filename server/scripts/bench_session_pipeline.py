@@ -32,15 +32,6 @@ for key in tuple(os.environ):
         os.environ.pop(key)
 sys.path[:0] = [str(args.repo / "server"), str(args.repo / "connector")]
 
-from agent_server.core.events import events_from_invalidation
-from agent_server.core.models import SessionView
-from agent_server.core.protocol import ProtocolCapabilitySet
-from agent_server.infra.timeline_broker import TimelineBroker
-from agent_server.services.effective_capabilities import (
-    _INHERITED_RUNTIME_CAPABILITY_IDS,
-    derive_session_effective_capabilities,
-    publish_connector_session_capabilities,
-)
 from connector.runtime_protocol import (
     MessageTimelineItem,
     MultimodalMessageContent,
@@ -50,6 +41,16 @@ from connector.server.notification_coalescer import TimelineItemNotificationCoal
 from connector.server.runtime_host import ConnectorRuntimeHost
 from connector.server.runtime_rpc_payloads import server_payload_without_turn_data
 from loguru import logger
+
+from agent_server.core.events import events_from_invalidation
+from agent_server.core.models import SessionView
+from agent_server.core.protocol import ProtocolCapabilitySet
+from agent_server.infra.timeline_broker import TimelineBroker
+from agent_server.services.effective_capabilities import (
+    _INHERITED_RUNTIME_CAPABILITY_IDS,
+    derive_session_effective_capabilities,
+    publish_connector_session_capabilities,
+)
 
 logger.remove()
 

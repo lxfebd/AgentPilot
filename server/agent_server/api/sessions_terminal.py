@@ -12,11 +12,16 @@ from __future__ import annotations
 
 import urllib.parse
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
 from agent_server.core.auth import verify_user_access_token
-from agent_server.infra.connector_rpc import ConnectorRpcManager
-from agent_server.deps import current_user_id, get_terminal_service
 from agent_server.core.models import (
     TerminalCreateRequest,
     TerminalListResponse,
@@ -24,10 +29,15 @@ from agent_server.core.models import (
     TerminalResizeRequest,
     TerminalResponse,
 )
-from agent_server.services.terminal import TerminalNotFoundError, TerminalService, TerminalServiceError
+from agent_server.deps import current_user_id, get_terminal_service
+from agent_server.infra.connector_rpc import ConnectorRpcManager
 from agent_server.infra.repositories.facade import Store
 from agent_server.infra.terminal_broker import TerminalBroker
-
+from agent_server.services.terminal import (
+    TerminalNotFoundError,
+    TerminalService,
+    TerminalServiceError,
+)
 
 router = APIRouter(prefix="/sessions", tags=["sessions-terminal"])
 
@@ -170,7 +180,7 @@ async def terminal_stream(
                     )
                 except TerminalNotFoundError:
                     break
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     code = getattr(exc, "status_code", 500)
                     message = getattr(exc, "detail", str(exc))
                     if not await _send_terminal_ws_error(websocket, code=code, message=str(message)):
@@ -190,7 +200,7 @@ async def terminal_stream(
                     )
                 except TerminalNotFoundError:
                     break
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     code = getattr(exc, "status_code", 500)
                     message = getattr(exc, "detail", str(exc))
                     if not await _send_terminal_ws_error(websocket, code=code, message=str(message)):
@@ -210,5 +220,5 @@ async def terminal_stream(
         ):
             try:
                 await terminal_service.close(session_id, terminal_id, user_id=user_id)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass

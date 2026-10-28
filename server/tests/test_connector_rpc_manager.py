@@ -4,6 +4,9 @@ import asyncio
 from typing import Any
 
 import pytest
+from fakeredis import FakeServer
+from fakeredis.aioredis import FakeRedis
+
 from agent_server.infra.connector_rpc import (
     ConnectorOfflineError,
     ConnectorRpcError,
@@ -11,8 +14,6 @@ from agent_server.infra.connector_rpc import (
     DuplicateConnectorConnectionError,
 )
 from agent_server.infra.redis_coordinator import RedisCoordinator
-from fakeredis import FakeServer
-from fakeredis.aioredis import FakeRedis
 
 
 class FakeWebSocket:

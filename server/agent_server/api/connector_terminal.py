@@ -550,7 +550,7 @@ async def connector_terminal_stream_v2(
                 terminal_id,
                 {"type": "snapshot", "fromSeq": fromSeq},
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             code = getattr(exc, "status_code", 500)
             detail = getattr(exc, "detail", str(exc))
             await websocket.send_json(
@@ -603,7 +603,7 @@ async def connector_terminal_stream_v2(
                         terminal_id, {"type": "input", "data": data_b64}
                     ):
                         raise TerminalRelayError("terminal relay is disconnected")
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     code = getattr(exc, "status_code", 500)
                     detail = getattr(exc, "detail", str(exc))
                     await websocket.send_json(
@@ -622,7 +622,7 @@ async def connector_terminal_stream_v2(
                         terminal_id, {"type": "resize", "cols": cols, "rows": rows}
                     ):
                         raise TerminalRelayError("terminal relay is disconnected")
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     code = getattr(exc, "status_code", 500)
                     detail = getattr(exc, "detail", str(exc))
                     await websocket.send_json(
@@ -711,5 +711,5 @@ async def connector_terminal_stream(
         ):
             try:
                 await terminal_service.close_for_connector(connector_id, terminal_id)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass

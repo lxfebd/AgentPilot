@@ -220,7 +220,7 @@ class TerminalService:
                 {"terminalId": terminal_id, "sessionId": session_id},
                 timeout=5,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             status_code = getattr(exc, "status_code", "?")
             logger.warning(
                 "terminal.close rpc failed terminal_id={} session_id={} status={}",
@@ -325,7 +325,7 @@ class TerminalService:
                 {"terminalId": terminal_id, "sessionId": session.id},
                 timeout=10,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             status_code = getattr(exc, "status_code", "?")
             logger.warning(
                 "terminal.close rpc failed terminal_id={} session_id={} status={}",

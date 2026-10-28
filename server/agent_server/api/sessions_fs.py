@@ -16,10 +16,9 @@ from agent_server.core.utc import utc_now
 from agent_server.deps import current_user_id, get_attachment_service, get_store
 from agent_server.infra.repositories.facade import Store
 from agent_server.services.attachments import (
-    AttachmentService,
     LOCAL_FILE_TOKEN_KIND,
+    AttachmentService,
 )
-
 
 router = APIRouter(prefix="/sessions", tags=["session-files"])
 

@@ -214,7 +214,7 @@ async def _best_effort_publish_session_protocol_update(
             runtime_state_cache,
             session_id,
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return
 
 
@@ -328,7 +328,7 @@ async def refresh_runtime_state_in_background(
                 session_id,
                 state,
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.opt(exception=True).debug(
             "background runtime state refresh failed session_id={}", session_id
         )
@@ -1086,7 +1086,7 @@ async def session_ws(
         while True:
             try:
                 message = await asyncio.wait_for(queue.get(), timeout=15.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await websocket.send_json(
                     {"type": "keepalive", "serverTime": utc_now()}
                 )
@@ -1728,7 +1728,7 @@ async def read_session_capabilities_from_connector(
             status_code=502,
             detail={"code": exc.code, "message": exc.message or exc.code},
         ) from exc
-    except ValueError as exc:
+    except (TypeError, ValueError) as exc:
         raise HTTPException(
             status_code=502,
             detail={

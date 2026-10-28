@@ -135,12 +135,14 @@ async def auth_register(
     """
     # Pre-check rather than relying on bootstrap_first_admin's None return —
     # we want to reject before touching the DB when the setup token is wrong.
-    if await db.count_users() == 0:
-        if not await _setup_token(request).verify(payload.setupToken):
-            raise HTTPException(
-                status_code=401,
-                detail="invalid or expired setup token — find the current token in the server log",
-            )
+    if (
+        await db.count_users() == 0
+        and not await _setup_token(request).verify(payload.setupToken)
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="invalid or expired setup token — find the current token in the server log",
+        )
 
     require_verification = bool((await get_email_settings(db)).get("enabled"))
     try:

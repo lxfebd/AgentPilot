@@ -20,8 +20,7 @@ import os
 import secrets
 import sys
 import threading
-from typing import Callable
-
+from collections.abc import Callable
 
 DEFAULT_TTL_SECONDS = 15 * 60
 MIN_TTL_SECONDS = 60
@@ -136,7 +135,7 @@ class SetupToken:
         )
         try:
             self._log(banner)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             # Logging must never break the request path.
             pass
 

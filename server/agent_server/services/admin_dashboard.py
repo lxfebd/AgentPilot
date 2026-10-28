@@ -1056,7 +1056,7 @@ def _ratio(numerator: float, denominator: float) -> float:
 
 def _snapshot_age_seconds(computed_at: str) -> float:
     try:
-        parsed = datetime.fromisoformat(computed_at.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(computed_at)
     except ValueError:
         return float("inf")
     return (datetime.now(UTC) - parsed.astimezone(UTC)).total_seconds()

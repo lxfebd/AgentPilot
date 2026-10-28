@@ -6,13 +6,14 @@ import asyncio
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import create_engine, text
+from test_auth import admin_token, bearer, make_client, password_verifier, register
+
 from agent_server.core.auth import create_user_access_token
 from agent_server.infra.db.migrations import upgrade_database
 from agent_server.infra.repositories import email_accounts
 from agent_server.services.email_delivery import EmailDeliveryError
 from agent_server.services.oauth import OAuthIdentity, create_pending_token
-from sqlalchemy import create_engine, text
-from test_auth import admin_token, bearer, make_client, password_verifier, register
 
 
 @pytest.fixture

@@ -5,14 +5,15 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from agent_server.core.setup_token import SetupToken
-from agent_server.infra.redis_coordinator import RedisCoordinator
-from agent_server.services.setup_tokens import SetupTokenService
 from fakeredis import FakeServer
 from fakeredis.aioredis import FakeRedis
 from httpx import ASGITransport, AsyncClient
 from redis.exceptions import ConnectionError
 from test_auth import make_client
+
+from agent_server.core.setup_token import SetupToken
+from agent_server.infra.redis_coordinator import RedisCoordinator
+from agent_server.services.setup_tokens import SetupTokenService
 
 
 def coordinator(server: FakeServer) -> RedisCoordinator:

@@ -5,6 +5,11 @@ import hashlib
 import json
 
 import pytest
+from alembic import command
+from sqlalchemy import BigInteger, create_engine, inspect, text
+from sqlalchemy.dialects.postgresql import asyncpg as postgresql_asyncpg
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from agent_server.infra.db.engine import build_engine, resolve_db_url
 from agent_server.infra.db.legacy_import import rehearse_v1_import
 from agent_server.infra.db.migrations import (
@@ -26,11 +31,7 @@ from agent_server.infra.db.schema import (
     sessions,
     timeline_items,
 )
-from alembic import command
 from migrations.versions import v2_24
-from sqlalchemy import BigInteger, create_engine, inspect, text
-from sqlalchemy.dialects.postgresql import asyncpg as postgresql_asyncpg
-from sqlalchemy.ext.asyncio import create_async_engine
 
 
 def _sqlite_url(path) -> str:

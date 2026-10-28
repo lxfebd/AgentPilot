@@ -1,4 +1,4 @@
-# ruff: noqa: F403, F405, I001
+# ruff: noqa: I001
 
 from __future__ import annotations
 
@@ -143,7 +143,7 @@ def _decode_session_cursor(cursor: str) -> tuple[int, str, int, int, str]:
         if type(values[0]) is not int or values[0] not in (0, 1):
             raise ValueError
         if not isinstance(values[1], str):
-            raise ValueError
+            raise TypeError
         if type(values[2]) is not int or type(values[3]) is not int:
             raise ValueError
         if not isinstance(values[4], str) or not values[4]:

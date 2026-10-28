@@ -4,6 +4,11 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
+from conftest import ApiV2TestClient as TestClient
+from fakeredis import FakeAsyncRedis
+from sqlalchemy import insert, select, text, update
+from sqlalchemy.exc import IntegrityError
+
 from agent_server.app import create_app
 from agent_server.core.models import SessionRuntimeState, TimelineItemIn
 from agent_server.core.utc import utc_now
@@ -13,10 +18,6 @@ from agent_server.infra.redis_coordinator import RedisCoordinator
 from agent_server.infra.terminal_broker import TerminalBroker
 from agent_server.infra.timeline_broker import TimelineBroker
 from agent_server.services.timeline_write_buffer import TimelineWriteBuffer
-from conftest import ApiV2TestClient as TestClient
-from fakeredis import FakeAsyncRedis
-from sqlalchemy import insert, select, text, update
-from sqlalchemy.exc import IntegrityError
 
 DEVICE_CHILD_TABLES = (
     db.connector_runtime_types,
@@ -116,111 +117,111 @@ async def add_related_data(store, device, session):
     rows = (
         (
             db.connector_runtime_types,
-            dict(
-                connector_id=device,
-                runtime_type="codex",
-                implementation_type="codex",
-                display_name="Codex",
-                discovery_json="{}",
-                defaults_json="{}",
-                capabilities_json="{}",
-                metadata_json="{}",
-                instance_policy="single",
-                last_discovered_at=now,
-                created_at=now,
-                updated_at=now,
-            ),
+            {
+                "connector_id": device,
+                "runtime_type": "codex",
+                "implementation_type": "codex",
+                "display_name": "Codex",
+                "discovery_json": "{}",
+                "defaults_json": "{}",
+                "capabilities_json": "{}",
+                "metadata_json": "{}",
+                "instance_policy": "single",
+                "last_discovered_at": now,
+                "created_at": now,
+                "updated_at": now,
+            },
         ),
         (
             db.device_runtimes,
-            dict(
-                connector_id=device,
-                runtime_id="codex",
-                runtime_type="codex",
-                name="Codex",
-                name_key="codex",
-                config_json='{"private":"config"}',
-                created_at=now,
-                updated_at=now,
-            ),
+            {
+                "connector_id": device,
+                "runtime_id": "codex",
+                "runtime_type": "codex",
+                "name": "Codex",
+                "name_key": "codex",
+                "config_json": '{"private":"config"}',
+                "created_at": now,
+                "updated_at": now,
+            },
         ),
         (
             db.connector_runtime_catalogs,
-            dict(
-                connector_id=device,
-                runtime="codex",
-                catalog_type="model",
-                revision=1,
-                catalog_json="{}",
-                updated_at=now,
-            ),
+            {
+                "connector_id": device,
+                "runtime": "codex",
+                "catalog_type": "model",
+                "revision": 1,
+                "catalog_json": "{}",
+                "updated_at": now,
+            },
         ),
         (
             db.connector_protocol_capabilities,
-            dict(
-                connector_id=device,
-                revision=1,
-                capabilities_json="{}",
-                updated_at=now,
-            ),
+            {
+                "connector_id": device,
+                "revision": 1,
+                "capabilities_json": "{}",
+                "updated_at": now,
+            },
         ),
         (
             db.connector_terminal_roots,
-            dict(
-                connector_id=device,
-                terminal_id="terminal",
-                session_id=session,
-                root="/work",
-                cwd="/work",
-                created_at=now,
-                updated_at=now,
-            ),
+            {
+                "connector_id": device,
+                "terminal_id": "terminal",
+                "session_id": session,
+                "root": "/work",
+                "cwd": "/work",
+                "created_at": now,
+                "updated_at": now,
+            },
         ),
         (
             db.fs_preview_tokens,
-            dict(
-                token_hash=device,
-                user_id=owner,
-                connector_id=device,
-                root="/work",
-                path="notes.md",
-                expires_at=now,
-                created_at=now,
-            ),
+            {
+                "token_hash": device,
+                "user_id": owner,
+                "connector_id": device,
+                "root": "/work",
+                "path": "notes.md",
+                "expires_at": now,
+                "created_at": now,
+            },
         ),
         (
             db.pairing_codes,
-            dict(
-                id=device,
-                code=device,
-                status="claimed",
-                connector_id=device,
-                connector_token="pairing-credential",
-                expires_at=now,
-                created_at=now,
-            ),
+            {
+                "id": device,
+                "code": device,
+                "status": "claimed",
+                "connector_id": device,
+                "connector_token": "pairing-credential",
+                "expires_at": now,
+                "created_at": now,
+            },
         ),
         (
             db.session_active_runs,
-            dict(
-                session_id=session,
-                runtime="codex",
-                status="running",
-                params_json='{"input":"private input"}',
-                started_at=now,
-                updated_at=now,
-            ),
+            {
+                "session_id": session,
+                "runtime": "codex",
+                "status": "running",
+                "params_json": '{"input":"private input"}',
+                "started_at": now,
+                "updated_at": now,
+            },
         ),
         (
             db.session_shares,
-            dict(
-                id=session,
-                session_id=session,
-                user_id=owner,
-                scope="session",
-                snapshot_json="{}",
-                created_at=now,
-            ),
+            {
+                "id": session,
+                "session_id": session,
+                "user_id": owner,
+                "scope": "session",
+                "snapshot_json": "{}",
+                "created_at": now,
+            },
         ),
     )
     async with store.engine.begin() as conn:

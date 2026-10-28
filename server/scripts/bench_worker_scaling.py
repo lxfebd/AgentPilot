@@ -47,7 +47,6 @@ async def child_cpu(executor, workers):
 
 def run_worker(connection, start, event_workers, batches):
     from agent_server.infra.timeline_broker import TimelineBroker
-
     from scripts.bench_session_pipeline import concurrent_fanout
 
     async def exercise():

@@ -444,23 +444,22 @@ class TimelineRepositoryMixin:
         source_observed_at: str | None = None,
         mark_read_on_change: bool = False,
     ) -> SessionView:
-        async with self._timeline_lock(session_id):
-            async with self._engine.begin() as conn:
-                await update_source_observed_at(
-                    conn,
-                    session_id=session_id,
-                    source_observed_at=source_observed_at,
-                )
-                updated_seq = await self._bump_session(
-                    conn,
-                    session_id,
-                    mark_read=mark_read_on_change,
-                )
-                await conn.execute(
-                    update(sessions_t)
-                    .where(sessions_t.c.id == session_id)
-                    .values(latest_turn_end_seq=updated_seq)
-                )
+        async with self._timeline_lock(session_id), self._engine.begin() as conn:
+            await update_source_observed_at(
+                conn,
+                session_id=session_id,
+                source_observed_at=source_observed_at,
+            )
+            updated_seq = await self._bump_session(
+                conn,
+                session_id,
+                mark_read=mark_read_on_change,
+            )
+            await conn.execute(
+                update(sessions_t)
+                .where(sessions_t.c.id == session_id)
+                .values(latest_turn_end_seq=updated_seq)
+            )
         return await self.get_session(session_id)
 
     @asynccontextmanager

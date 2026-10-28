@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 
-from agent_server.core.device_runtime import RuntimeDiscoveryResponse
 from test_runtime_instances_lifecycle import _make_client, _v2_discovery
+
+from agent_server.core.device_runtime import RuntimeDiscoveryResponse
 
 
 def test_discovery_preserves_instance_owned_state_without_negotiation(tmp_path):

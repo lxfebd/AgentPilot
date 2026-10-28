@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import asyncio
 
+from test_runtime_instances_lifecycle import _make_client, _v2_discovery
 
 from agent_server.core.device_runtime import RuntimeDiscoveryResponse
 from agent_server.infra.connector_rpc import ConnectorRpcError
-from test_runtime_instances_lifecycle import _make_client, _v2_discovery
 
 
 def test_named_snapshot_and_runtime_recover_after_discovery_error(tmp_path):

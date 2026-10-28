@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import asyncio
 
-from agent_server.core.models import TimelineItemIn
 from test_backend_mvp import (
     _create_extra_session,
     create_connector_and_session,
     dashboard_ws_ticket,
     make_client,
 )
+
+from agent_server.core.models import TimelineItemIn
 
 
 def test_inventory_and_push_include_all_owned_active_and_archived_sessions(tmp_path):
@@ -154,8 +155,9 @@ def test_inventory_projects_the_newest_timeline_item_of_each_session(tmp_path):
 
 
 def test_unchanged_source_fast_path_preserves_seq_archive_and_scan_order(tmp_path):
-    from agent_server.infra.db import sessions as sessions_t
     from sqlalchemy import select
+
+    from agent_server.infra.db import sessions as sessions_t
 
     client = make_client(tmp_path)
     connector_id, _, session_id, _ = create_connector_and_session(client)

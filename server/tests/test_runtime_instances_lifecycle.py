@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from conftest import ApiV2TestClient as TestClient
+from sqlalchemy import insert
+
 from agent_server.app import create_app
 from agent_server.infra.db import device_runtimes
 from agent_server.services.device_runtimes import (
     DeviceRuntimeService,
 )
-from conftest import ApiV2TestClient as TestClient
-from sqlalchemy import insert
 
 ADMIN_USER = "user1"
 ADMIN_PASSWORD = "secret"
@@ -976,7 +977,7 @@ def test_v2_discovery_requires_contract_nullable_fields(tmp_path: Any) -> None:
 
 
 def test_dashboard_snapshot_pushes_runtime_lifecycle(tmp_path: Any) -> None:
-    client, rpc, connector_id, headers = _make_client(tmp_path, _v2_discovery())
+    client, _rpc, connector_id, headers = _make_client(tmp_path, _v2_discovery())
     _discover_types(client, connector_id, headers)
     created = client.post(
         f"/connectors/{connector_id}/runtimes",
