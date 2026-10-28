@@ -66,7 +66,27 @@ export function mergeTimelineItems(
       byId.set(nextItem.id, nextItem)
     }
   }
-  return reconcileDshAssistantActivity(sortTimelineItems(Array.from(byId.values())))
+  return reconcileDshAssistantActivity(orderPendingLast(sortTimelineItems(Array.from(byId.values()))))
+}
+
+// A placeholder stays "in flight" until its echo reaches the client. A real user
+// message sent from another device can carry a higher orderSeq, which would sort
+// the pending placeholder up into the middle of the timeline and make it look
+// settled, so pending placeholders are placed after the last user message. Agent
+// replies keep their own position: they answer an earlier turn, not this one.
+function orderPendingLast(items: TimelineItem[]): TimelineItem[] {
+  const pending: TimelineItem[] = []
+  const rest: TimelineItem[] = []
+  for (const item of items) {
+    if (isOptimisticTimelineItem(item) && item.status === "pending") pending.push(item)
+    else rest.push(item)
+  }
+  if (pending.length === 0) return items
+  let insertAt = 0
+  for (const [index, item] of rest.entries()) {
+    if (item.role === "user") insertAt = index + 1
+  }
+  return [...rest.slice(0, insertAt), ...pending, ...rest.slice(insertAt)]
 }
 
 function reconcileDshAssistantActivity(items: TimelineItem[]): TimelineItem[] {
