@@ -28,7 +28,10 @@ dev = [
     "fakeredis[lua]>=2.30.0",
     "httpx>=0.28.1",
     "pytest>=9.0.3",
-    "ruff>=0.15.13",
+    # Pinned exactly: ruff adds rules in minors and occasionally tightens one in
+    # a patch release, and the CI lint gate must only ever fail on our own code,
+    # never on a resolver picking up a sharper linter overnight.
+    "ruff==0.17.3",
 ]
 
 # Audit remediation 2026-10-26: FastAPI dependency markers are the documented

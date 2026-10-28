@@ -186,6 +186,9 @@ jobs:
         run: |
           uv sync --project connector
           uv sync --project server
+      - name: Lint Server
+        working-directory: server
+        run: uv run --frozen ruff check . --exclude .venv
       - name: Test Server runtime, onboarding and attachment flows
         working-directory: server
         run: >-
