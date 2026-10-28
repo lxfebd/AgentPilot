@@ -2,7 +2,10 @@
 
 When AGENT_SERVER_DB_URL points at a real database (e.g. Postgres) the tests
 share state across runs, unlike the per-tmp_path sqlite default. Truncate
-known tables before each test so tests stay isolated.
+known tables before each test so tests stay isolated. Truncation is guarded:
+it requires AGENT_SERVER_TEST_ALLOW_DB_TRUNCATE=1 and a database name that is
+clearly disposable ("agent_pilot" or containing "test"), see
+_assert_truncate_allowed().
 """
 
 from __future__ import annotations
@@ -54,6 +57,12 @@ def make_test_client(destination: pathlib.Path) -> TestClient:
     return ApiV2TestClient(create_app(destination))
 
 _PG_PREFIX = "postgresql"
+# Truncating the database is destructive and the URL can point anywhere, so it
+# requires an explicit opt-in and a database name that is clearly disposable.
+_TRUNCATE_ALLOW_ENV = "AGENT_SERVER_TEST_ALLOW_DB_TRUNCATE"
+# The documented local/dev database name; "test" in the name covers disposable
+# databases such as agent_pilot_test. Anything else is refused.
+_ALLOWED_TRUNCATE_DB_NAMES = ("agent_pilot",)
 _API_PREFIX = "/api/v2"
 _API_ROOTS = (
     "/.well-known",
@@ -86,6 +95,38 @@ def _asyncpg_url(url: str) -> str:
     if url.startswith("postgresql+asyncpg:"):
         return "postgresql:" + url[len("postgresql+asyncpg:") :]
     return url
+
+
+def _pg_database_name(url: str) -> str:
+    """Return the database name of a postgresql URL (empty when absent)."""
+    from urllib.parse import urlparse
+
+    name = urlparse(_asyncpg_url(url)).path.lstrip("/")
+    if "?" in name:
+        name = name.split("?", 1)[0]
+    return name
+
+
+def _assert_truncate_allowed(url: str) -> None:
+    """Refuse to truncate an unconfirmed or suspicious database.
+
+    AGENT_SERVER_DB_URL can point at a production database, so truncation only
+    runs when the caller explicitly opts in AND the database name is clearly a
+    disposable one (the documented "agent_pilot" dev database, or a name
+    containing "test").
+    """
+    if os.environ.get(_TRUNCATE_ALLOW_ENV, "").strip().lower() not in {"1", "true", "yes"}:
+        raise RuntimeError(
+            f"Refusing to truncate the database at AGENT_SERVER_DB_URL: set "
+            f"{_TRUNCATE_ALLOW_ENV}=1 to confirm it is a disposable test database."
+        )
+    name = _pg_database_name(url)
+    if not name or ("test" not in name and name not in _ALLOWED_TRUNCATE_DB_NAMES):
+        raise RuntimeError(
+            f"Refusing to truncate database {name!r} from AGENT_SERVER_DB_URL: "
+            f"expected the disposable '{_ALLOWED_TRUNCATE_DB_NAMES[0]}' database or a "
+            f"name containing 'test'."
+        )
 
 
 def _api_v2_test_path(url: str) -> str:
@@ -128,4 +169,5 @@ def _isolate_external_database() -> None:
     url = os.environ.get("AGENT_SERVER_DB_URL")
     if not url or not url.startswith(_PG_PREFIX):
         return
+    _assert_truncate_allowed(url)
     asyncio.run(_truncate(_asyncpg_url(url)))

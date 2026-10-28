@@ -222,6 +222,19 @@ uv run ruff check . --exclude .venv
 uv run pytest -q
 ```
 
+The suite is self-contained: without `AGENT_SERVER_DB_URL` it never touches a
+real database. When you do point it at one, the autouse fixture truncates that
+database between tests, so it refuses to run unless you confirm the target:
+
+```bash
+AGENT_SERVER_DB_URL=postgresql+asyncpg://agents:password@127.0.0.1:5432/agent_pilot \
+AGENT_SERVER_TEST_ALLOW_DB_TRUNCATE=1 \
+  uv run pytest -q
+```
+
+The database name must be `agent_pilot` or contain `test`; anything else (a
+production name, an empty path) is rejected before the first `TRUNCATE`.
+
 ## Client version checks
 
 `GET /api/v2/health` and `/api/v2/health/live` include `version`, matching the
