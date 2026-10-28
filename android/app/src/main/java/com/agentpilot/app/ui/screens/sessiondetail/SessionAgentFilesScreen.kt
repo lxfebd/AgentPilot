@@ -43,7 +43,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -867,8 +867,8 @@ internal fun TerminalContent(
     onVerticalDragChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val terminalState by terminalController.state.collectAsState()
-    val modifierState by terminalController.modifierState.collectAsState()
+    val terminalState by terminalController.state.collectAsStateWithLifecycle()
+    val modifierState by terminalController.modifierState.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val imeBottomPx = WindowInsets.ime.getBottom(density)

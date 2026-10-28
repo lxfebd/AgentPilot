@@ -37,8 +37,8 @@ android {
         applicationId = "com.agentpilot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
-        versionName = "2.3.4"
+        versionCode = 26
+        versionName = "2.3.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -54,7 +54,9 @@ android {
             buildConfigField("String", "OFFICIAL_SERVER_URL", pinnedServerUrl.asBuildConfigString())
         }
         release {
-            isMinifyEnabled = false
+            // Shrink + obfuscate the release APK; proguard-rules.pro keeps what
+            // reflection needs. Debug stays unminified.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
