@@ -1,5 +1,6 @@
 package com.agentpilot.app.app
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -9,7 +10,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -573,7 +574,7 @@ fun AgentPilotApp(
     val realtimeServerUrl = sessionStore.readServerUrl()
     val realtimeAccessToken = sessionStore.readAccessToken()
     val devicePairingMonitor = remember(realtimeServerUrl, realtimeAccessToken) { DevicePairingMonitor() }
-    val devicePairingStates by devicePairingMonitor.states.collectAsState()
+    val devicePairingStates by devicePairingMonitor.states.collectAsStateWithLifecycle()
     LaunchedEffect(devicePairingMonitor, appVisible, hasAuthSession) {
         if (!hasAuthSession || !appVisible) return@LaunchedEffect
         devicePairingMonitor.observe(
@@ -1202,6 +1203,7 @@ private val NewSessionDraftSaver = listSaver<NewSessionDraft?, Any>(
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
+@SuppressLint("ViewModelConstructorInComposable") // Preview only; real hosts construct view models via factories.
 private fun AgentPilotAppPreview() {
     AgentPilotTheme {
         val context = LocalContext.current

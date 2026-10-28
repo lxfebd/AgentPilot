@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only override: private/self-use builds may talk plain HTTP to a
+    self-hosted LAN server. Never shipped in the release variant, which keeps
+    the main configuration's cleartext denial.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

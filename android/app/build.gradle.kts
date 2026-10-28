@@ -37,8 +37,8 @@ android {
         applicationId = "com.agentpilot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 25
-        versionName = "2.3.4"
+        versionCode = 26
+        versionName = "2.3.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
@@ -54,7 +54,9 @@ android {
             buildConfigField("String", "OFFICIAL_SERVER_URL", pinnedServerUrl.asBuildConfigString())
         }
         release {
-            isMinifyEnabled = false
+            // Shrink + obfuscate the release APK; proguard-rules.pro keeps what
+            // reflection needs. Debug stays unminified.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -124,6 +126,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    // Compose UI test artifacts resolve versions from the BOM, and the
+    // androidTestImplementation configuration does not inherit the platform
+    // constraint from implementation() - without this, lintDebug fails on
+    // an empty ui-test-junit4 version during generateDebugAndroidTestLintModel.
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

@@ -267,6 +267,15 @@ internal fun UpdateDetailPage(
                         lineHeight = 18.sp,
                     )
                 }
+                if (state.signatureBlocked) {
+                    Text(
+                        text = stringResource(R.string.update_signature_blocked),
+                        color = colors.errorText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 18.sp,
+                    )
+                }
                 when {
                     state.downloading -> ProfileDialogButton(
                         label = stringResource(R.string.update_cancel_download),

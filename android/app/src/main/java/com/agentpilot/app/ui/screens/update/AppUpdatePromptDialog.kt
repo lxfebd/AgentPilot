@@ -98,6 +98,15 @@ fun AppUpdatePromptDialog(
                     lineHeight = 18.sp,
                 )
             }
+            if (state.signatureBlocked) {
+                Text(
+                    text = stringResource(R.string.update_signature_blocked),
+                    color = colors.errorText,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 18.sp,
+                )
+            }
             if (state.ignoreFailed || state.downloadUnavailable) {
                 Text(
                     text = stringResource(if (state.ignoreFailed) R.string.update_ignore_failed else R.string.update_download_unavailable),
