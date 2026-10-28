@@ -143,12 +143,20 @@ def test_launch_detaches_on_windows(tmp_path: Path) -> None:
     handler = _local_rpc_handler(launcher)
     with patch("connector.local.app_launcher._dsh_already_running", return_value=False):
         with patch("connector.local.app_launcher.sys.platform", "win32"):
+            # CREATE_NEW_PROCESS_GROUP only exists on Windows; the code path is
+            # Windows-only anyway, so stand the constant in when the test runs
+            # on another platform (CI runs Linux).
             with patch(
-                "connector.local.app_launcher.subprocess.Popen"
-            ) as popen:
-                proc = popen.return_value
-                proc.pid = 5
-                asyncio.run(handler.dispatch("device.launch", {"app": "dsh"}))
+                "connector.local.app_launcher.subprocess.CREATE_NEW_PROCESS_GROUP",
+                0x00000200,
+                create=True,
+            ):
+                with patch(
+                    "connector.local.app_launcher.subprocess.Popen"
+                ) as popen:
+                    proc = popen.return_value
+                    proc.pid = 5
+                    asyncio.run(handler.dispatch("device.launch", {"app": "dsh"}))
     kwargs = popen.call_args.kwargs
     assert kwargs.get("stdin") is not None  # DEVNULL
     assert kwargs.get("creationflags", 0) != 0
