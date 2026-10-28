@@ -1,14 +1,3 @@
-/* eslint-disable */
-/**
- * Generated from protocol 1.0 artifact handshake-response.
- * Do not edit by hand; run `yarn protocol:generate`.
- */
-
-export type Selectedprotocolversion = "1.0"
-export type Serverversion = string
-
-export interface ProtocolHandshakeResponse {
-  selectedProtocolVersion: Selectedprotocolversion
-  serverVersion: Serverversion
-  [k: string]: unknown
-}
+// The generated protocol types live in packages/ui-core so both clients read one copy.
+// Do not edit here; run `yarn protocol:generate` in either client.
+export * from "@agentpilot/ui-core/generated/protocol/v1/handshake-response";

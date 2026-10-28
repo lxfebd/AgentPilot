@@ -8,7 +8,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const webRoot = path.resolve(scriptDir, "..")
 const repositoryRoot = path.resolve(webRoot, "..")
 const contractDir = path.join(repositoryRoot, "contracts", "protocol", "1.0")
-const generatedDir = path.join(webRoot, "src", "generated", "protocol", "v1")
+const generatedDir = path.join(repositoryRoot, "packages", "ui-core", "src", "generated", "protocol", "v1")
 const checkOnly = process.argv.includes("--check")
 
 const manifest = JSON.parse(await readFile(path.join(contractDir, "manifest.json"), "utf8"))
