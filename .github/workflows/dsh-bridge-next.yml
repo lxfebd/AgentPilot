@@ -305,3 +305,10 @@ jobs:
       - name: Run lint
         working-directory: android
         run: ./gradlew lintDebug --console=plain
+      # Release build compiles the signing configuration even without a
+      # keystore (the variant stays unsigned), so a broken signing block or
+      # R8 setup cannot reach the release branch undetected.  The APK is not
+      # published — it is a compile regression guard only.
+      - name: Build release APK (unsigned guard)
+        working-directory: android
+        run: ./gradlew assembleRelease --console=plain
