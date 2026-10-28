@@ -1,1 +1,1 @@
-export * from "@agentpilot/ui-core/id"
+export * from "@agentpilot/ui-core/lib/id"

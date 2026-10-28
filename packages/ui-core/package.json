@@ -7,10 +7,6 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./id": "./src/id.ts",
-    "./retry": "./src/retry.ts",
-    "./session-title": "./src/session-title.ts",
-    "./clipboard": "./src/clipboard.ts",
     "./*": "./src/*.ts"
   }
 }
