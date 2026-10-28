@@ -14,6 +14,27 @@ import {
 const SHUTDOWN_GRACE_MS = 5_000;
 const STREAM_RETRY_MS = 1_000;
 
+/**
+ * Sends one control message to the backend, tolerating a backend that is
+ * already gone.
+ *
+ * `ChildProcess.send` fails twice over on a closed channel: it throws
+ * synchronously, and without a callback it also emits the failure as an
+ * `error` event on the child. Nothing listens to that event in Main, so it
+ * surfaces as an uncaught exception whenever the backend exits between our
+ * last health check and the write (the backend stops itself right after it
+ * receives the final `netFetchResult`, which is exactly that window). Passing
+ * a callback keeps the failure local to this function.
+ */
+export function sendToChild(child: ChildProcess | null, message: BackendControlMessage): void {
+  if (!child || !child.connected) return;
+  try {
+    child.send(message, () => {});
+  } catch {
+    // The channel closed between the check and the write.
+  }
+}
+
 export type BackendClientOptions = {
   /** Chromium network stack, so outbound requests honour the system proxy. */
   fetcher: (input: string, init?: RequestInit) => Promise<Response>;
@@ -141,11 +162,7 @@ export class DesktopBackendClient {
     this.stream = null;
     const child = this.child;
     if (!child) return;
-    try {
-      child.send({ type: "shutdown" } satisfies BackendControlMessage);
-    } catch {
-      // The channel is already gone; the exit race below handles it.
-    }
+    sendToChild(child, { type: "shutdown" });
     const exited = await Promise.race([
       this.exitPromise?.then(() => true) ?? Promise.resolve(true),
       delay(SHUTDOWN_GRACE_MS).then(() => false),
@@ -200,20 +217,20 @@ export class DesktopBackendClient {
       const headers: Record<string, string> = {};
       response.headers.forEach((value, key) => { headers[key] = value; });
       const body = await response.text();
-      this.child?.send({
+      sendToChild(this.child, {
         type: "netFetchResult",
         id: message.id,
         ok: response.ok,
         status: response.status,
         headers,
         body,
-      } satisfies BackendControlMessage);
+      });
     } catch (error) {
-      this.child?.send({
+      sendToChild(this.child, {
         type: "netFetchError",
         id: message.id,
         message: error instanceof Error ? error.message : String(error),
-      } satisfies BackendControlMessage);
+      });
     }
   }
 
