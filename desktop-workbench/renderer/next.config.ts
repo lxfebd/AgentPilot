@@ -22,11 +22,14 @@ const apiRoutePrefixes = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Consumed as TypeScript sources through a portal dependency.
+  transpilePackages: ["@agentpilot/ui-core"],
   allowedDevOrigins: ["**.*", "localhost", "*.localhost"],
   output: staticExport ? "export" : undefined,
   trailingSlash: staticExport,
   turbopack: {
-    root: path.resolve(__dirname, ".."),
+    // Repo root, so the portal dependency under packages/ resolves.
+    root: path.resolve(__dirname, "../.."),
   },
   env: {
     NEXT_PUBLIC_AGENT_PILOT_API: browserApiTarget,

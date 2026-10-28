@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const apiTarget = (process.env.AGENT_PILOT_API ?? "http://127.0.0.1:8000").trim();
 const apiNamespace = process.env.AGENT_PILOT_API_NAMESPACE ?? "/api/v2";
@@ -19,7 +20,13 @@ const apiRoutePrefixes = [
 ];
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    // Allow resolving the portal dependency under packages/ at the repo root.
+    root: path.resolve(__dirname, ".."),
+  },
   devIndicators: false,
+  // Consumed as TypeScript sources through a portal dependency.
+  transpilePackages: ["@agentpilot/ui-core"],
   allowedDevOrigins: ["**.*", "localhost", "*.localhost"],
   output: staticExport ? "export" : undefined,
   trailingSlash: staticExport,

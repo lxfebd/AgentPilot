@@ -18,6 +18,7 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 | `ios/` | iOS / iPadOS 客户端，见 `ios/ARCHITECTURE.md` | Swift、Xcode |
 | `dsh-bridge-next/` | **当前** DSH 插件（npm 包，也随 DSH Desktop 分发） | TypeScript、Yarn |
 | `contracts/` | 跨端契约与 fixtures，按 `<name>/<version>/` 组织 | JSON Schema / 文档 |
+| `packages/ui-core/` | Web 与桌面渲染器共享的无依赖 TS 助手（经 `portal:` 依赖引入） | TypeScript |
 | `docker/` | 自托管部署与本地数据库 compose | Docker Compose |
 
 不在当前主线上开发的目录：
@@ -28,6 +29,7 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 ## 开发与验证
 
 - 仓库根目录**没有**统一的构建命令，每个子项目单独安装依赖、单独检查。
+- `packages/ui-core/` 不是独立子项目：它由 `web-next` 与 `desktop-workbench/renderer` 以 `portal:` 依赖引入（`transpilePackages` 编译），改完只需跑这两个项目的 typecheck / test。
 - **不提交 lockfile**（`yarn.lock`、`uv.lock`、`package-lock.json` 等已被 `.gitignore` 忽略），不要把它们加回来。
 - 只运行和修改有关的 headless 检查：
   - Server：`cd server && uv run ruff check . --exclude .venv && uv run pytest -q`
