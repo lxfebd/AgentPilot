@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { API_NAMESPACE } from "@/lib/api"
+import { API_NAMESPACE } from "@/lib/api/client"
 import { createProjectSidebarPreferenceStore, projectSidebarPreferenceKey } from "./project-sidebar-preferences"
 
 export function useProjectSidebarPreferences(userId: string) {
