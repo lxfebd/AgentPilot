@@ -1,0 +1,15 @@
+{
+  "name": "@agentpilot/ui-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-agnostic helpers shared by web-next and the desktop renderer.",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./id": "./src/id.ts",
+    "./retry": "./src/retry.ts",
+    "./session-title": "./src/session-title.ts",
+    "./clipboard": "./src/clipboard.ts"
+  }
+}
