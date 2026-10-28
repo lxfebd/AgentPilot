@@ -130,7 +130,7 @@ curl http://127.0.0.1:8000/api/v2/health/ready
 | `AGENT_SERVER_FILES_S3_REGION` | S3 region. Defaults to `us-east-1`. |
 | `AGENT_SERVER_FILES_S3_ENDPOINT_URL` | Optional S3-compatible endpoint URL. |
 | `AGENT_SERVER_FILES_S3_VIRTUAL_HOST_STYLE` | Set to `true` for virtual-host-style S3 URLs. |
-| `AGENT_SERVER_SECRET` | Secret used for signed auth tokens. Set this outside local dev. |
+| `AGENT_SERVER_SECRET` | **Required.** Secret used to sign access, connector, setup and email-code tokens. The server refuses to start without it. Local development may set `AGENT_SERVER_ALLOW_DEV_SECRET=1` to use a well-known development secret instead. |
 | `AGENT_SERVER_SETUP_TOKEN_TTL` | First-run setup token TTL in seconds. |
 | `AGENT_SERVER_PUBLIC_ORIGIN` | Public Web origin used for OAuth redirect URLs when reverse-proxy headers or `returnTo` are unavailable. Example: `https://agents.example.com`. |
 | `AGENT_SERVER_CORS_ORIGINS` | Comma-separated explicit CORS origins. |

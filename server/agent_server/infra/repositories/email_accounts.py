@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import os
 import re
 import secrets
 import time
@@ -27,6 +26,7 @@ from agent_server.core.auth import (
     verify_password_verifier,
 )
 from agent_server.core.models import UserView
+from agent_server.core.secret import resolve_secret
 from agent_server.core.utc import utc_now
 from agent_server.infra.db.schema import email_verification_codes as codes_t
 from agent_server.infra.db.schema import email_verification_limits as limits_t
@@ -94,9 +94,8 @@ def _scope(email: str, purpose: str, user_id: str) -> str:
 
 
 def _code_hash(nonce: str, code: str) -> str:
-    secret = os.environ.get("AGENT_SERVER_SECRET", "agent-server-dev-secret").encode()
     return hmac.new(
-        secret, f"email-code:{nonce}:{code}".encode(), hashlib.sha256
+        resolve_secret(), f"email-code:{nonce}:{code}".encode(), hashlib.sha256
     ).hexdigest()
 
 

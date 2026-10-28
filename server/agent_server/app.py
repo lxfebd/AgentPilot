@@ -43,6 +43,7 @@ from agent_server.api import (
 )
 from agent_server.core.api_namespace import API_V2_PREFIX
 from agent_server.core.process_settings import ProcessSettings
+from agent_server.core.secret import validate_secret_configuration
 from agent_server.core.setup_token import SetupToken
 from agent_server.core.utc import utc_now
 from agent_server.infra.connector_rpc import ConnectorRpcManager
@@ -117,6 +118,7 @@ def create_app(
     if resolved_redis_url is None and db_path is None:
         resolved_redis_url = os.environ.get("AGENT_SERVER_REDIS_URL")
     process_settings.validate_shared_state(redis_configured=bool(resolved_redis_url))
+    validate_secret_configuration()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:

@@ -9,13 +9,10 @@ import secrets
 import time
 from typing import Any
 
+from agent_server.core.secret import resolve_secret
+
 DEFAULT_EXPIRES_IN = 900
 DEFAULT_USER_EXPIRES_IN = 60 * 60 * 24 * 7
-
-
-def _secret() -> bytes:
-    value = os.environ.get("AGENT_SERVER_SECRET", "agent-server-dev-secret")
-    return value.encode("utf-8")
 
 
 def create_connector_access_token(
@@ -26,7 +23,7 @@ def create_connector_access_token(
 ) -> str:
     expires_at = int(time.time()) + expires_in
     payload = f"{connector_id}:{expires_at}:{credential_hash}"
-    sig = hmac.new(_secret(), payload.encode("utf-8"), hashlib.sha256).digest()
+    sig = hmac.new(resolve_secret(), payload.encode("utf-8"), hashlib.sha256).digest()
     encoded_sig = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
     return f"{connector_id}.{expires_at}.{encoded_sig}"
 
@@ -49,7 +46,7 @@ def verify_connector_access_token(token: str, *, credential_hash: str) -> str | 
 
     payload = f"{connector_id}:{expires_at}:{credential_hash}"
     expected_sig = base64.urlsafe_b64encode(
-        hmac.new(_secret(), payload.encode("utf-8"), hashlib.sha256).digest()
+        hmac.new(resolve_secret(), payload.encode("utf-8"), hashlib.sha256).digest()
     ).decode("ascii").rstrip("=")
     if not hmac.compare_digest(expected_sig, received_sig):
         return None
@@ -109,21 +106,21 @@ def create_user_access_token(user_id: str, expires_in: int = DEFAULT_USER_EXPIRE
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {"sub": user_id, "exp": int(time.time()) + expires_in}
     signing_input = f"{_b64_json(header)}.{_b64_json(payload)}"
-    signature = _b64_bytes(hmac.new(_secret(), signing_input.encode("utf-8"), hashlib.sha256).digest())
+    signature = _b64_bytes(hmac.new(resolve_secret(), signing_input.encode("utf-8"), hashlib.sha256).digest())
     return f"{signing_input}.{signature}"
 
 
 def create_signed_token(kind: str, payload: dict[str, Any], expires_in: int) -> str:
     body = {"kind": kind, "exp": int(time.time()) + expires_in, **payload}
     signing_input = _b64_json(body)
-    signature = _b64_bytes(hmac.new(_secret(), signing_input.encode("utf-8"), hashlib.sha256).digest())
+    signature = _b64_bytes(hmac.new(resolve_secret(), signing_input.encode("utf-8"), hashlib.sha256).digest())
     return f"{signing_input}.{signature}"
 
 
 def verify_signed_token(kind: str, token: str) -> dict[str, Any] | None:
     try:
         body, signature = token.split(".", 1)
-        expected = _b64_bytes(hmac.new(_secret(), body.encode("utf-8"), hashlib.sha256).digest())
+        expected = _b64_bytes(hmac.new(resolve_secret(), body.encode("utf-8"), hashlib.sha256).digest())
         if not hmac.compare_digest(expected, signature):
             return None
         data = json.loads(_b64_decode(body).decode("utf-8"))
@@ -139,7 +136,7 @@ def verify_signed_token(kind: str, token: str) -> dict[str, Any] | None:
 def verify_user_access_token(token: str) -> str | None:
     try:
         header, payload, signature = token.split(".", 2)
-        expected = _b64_bytes(hmac.new(_secret(), f"{header}.{payload}".encode("utf-8"), hashlib.sha256).digest())
+        expected = _b64_bytes(hmac.new(resolve_secret(), f"{header}.{payload}".encode("utf-8"), hashlib.sha256).digest())
         if not hmac.compare_digest(expected, signature):
             return None
         data = json.loads(_b64_decode(payload).decode("utf-8"))

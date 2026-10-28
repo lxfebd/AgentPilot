@@ -27,6 +27,9 @@ os.environ.setdefault("AGENT_SERVER_SESSION_RPC_TIMEOUT_SECONDS", "0.2")
 os.environ.setdefault("AGENT_SERVER_PASSWORD_ITERATIONS", "1000")
 # Most tests exercise protocol behavior. The process pool has dedicated tests.
 os.environ.setdefault("AGENT_SERVER_EVENT_WORKERS", "0")
+# Signing tokens needs the development secret; deployments must set a real one
+# (fail fast) instead of falling back to it implicitly.
+os.environ.setdefault("AGENT_SERVER_ALLOW_DEV_SECRET", "1")
 
 _TEMPLATE_DB: pathlib.Path | None = None
 
