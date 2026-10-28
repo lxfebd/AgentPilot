@@ -34,12 +34,12 @@ from agent_server.core.runtime_identity import (
     resolve_session_runtime_binding,
 )
 from agent_server.core.utc import utc_now
+from agent_server.core.workspace import clean_workspace_path
 from agent_server.infra.connector_rpc import (
     ConnectorOfflineError,
     ConnectorRpcError,
     ConnectorRpcManager,
 )
-from agent_server.infra.repositories.projects import _clean_workspace_path
 from agent_server.services.device_runtimes import (
     DeviceRuntimeError,
     DeviceRuntimeService,
@@ -350,8 +350,8 @@ class SessionRunService:
             cwd = project.workspacePath
         else:
             try:
-                _cleaned_cwd, cwd_key = _clean_workspace_path(cwd, None)
-                _project_path, project_key = _clean_workspace_path(
+                _cleaned_cwd, cwd_key = clean_workspace_path(cwd, None)
+                _project_path, project_key = clean_workspace_path(
                     project.workspacePath,
                     None,
                 )

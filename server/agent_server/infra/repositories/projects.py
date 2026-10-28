@@ -1,16 +1,12 @@
 
 from __future__ import annotations
 
-import posixpath
 from pathlib import PurePosixPath, PureWindowsPath
 
 from sqlalchemy import case
 
+from agent_server.core.workspace import MissingWorkspaceError, clean_workspace_path
 from agent_server.infra.repositories.store_support import *
-
-
-class MissingWorkspaceError(ValueError):
-    """Raised when a connector session cannot be assigned to a workspace."""
 
 
 class ProjectNameConflictError(ValueError):
@@ -19,30 +15,6 @@ class ProjectNameConflictError(ValueError):
     def __init__(self, name: str) -> None:
         self.name = name
         super().__init__(f'project name already exists: "{name}"')
-
-
-def _clean_workspace_path(path: str, device_os: str | None) -> tuple[str, str]:
-    cleaned = path.strip()
-    if not cleaned:
-        raise ValueError("workspacePath must not be empty")
-
-    looks_windows = (
-        device_os == "windows"
-        or (len(cleaned) >= 3 and cleaned[1] == ":" and cleaned[2] in ("/", "\\"))
-        or cleaned.startswith("\\\\")
-    )
-    if looks_windows:
-        windows_path = PureWindowsPath(cleaned)
-        if not windows_path.is_absolute():
-            raise ValueError("workspacePath must be an absolute path")
-        display = str(windows_path)
-        return display, windows_path.as_posix().casefold()
-
-    posix_path = PurePosixPath(cleaned)
-    if not posix_path.is_absolute():
-        raise ValueError("workspacePath must be an absolute path")
-    display = posixpath.normpath(cleaned)
-    return display, display
 
 
 def _workspace_name(path: str, device_os: str | None) -> str:
@@ -181,7 +153,7 @@ class ProjectRepositoryMixin:
         if not isinstance(workspace_path, str) or not workspace_path.strip():
             raise MissingWorkspaceError("session workdir is required")
         candidate_path = workspace_path.strip()
-        cleaned_path, workspace_key = _clean_workspace_path(candidate_path, device_os)
+        cleaned_path, workspace_key = clean_workspace_path(candidate_path, device_os)
         existing = (
             await conn.execute(
                 select(projects_t.c.id)
@@ -324,7 +296,7 @@ class ProjectRepositoryMixin:
                 ).first()
                 if connector is None:
                     raise KeyError(connector_id)
-                cleaned_path, workspace_key = _clean_workspace_path(
+                cleaned_path, workspace_key = clean_workspace_path(
                     workspace_path,
                     connector.device_os,
                 )

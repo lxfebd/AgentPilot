@@ -7,8 +7,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import and_, delete, func, insert, select
-
+from agent_server.core.jsonutil import json_loads
 from agent_server.core.models import (
     DashboardBreakdownItem,
     DashboardHistogramBucket,
@@ -24,34 +23,6 @@ from agent_server.core.models import (
     DashboardUserSegmentItem,
 )
 from agent_server.core.utc import utc_now
-from agent_server.infra.db import (
-    connectors as connectors_t,
-)
-from agent_server.infra.db import (
-    dashboard_daily_metrics as dashboard_daily_metrics_t,
-)
-from agent_server.infra.db import (
-    dashboard_settings as dashboard_settings_t,
-)
-from agent_server.infra.db import (
-    dashboard_user_daily_facts as dashboard_user_daily_facts_t,
-)
-from agent_server.infra.db import (
-    device_runtimes as device_runtimes_t,
-)
-from agent_server.infra.db import (
-    platform_user_activity as platform_user_activity_t,
-)
-from agent_server.infra.db import (
-    sessions as sessions_t,
-)
-from agent_server.infra.db import (
-    timeline_items as timeline_items_t,
-)
-from agent_server.infra.db import (
-    users as users_t,
-)
-from agent_server.infra.repositories.store_support import _json_loads
 from agent_server.services.repository_ports import AdminDashboardRepository
 
 DASHBOARD_SETTINGS_KEY = "settings"
@@ -127,19 +98,12 @@ class AdminDashboardService:
         return settings.model_copy(update={"serverTime": utc_now()})
 
     async def _load_settings(self) -> tuple[DashboardSettingsView, bool]:
-        async with self._store.engine.connect() as conn:
-            row = (
-                await conn.execute(
-                    select(dashboard_settings_t.c.value_json).where(
-                        dashboard_settings_t.c.key == DASHBOARD_SETTINGS_KEY
-                    )
-                )
-            ).first()
-        if row is None:
+        raw = await self._store.load_settings_value(DASHBOARD_SETTINGS_KEY)
+        if raw is None:
             settings = DashboardSettingsView()
             customized = False
         else:
-            settings = DashboardSettingsView.model_validate(_json_loads(row.value_json) or {})
+            settings = DashboardSettingsView.model_validate(json_loads(raw) or {})
             customized = True
         return _normalized_settings(settings), customized
 
@@ -167,22 +131,11 @@ class AdminDashboardService:
             ),
             "updated_at": now,
         }
-        async with self._store.engine.begin() as conn:
-            existing = (
-                await conn.execute(
-                    select(dashboard_settings_t.c.key).where(
-                        dashboard_settings_t.c.key == DASHBOARD_SETTINGS_KEY
-                    )
-                )
-            ).first()
-            if existing is None:
-                await conn.execute(insert(dashboard_settings_t).values(**values))
-            else:
-                await conn.execute(
-                    dashboard_settings_t.update()
-                    .where(dashboard_settings_t.c.key == DASHBOARD_SETTINGS_KEY)
-                    .values(value_json=values["value_json"], updated_at=now)
-                )
+        await self._store.upsert_settings(
+            key=DASHBOARD_SETTINGS_KEY,
+            value_json=values["value_json"],
+            updated_at=now,
+        )
         return settings.model_copy(update={"serverTime": utc_now()})
 
     async def get_overview(
@@ -411,21 +364,11 @@ class AdminDashboardService:
             }
             for fact in sorted(facts.values(), key=lambda value: value.user_id)
         ]
-        async with self._store.engine.begin() as conn:
-            await conn.execute(
-                delete(dashboard_daily_metrics_t).where(
-                    dashboard_daily_metrics_t.c.date == target_date.isoformat()
-                )
-            )
-            await conn.execute(
-                delete(dashboard_user_daily_facts_t).where(
-                    dashboard_user_daily_facts_t.c.date == target_date.isoformat()
-                )
-            )
-            if metrics:
-                await conn.execute(insert(dashboard_daily_metrics_t), metrics)
-            if fact_rows:
-                await conn.execute(insert(dashboard_user_daily_facts_t), fact_rows)
+        await self._store.replace_snapshot(
+            target_date=target_date.isoformat(),
+            metrics=metrics,
+            fact_rows=fact_rows,
+        )
         return DashboardSnapshotResponse(
             date=target_date.isoformat(),
             computedAt=computed_at,
@@ -435,44 +378,17 @@ class AdminDashboardService:
         )
 
     async def _latest_snapshot_at(self, target_date: date) -> str | None:
-        async with self._store.engine.connect() as conn:
-            row = (
-                await conn.execute(
-                    select(func.max(dashboard_daily_metrics_t.c.computed_at)).where(
-                        dashboard_daily_metrics_t.c.date == target_date.isoformat()
-                    )
-                )
-            ).first()
-        return str(row[0]) if row is not None and row[0] else None
+        return await self._store.latest_snapshot_computed_at(target_date.isoformat())
 
     async def _snapshot_version(self, target_date: date) -> int | None:
-        async with self._store.engine.connect() as conn:
-            row = (
-                await conn.execute(
-                    select(dashboard_daily_metrics_t.c.value).where(
-                        dashboard_daily_metrics_t.c.date == target_date.isoformat(),
-                        dashboard_daily_metrics_t.c.metric_key == "snapshot.version",
-                        dashboard_daily_metrics_t.c.dimension_key == "",
-                        dashboard_daily_metrics_t.c.dimension_value == "",
-                    )
-                )
-            ).first()
-        return int(row[0]) if row is not None and row[0] is not None else None
+        return await self._store.snapshot_version(target_date.isoformat())
 
     async def _read_metrics(
         self,
         from_date: date,
         to_date: date,
     ) -> dict[str, dict[tuple[str, str, str], float]]:
-        async with self._store.engine.connect() as conn:
-            rows = (
-                await conn.execute(
-                    select(dashboard_daily_metrics_t).where(
-                        dashboard_daily_metrics_t.c.date >= from_date.isoformat(),
-                        dashboard_daily_metrics_t.c.date <= to_date.isoformat(),
-                    )
-                )
-            ).mappings().all()
+        rows = await self._store.metrics_between(from_date.isoformat(), to_date.isoformat())
         result: dict[str, dict[tuple[str, str, str], float]] = defaultdict(dict)
         for row in rows:
             result[row["date"]][
@@ -485,15 +401,7 @@ class AdminDashboardService:
         from_date: date,
         to_date: date,
     ) -> dict[str, dict[str, Any]]:
-        async with self._store.engine.connect() as conn:
-            rows = (
-                await conn.execute(
-                    select(dashboard_user_daily_facts_t).where(
-                        dashboard_user_daily_facts_t.c.date >= from_date.isoformat(),
-                        dashboard_user_daily_facts_t.c.date <= to_date.isoformat(),
-                    )
-                )
-            ).mappings().all()
+        rows = await self._store.facts_between(from_date.isoformat(), to_date.isoformat())
         by_user: dict[str, dict[str, Any]] = {}
         for row in rows:
             user_id = row["user_id"]
@@ -516,25 +424,12 @@ class AdminDashboardService:
         return by_user
 
     async def _load_users(self, *, end_utc: str) -> dict[str, dict[str, Any]]:
-        async with self._store.engine.connect() as conn:
-            rows = (
-                await conn.execute(
-                    select(users_t).where(users_t.c.created_at < end_utc)
-                )
-            ).mappings().all()
+        rows = await self._store.users_before(end_utc)
         return {row["id"]: dict(row) for row in rows}
 
     async def _load_device_snapshot(self) -> DeviceSnapshot:
         connectors = await self._store.list_connectors()
-        async with self._store.engine.connect() as conn:
-            runtime_rows = (
-                await conn.execute(
-                    select(
-                        device_runtimes_t.c.connector_id,
-                        device_runtimes_t.c.runtime_type,
-                    ).where(device_runtimes_t.c.config_json.is_not(None))
-                )
-            ).all()
+        runtime_rows = await self._store.device_runtimes()
         runtimes_by_connector: dict[str, set[str]] = defaultdict(set)
         for connector_id, runtime_type in runtime_rows:
             runtimes_by_connector[str(connector_id)].add(str(runtime_type))
@@ -588,63 +483,10 @@ class AdminDashboardService:
                 facts[user_id] = fact
             return fact
 
-        async with self._store.engine.connect() as conn:
-            activity_rows = (
-                await conn.execute(
-                    select(
-                        platform_user_activity_t.c.user_id,
-                        func.max(platform_user_activity_t.c.last_seen_at).label("last_activity_at"),
-                    )
-                    .where(_between(platform_user_activity_t.c.last_seen_at, start_utc, end_utc))
-                    .group_by(platform_user_activity_t.c.user_id)
-                )
-            ).mappings().all()
-            session_rows = (
-                await conn.execute(
-                    select(
-                        sessions_t.c.id,
-                        sessions_t.c.created_at,
-                        connectors_t.c.user_id,
-                    )
-                    .join(connectors_t, connectors_t.c.id == sessions_t.c.connector_id)
-                    .where(
-                        sessions_t.c.origin == "platform",
-                        _between(sessions_t.c.created_at, start_utc, end_utc),
-                    )
-                )
-            ).mappings().all()
-            timeline_session_rows = (
-                await conn.execute(
-                    select(
-                        timeline_items_t.c.session_id,
-                        connectors_t.c.user_id,
-                        func.max(timeline_items_t.c.item_time).label("last_activity_at"),
-                    )
-                    .join(sessions_t, sessions_t.c.id == timeline_items_t.c.session_id)
-                    .join(connectors_t, connectors_t.c.id == sessions_t.c.connector_id)
-                    .where(
-                        _platform_user_message_filter(),
-                        _between(timeline_items_t.c.item_time, start_utc, end_utc),
-                    )
-                    .group_by(timeline_items_t.c.session_id, connectors_t.c.user_id)
-                )
-            ).mappings().all()
-            message_rows = (
-                await conn.execute(
-                    select(
-                        connectors_t.c.user_id,
-                        func.count(func.distinct(timeline_items_t.c.id)).label("messages"),
-                        func.max(timeline_items_t.c.item_time).label("last_activity_at"),
-                    )
-                    .join(sessions_t, sessions_t.c.id == timeline_items_t.c.session_id)
-                    .join(connectors_t, connectors_t.c.id == sessions_t.c.connector_id)
-                    .where(
-                        _platform_user_message_filter(),
-                        _between(timeline_items_t.c.item_time, start_utc, end_utc),
-                    )
-                    .group_by(connectors_t.c.user_id)
-                )
-            ).mappings().all()
+        activity_rows, session_rows, timeline_session_rows, message_rows = await self._store.activity_bundle(
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
 
         for row in activity_rows:
             fact = fact_for(row["user_id"])
@@ -667,26 +509,10 @@ class AdminDashboardService:
 
     async def _active_session_agent_counts(self, *, start_utc: str, end_utc: str) -> Counter[str]:
         active: dict[str, str] = {}
-        async with self._store.engine.connect() as conn:
-            session_rows = (
-                await conn.execute(
-                    select(sessions_t.c.id, sessions_t.c.runtime).where(
-                        sessions_t.c.origin == "platform",
-                        _between(sessions_t.c.created_at, start_utc, end_utc),
-                    )
-                )
-            ).mappings().all()
-            timeline_rows = (
-                await conn.execute(
-                    select(sessions_t.c.id, sessions_t.c.runtime)
-                    .join(timeline_items_t, timeline_items_t.c.session_id == sessions_t.c.id)
-                    .where(
-                        _platform_user_message_filter(),
-                        _between(timeline_items_t.c.item_time, start_utc, end_utc),
-                    )
-                    .group_by(sessions_t.c.id, sessions_t.c.runtime)
-                )
-            ).mappings().all()
+        session_rows, timeline_rows = await self._store.agent_count_rows(
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
         for row in [*session_rows, *timeline_rows]:
             runtime = row["runtime"]
             if runtime in {"codex", "claude", "dsh"}:
@@ -695,37 +521,10 @@ class AdminDashboardService:
 
     async def _count_active_users_between(self, *, start_utc: str, end_utc: str) -> int:
         active: set[str] = set()
-        async with self._store.engine.connect() as conn:
-            activity_users = (
-                await conn.execute(
-                    select(platform_user_activity_t.c.user_id)
-                    .where(_between(platform_user_activity_t.c.last_seen_at, start_utc, end_utc))
-                    .group_by(platform_user_activity_t.c.user_id)
-                )
-            ).all()
-            session_users = (
-                await conn.execute(
-                    select(connectors_t.c.user_id)
-                    .join(sessions_t, sessions_t.c.connector_id == connectors_t.c.id)
-                    .where(
-                        sessions_t.c.origin == "platform",
-                        _between(sessions_t.c.created_at, start_utc, end_utc),
-                    )
-                    .group_by(connectors_t.c.user_id)
-                )
-            ).all()
-            timeline_users = (
-                await conn.execute(
-                    select(connectors_t.c.user_id)
-                    .join(sessions_t, sessions_t.c.connector_id == connectors_t.c.id)
-                    .join(timeline_items_t, timeline_items_t.c.session_id == sessions_t.c.id)
-                    .where(
-                        _platform_user_message_filter(),
-                        _between(timeline_items_t.c.item_time, start_utc, end_utc),
-                    )
-                    .group_by(connectors_t.c.user_id)
-                )
-            ).all()
+        activity_users, session_users, timeline_users = await self._store.active_user_rows(
+            start_utc=start_utc,
+            end_utc=end_utc,
+        )
         active.update(str(row[0]) for row in activity_users if row[0])
         active.update(str(row[0]) for row in session_users if row[0])
         active.update(str(row[0]) for row in timeline_users if row[0])
@@ -759,18 +558,6 @@ def _iso_utc(value: datetime) -> str:
 def _date_range(from_date: date, to_date: date) -> list[date]:
     days = (to_date - from_date).days
     return [from_date + timedelta(days=offset) for offset in range(days + 1)]
-
-
-def _between(column: Any, start_utc: str, end_utc: str) -> Any:
-    return and_(column.is_not(None), column >= start_utc, column < end_utc)
-
-
-def _platform_user_message_filter() -> Any:
-    return and_(
-        timeline_items_t.c.type == "message",
-        timeline_items_t.c.role == "user",
-        timeline_items_t.c.payload_json.like('%"clientMessageId"%'),
-    )
 
 
 def _in_range(value: str | None, start_utc: str, end_utc: str) -> bool:

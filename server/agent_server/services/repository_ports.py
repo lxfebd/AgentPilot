@@ -565,9 +565,52 @@ class OAuthRepository(Protocol):
 
 
 class AdminDashboardRepository(Protocol):
-    engine: Any
-
     async def list_connectors(self, *, user_id: str | None = None) -> list[ConnectorView]: ...
+
+    async def load_settings_value(self, key: str) -> str | None: ...
+
+    async def upsert_settings(self, *, key: str, value_json: str, updated_at: str) -> None: ...
+
+    async def latest_snapshot_computed_at(self, target_date: str) -> str | None: ...
+
+    async def snapshot_version(self, target_date: str) -> int | None: ...
+
+    async def metrics_between(self, from_date: str, to_date: str) -> list[Any]: ...
+
+    async def facts_between(self, from_date: str, to_date: str) -> list[Any]: ...
+
+    async def users_before(self, end_utc: str) -> list[Any]: ...
+
+    async def device_runtimes(self) -> list[Any]: ...
+
+    async def activity_bundle(
+        self,
+        *,
+        start_utc: str,
+        end_utc: str,
+    ) -> tuple[list[Any], list[Any], list[Any], list[Any]]: ...
+
+    async def agent_count_rows(
+        self,
+        *,
+        start_utc: str,
+        end_utc: str,
+    ) -> tuple[list[Any], list[Any]]: ...
+
+    async def active_user_rows(
+        self,
+        *,
+        start_utc: str,
+        end_utc: str,
+    ) -> tuple[list[Any], list[Any], list[Any]]: ...
+
+    async def replace_snapshot(
+        self,
+        *,
+        target_date: str,
+        metrics: list[dict[str, Any]],
+        fact_rows: list[dict[str, Any]],
+    ) -> None: ...
 
 
 class ConnectorTerminalRepository(Protocol):
