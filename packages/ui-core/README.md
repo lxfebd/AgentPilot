@@ -22,3 +22,19 @@ identical, so every edit had to be made twice and any drift was silent.
 Both projects depend on `portal:../<path>/packages/ui-core` and list the package
 in `transpilePackages`, because the exported files are `.ts` sources rather than
 a prebuilt `dist`.
+## Adding a module
+
+- Put the source under `src/` mirroring the original in-app path, e.g.
+  `src/components/session/session-list-order.ts` for
+  `components/session/session-list-order.ts`.
+- The `./*` export pattern maps any subpath to `./src/*.ts`, so imports use
+  `@agentpilot/ui-core/components/session/session-list-order` — there is no
+  export entry to maintain per module.
+- In each app, replace the old file with a one-line re-export shim:
+  `export * from "@agentpilot/ui-core/<original-path-without-ext>";`
+- Shims must stay identical across the two apps.
+- Only modules whose imports are fully self-contained (relative paths only, no
+  `@/` aliases, no bare third-party specifiers) can move here: this package has
+  no node_modules, so `react`/`clsx`/etc. do not resolve from this directory.
+  Framework-coupled or alias-importing modules stay in-app until the repo gains
+  a workspace root.

@@ -10,6 +10,7 @@
     "./id": "./src/id.ts",
     "./retry": "./src/retry.ts",
     "./session-title": "./src/session-title.ts",
-    "./clipboard": "./src/clipboard.ts"
+    "./clipboard": "./src/clipboard.ts",
+    "./*": "./src/*.ts"
   }
 }
