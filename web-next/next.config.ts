@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
+// Local development default only; deployments must set AGENT_PILOT_API and
+// static exports never bake this target into the browser bundle.
 const apiTarget = (process.env.AGENT_PILOT_API ?? "http://127.0.0.1:8000").trim();
 const apiNamespace = process.env.AGENT_PILOT_API_NAMESPACE ?? "/api/v2";
 const proxyClientMaxBodySize = 100 * 1024 * 1024;
@@ -27,7 +29,9 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // Consumed as TypeScript sources through a portal dependency.
   transpilePackages: ["@agentpilot/ui-core"],
-  allowedDevOrigins: ["**.*", "localhost", "*.localhost"],
+  // Only the local development hostnames; a bare wildcard would let any
+  // cross-origin page drive the dev server.
+  allowedDevOrigins: ["localhost", "127.0.0.1", "[::1]", "*.localhost"],
   output: staticExport ? "export" : undefined,
   trailingSlash: staticExport,
   env: {
