@@ -38,6 +38,15 @@ a prebuilt `dist`.
   no node_modules, so `react`/`clsx`/etc. do not resolve from this directory.
   Framework-coupled or alias-importing modules stay in-app until the repo gains
   a workspace root.
+## Guard
+
+`scripts/check-consumers.mjs` asserts the invariant that makes the sharing safe
+from both test suites (`test/ui-core-consumers.test.mjs` in each client): every
+module here needs a one-line re-export shim at the same path in both clients, a
+shim may not grow additional code, the two shims must be identical, and nothing
+inside this package may import a bare package name. Whichever client's CI runs,
+a drifted copy is caught.
+
 ## Generated protocol types
 
 `src/generated/protocol/v1/` holds the TypeScript types compiled from

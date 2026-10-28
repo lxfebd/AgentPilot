@@ -1,1 +1,1 @@
-export * from "@agentpilot/ui-core/session-title"
+export * from "@agentpilot/ui-core/lib/session-title"

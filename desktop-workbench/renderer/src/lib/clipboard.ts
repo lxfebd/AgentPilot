@@ -1,1 +1,1 @@
-export * from "@agentpilot/ui-core/clipboard"
+export * from "@agentpilot/ui-core/lib/clipboard"
