@@ -29,9 +29,35 @@ fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\")
     .replace("\n", "\\n")
     .replace("\r", "\\r") + "\""
 
+// Release signing is opt-in per machine: the release keystore and its passwords
+// are passed as Gradle properties (never committed). Without them the release
+// variant builds unsigned, which keeps CI green and secrets out of the repo.
+//   ./gradlew assembleRelease \
+//     -PagentPilot.releaseStoreFile=/abs/path/agentpilot.jks \
+//     -PagentPilot.releaseStorePassword=... \
+//     -PagentPilot.releaseKeyAlias=agentpilot \
+//     -PagentPilot.releaseKeyPassword=...
+val releaseStorePath = (project.findProperty("agentPilot.releaseStoreFile") as String?)
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+
 android {
     namespace = "com.agentpilot.app"
     compileSdk = 36
+
+    // Opt-in release signing: the keystore and its passwords arrive as Gradle
+    // properties (never committed). Without them the release variant builds
+    // unsigned, which keeps CI green and secrets out of the repo.
+    if (releaseStorePath != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseStorePath)
+                storePassword = providers.gradleProperty("agentPilot.releaseStorePassword").get()
+                keyAlias = providers.gradleProperty("agentPilot.releaseKeyAlias").get()
+                keyPassword = providers.gradleProperty("agentPilot.releaseKeyPassword").get()
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.agentpilot.app"
@@ -57,6 +83,10 @@ android {
             // Shrink + obfuscate the release APK; proguard-rules.pro keeps what
             // reflection needs. Debug stays unminified.
             isMinifyEnabled = true
+            // Bound only when the signing keystore properties are present; a
+            // missing config leaves the APK unsigned instead of failing, so CI
+            // can still build releases without any secret.
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

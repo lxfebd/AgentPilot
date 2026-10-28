@@ -15,3 +15,9 @@ captures/
 *.aab
 *.ap_
 *.hprof
+
+# release signing material - never commit (see RELEASING.md)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
