@@ -90,3 +90,23 @@ Python 和 Desktop 各自写入的字段位于同一文件，因此读取、合�
 Python 首次成功写入时迁移旧 `.agentpilot/machine.json`、`.agentpilot/desktop/install.json` 及旧版扁平 PID 记录，保留有序历史、Desktop 发布的安装信息和未知字段，完成后标记 `legacyMachineMigrated`。Host 在迁移前仅提供兼容的内存读取视图。自定义配置目录中的旧运行记录也会检查；旧记录中的活跃 Connector 子进程仍阻止并发启动。所有入口应一起升级，避免旧入口继续按 v1 协议写入。
 
 自动化测试在临时用户目录运行真实 Python CLI/RPC，覆盖三种启动来源竞争、RPC 重试、进程异常退出、无关 PID、ID 去重、Desktop 并发写安装信息和跨端设备复用。测试不启动真实后端、Electron 或 DSH GUI。
+
+## RPC 面
+
+`agentpilot-cli rpc --config <path>` 在 stdio 上跑换行分隔的 JSON-RPC 2.0（`ensure_ascii=False`、`separators=(",", ":")`，一行一个对象）。stdin 收请求；stdout 只输出协议行（响应与通知）；stderr 是日志文本，Desktop 按 `| LEVEL |` 前缀解析，不是协议的一部分。机器可读清单见 [rpc.json](rpc.json)，Python 侧与 Desktop 侧各有一个测试校验自己那一半。
+
+| 方法 | Desktop 调用 | 说明 |
+| --- | --- | --- |
+| `connector.acquireOwnership` | 是 | 预检占用，无配置时也可调用；被占用时返回 `-32009` |
+| `connector.getState` | 是 | 运行状态快照；`requiresConfig=false` 时无需配置 |
+| `connector.saveConfig` | 是 | 写入私有配置（含 Connector token），由 Python 侧检查占用 |
+| `connector.start` `connector.stop` `connector.restart` | 是 | 后端连接生命周期；`connector.stop` 只停连接，进程未退仍占用 |
+| `connector.getPaths` `connector.getConfig` `connector.startPairing` `connector.cancelPairing` | 否 | CLI 与插件使用的入口 |
+
+通知（无 `id` 的 JSON-RPC 消息）：`connector/state` 携带与 `connector.getState` 同结构的运行状态，`connector/log` 携带 `{seq, level, message, time}` 形式的日志条目。错误码：`-32700` 解析失败、`-32600` 请求非法、`-32601` 方法不存在、`-32000` 处理器异常、`-32009` 已有 Connector 占用（`data.reason = "connector_already_running"`）。
+
+## Desktop 的启动契约
+
+Desktop 优先直接执行预构建的 `agentpilot-cli rpc --config <path>`（`resources/connector-bin/<platform>-<arch>/`，其次 `resources/connector/`）；只有找不到二进制时才回落到 `uv run --project <dir> [--python <py>] agentpilot-cli rpc --config <path>`，此时 `uv` 负责建环境。环境变量：`AA_CONNECTOR_OWNER_KIND=desktop-workbench`；打包版强制 `UV_PROJECT_ENVIRONMENT=<dataPath>/.venv` 与 `UV_CACHE_DIR=<dataPath>/uv-cache`，因此运行期创建的环境不会落进仓库或安装目录；索引统一由 `UV_DEFAULT_INDEX`/`UV_INDEX_URL`/`PIP_INDEX_URL` 指定，缺失时用官方源，解释器下载源由 `UV_PYTHON_INSTALL_MIRROR` 决定。
+
+请求超时默认 30 秒，关闭流程里的 `connector.stop` 只等 4 秒，首次建环境的预检会延长并在等待期间上报 `preparing`。RPC 进程异常退出后，只要仍期望运行、不在关闭流程、不是认证失败且还有凭据，就按 `1s × 2^n`（上限 30 秒）重启；`-32009` 冲突不进入重启循环。
