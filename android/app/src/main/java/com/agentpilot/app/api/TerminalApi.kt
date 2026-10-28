@@ -64,7 +64,6 @@ class TerminalApi(
 
     fun streamUrl(
         serverUrl: String,
-        authorizationToken: String,
         deviceId: String,
         terminalId: String,
         fromSeq: Long = 0,
@@ -72,7 +71,7 @@ class TerminalApi(
         return webSocketApiUrl(
             serverUrl = serverUrl,
             path = "/connectors/${deviceId.urlEncode()}/terminals-v2/${terminalId.urlEncode()}/stream" +
-                "?fromSeq=$fromSeq&token=${authorizationToken.urlEncode()}",
+                "?fromSeq=$fromSeq",
         )
     }
 

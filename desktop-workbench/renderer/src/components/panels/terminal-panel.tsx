@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { dashboardApi } from "@/features/dashboard/api"
 import type { TerminalView } from "@/features/dashboard/types"
 import { apiWebSocketUrl } from "@/lib/api"
+import { createClientId } from "@/lib/id"
 import { cn } from "@/lib/utils"
 import { ChevronExternal } from "./runtime-icons"
 
@@ -545,7 +546,14 @@ function XtermHost({
       })
       resizeObserver.observe(host)
 
-      socket = new WebSocket(connectorTerminalStreamUrl(connectorId, terminal.terminalId, token))
+      const wsTicket = await dashboardApi.createTerminalWsTicket(
+        token,
+        createClientId("desktop"),
+        connectorId,
+        terminal.terminalId,
+      )
+      if (cancelled) return
+      socket = new WebSocket(connectorTerminalStreamUrl(connectorId, terminal.terminalId, wsTicket.ticket))
       socket.onopen = () => {
         if (cancelled) return
         setStatus("open")
@@ -697,9 +705,9 @@ function isTerminalStreamMessage(value: unknown): value is TerminalStreamMessage
   return false
 }
 
-function connectorTerminalStreamUrl(connectorId: string, terminalId: string, token: string): string {
+function connectorTerminalStreamUrl(connectorId: string, terminalId: string, ticket: string): string {
   const url = new URL(apiWebSocketUrl(`/connectors/${encodeURIComponent(connectorId)}/terminals-v2/${encodeURIComponent(terminalId)}/stream`))
-  url.searchParams.set("token", token)
+  url.searchParams.set("ticket", ticket)
   url.searchParams.set("fromSeq", "0")
   return url.toString()
 }

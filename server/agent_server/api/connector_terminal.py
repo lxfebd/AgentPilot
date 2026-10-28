@@ -42,6 +42,7 @@ from agent_server.deps import (
 from agent_server.infra.connector_rpc import ConnectorRpcManager
 from agent_server.infra.repositories.facade import Store
 from agent_server.infra.terminal_broker import TerminalBroker, TerminalRelayError
+from agent_server.infra.ws_tickets import ClientWsTicketManager
 from agent_server.services.connector_rpc import ConnectorUpstreamError
 from agent_server.services.terminal import (
     TerminalService,
@@ -508,14 +509,22 @@ async def connector_terminal_stream_v2(
     terminal_id: str,
     fromSeq: int = Query(default=0, ge=0),
 ) -> None:
-    token = websocket.query_params.get("token")
+    # Browser clients negotiate a short-lived single-use ticket (POST /ws-ticket)
+    # so the long-lived user access token never appears in the query string;
+    # non-browser clients (Android) authenticate with the Authorization header.
+    ticket_value = websocket.query_params.get("ticket")
     auth_header = websocket.headers.get("authorization")
-    if not token and auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[len("Bearer ") :]
-    if not token:
-        await websocket.close(code=4401)
-        return
-    user_id = verify_user_access_token(urllib.parse.unquote(token))
+    user_id: str | None = None
+    if ticket_value:
+        tickets: ClientWsTicketManager = websocket.app.state.ws_tickets
+        ticket = await tickets.consume_scope(
+            ticket_value,
+            scope=f"terminal:{connector_id}:{terminal_id}",
+        )
+        if ticket is not None:
+            user_id = ticket.user_id
+    if user_id is None and auth_header and auth_header.startswith("Bearer "):
+        user_id = verify_user_access_token(auth_header[len("Bearer ") :])
     if user_id is None:
         await websocket.close(code=4401)
         return

@@ -423,6 +423,19 @@ export class DashboardApi {
     );
   }
 
+  createTerminalWsTicket(
+    token: string,
+    clientId: string,
+    connectorId: string,
+    terminalId: string,
+  ): Promise<WsTicketResponse> {
+    return this.client.post<WsTicketResponse>(
+      "/ws-ticket",
+      { clientId, scope: { connectorId, terminalId } },
+      { token },
+    );
+  }
+
   sessionWebSocketUrl(sessionId: string, ticket: string): string {
     const path = `${apiPath(`/sessions/${encodeURIComponent(sessionId)}/ws`)}?ticket=${encodeURIComponent(ticket)}`;
     if (typeof window === "undefined") return path;

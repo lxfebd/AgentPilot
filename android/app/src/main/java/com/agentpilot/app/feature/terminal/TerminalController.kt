@@ -41,7 +41,7 @@ class TerminalController(
                 WorkspaceTerminalConnection(
                     connectorId = session.connectorId,
                     terminal = terminal,
-                    streamUrl = terminalApi.streamUrl(auth.serverUrl, auth.accessToken, session.connectorId, terminal.terminalId),
+                    streamUrl = terminalApi.streamUrl(auth.serverUrl, session.connectorId, terminal.terminalId),
                     authorizationToken = auth.accessToken,
                 )
             }.recoverCatching { error ->
@@ -78,7 +78,7 @@ class TerminalController(
                 WorkspaceTerminalConnection(
                     connectorId = connectorId,
                     terminal = terminal,
-                    streamUrl = terminalApi.streamUrl(auth.serverUrl, auth.accessToken, connectorId, terminal.terminalId),
+                    streamUrl = terminalApi.streamUrl(auth.serverUrl, connectorId, terminal.terminalId),
                     authorizationToken = auth.accessToken,
                 )
             }.recoverCatching { error ->

@@ -360,8 +360,14 @@ class RemoteTerminalController(
     private fun connectSocket(url: String) {
         manuallyClosed = false
         diag("ws connecting terminal=$terminalId fromSeq=${url.substringAfter("fromSeq=", "0").substringBefore("&")}")
+        val request = Request.Builder()
+            .url(url)
+            .apply {
+                streamAuthorizationToken?.let { addHeader("Authorization", "Bearer $it") }
+            }
+            .build()
         socket = http.newWebSocket(
-            Request.Builder().url(url).build(),
+            request,
             object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     if (socket !== webSocket || manuallyClosed) {

@@ -2,6 +2,18 @@
   "$defs": {
     "ProtocolWsTicketScope": {
       "properties": {
+        "connectorId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Connectorid"
+        },
         "dashboard": {
           "default": false,
           "title": "Dashboard",
@@ -18,6 +30,18 @@
           ],
           "default": null,
           "title": "Sessionid"
+        },
+        "terminalId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terminalid"
         }
       },
       "title": "ProtocolWsTicketScope",
