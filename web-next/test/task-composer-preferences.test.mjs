@@ -16,10 +16,12 @@ import {
   permissionSelectionForNewSessionPreference,
 } from "../src/components/session/catalog-selection.ts"
 
+// Markers below are written with \n; an autocrlf worktree hands us \r\n and
+// every multi-line marker would miss on Windows only.
 const source = readFileSync(
   new URL("../src/components/task-composer.tsx", import.meta.url),
   "utf8",
-)
+).replaceAll("\r\n", "\n")
 
 function sourceBetween(start, end) {
   const startIndex = source.indexOf(start)
