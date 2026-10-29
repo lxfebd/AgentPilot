@@ -395,6 +395,7 @@
     <string name="session_load_messages_failed">Could not load messages.</string>
     <string name="session_wait_uploads">Wait for attachments to finish uploading.</string>
     <string name="session_send_failed">Failed to send message.</string>
+    <string name="session_send_runtime_not_running">The runtime on the device is not running. Start it there, then send again.</string>
     <string name="session_takeover_update_failed">Could not update takeover.</string>
     <string name="session_runtime_state_unknown">Runtime state is unavailable. Refresh to try again.</string>
     <string name="session_runtime_state_error">The session encountered an error. Please try again.</string>

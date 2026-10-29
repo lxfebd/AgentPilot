@@ -5203,6 +5203,76 @@ def test_send_message_forwards_client_message_id_to_connector(tmp_path):
     assert params["clientMessageId"] == "opt_abc"
 
 
+def test_send_message_surfaces_runtime_unavailable_as_structured_detail(tmp_path):
+    client = make_client(tmp_path)
+    connector_id, _, session_id, headers = create_connector_and_session(client)
+
+    class NotRunningRpc(FakeLocalRpc):
+        async def request(
+            self,
+            connector_id: str,
+            method: str,
+            params: dict[str, Any],
+            *,
+            timeout: float = 30,
+        ) -> Any:
+            if method == "session.send_message":
+                self.requests.append((connector_id, method, params, timeout))
+                raise ConnectorRpcError(
+                    "runtime_unavailable",
+                    "'rti_9hdNpnGKqySeE8' is not running (status='stopped')",
+                )
+            return await super().request(connector_id, method, params, timeout=timeout)
+
+    client.app.state.rpc = NotRunningRpc()
+    asyncio.run(client.app.state.store.set_connector_status(connector_id, "online"))
+    client.post(f"/sessions/{session_id}/takeover", headers=headers).raise_for_status()
+
+    response = client.post(
+        f"/sessions/{session_id}/runtime/messages",
+        headers=headers,
+        json={"content": "hi"},
+    )
+
+    assert response.status_code == 502, response.text
+    assert response.json()["detail"] == {
+        "code": "runtime_unavailable",
+        "message": "'rti_9hdNpnGKqySeE8' is not running (status='stopped')",
+    }
+
+
+def test_send_message_keeps_provider_error_message_verbatim(tmp_path):
+    client = make_client(tmp_path)
+    connector_id, _, session_id, headers = create_connector_and_session(client)
+
+    class FailingProviderRpc(FakeLocalRpc):
+        async def request(
+            self,
+            connector_id: str,
+            method: str,
+            params: dict[str, Any],
+            *,
+            timeout: float = 30,
+        ) -> Any:
+            if method == "session.send_message":
+                self.requests.append((connector_id, method, params, timeout))
+                raise ConnectorRpcError("codex_error", "request gone")
+            return await super().request(connector_id, method, params, timeout=timeout)
+
+    client.app.state.rpc = FailingProviderRpc()
+    asyncio.run(client.app.state.store.set_connector_status(connector_id, "online"))
+    client.post(f"/sessions/{session_id}/takeover", headers=headers).raise_for_status()
+
+    response = client.post(
+        f"/sessions/{session_id}/runtime/messages",
+        headers=headers,
+        json={"content": "hi"},
+    )
+
+    assert response.status_code == 502, response.text
+    assert response.json()["detail"] == "request gone"
+
+
 @pytest.mark.parametrize("cached_allowed, live_allowed", [(False, True), (True, False)])
 def test_send_message_and_display_use_live_capabilities_when_cache_disagrees(
     tmp_path, monkeypatch, cached_allowed, live_allowed,

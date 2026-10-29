@@ -394,6 +394,7 @@
     <string name="session_load_messages_failed">无法加载消息。</string>
     <string name="session_wait_uploads">请等待附件上传完成。</string>
     <string name="session_send_failed">无法发送消息。</string>
+    <string name="session_send_runtime_not_running">设备上的运行时未启动，请先在设备上启动运行时，再重新发送。</string>
     <string name="session_takeover_update_failed">无法更新接管状态。</string>
     <string name="session_runtime_state_unknown">运行时状态不可用，请刷新后重试。</string>
     <string name="session_runtime_state_error">会话运行出错，请稍后重试。</string>

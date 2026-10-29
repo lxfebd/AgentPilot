@@ -86,6 +86,28 @@ SESSION_SOURCE_ERROR_CODES = {
     "missing": "session_missing",
 }
 
+# Connector runtime-protocol failures carry a stable code (see
+# connector/connector/runtime_protocol/errors.py). They describe a request the
+# connector understood but could not run, usually because the runtime instance
+# is stopped, so clients need the code to show their own copy and a retry hint.
+# Everything else keeps the connector's text verbatim: provider errors are
+# opaque to us and the raw message is the only useful information.
+RUNTIME_PROTOCOL_ERROR_CODES = frozenset(
+    {
+        "runtime_unavailable",
+        "runtime_unsupported",
+        "runtime_invalid_request",
+        "runtime_conflict",
+        "runtime_upstream_error",
+    }
+)
+
+
+def _upstream_error_detail(exc: ConnectorRpcError) -> Any:
+    if exc.code in RUNTIME_PROTOCOL_ERROR_CODES:
+        return {"code": exc.code, "message": exc.message or exc.code}
+    return exc.message or exc.code
+
 
 @dataclass(frozen=True, slots=True)
 class PersistedInlineAttachment:
@@ -256,7 +278,7 @@ class SessionRunService:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
             await self._store.clear_active_run(session.id)
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
 
         if not isinstance(connector_result, dict):
             await self._mark_create_and_start_failed(
@@ -451,7 +473,7 @@ class SessionRunService:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
             await self._store.clear_active_run(session_id)
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         if isinstance(result, dict) and result.get("ok") is False:
             await self._store.clear_active_run(session_id)
             await self._persist_operation_source_state(session, result)
@@ -515,7 +537,7 @@ class SessionRunService:
         except ConnectorOfflineError as exc:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         if not isinstance(result, dict):
             return "idle"
         state = result.get("state")
@@ -588,7 +610,7 @@ class SessionRunService:
         except ConnectorOfflineError as exc:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         if isinstance(result, dict) and result.get("ok") is False:
             code = result.get("code")
             message = result.get("message")
@@ -671,7 +693,7 @@ class SessionRunService:
         except ConnectorOfflineError as exc:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         return RpcResponsePayload(ok=True, result=result)
 
     async def _require_runtime_capability(
@@ -743,7 +765,7 @@ class SessionRunService:
                 "message": "connector session capabilities request timed out",
             }) from exc
         except ConnectorRpcError as exc:
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         except ValueError as exc:
             raise SessionRunUpstreamError(str(exc)) from exc
         online_session = session.model_copy(update={"connectorStatus": "online"})
@@ -930,7 +952,7 @@ class SessionRunService:
         except ConnectorOfflineError as exc:
             raise SessionRunConflictError(str(exc)) from exc
         except ConnectorRpcError as exc:
-            raise SessionRunUpstreamError(exc.message or exc.code) from exc
+            raise SessionRunUpstreamError(_upstream_error_detail(exc)) from exc
         await self._store.clear_active_run(session_id)
         return RpcResponsePayload(ok=True, result=result)
 
