@@ -98,6 +98,7 @@ import com.agentpilot.app.feature.sessiondetail.completeSnapshotLoad
 import com.agentpilot.app.feature.sessiondetail.failSnapshotLoad
 import com.agentpilot.app.feature.sessiondetail.isValidAttachmentMediaType
 import com.agentpilot.app.feature.sessiondetail.isInternalRuntimeError
+import com.agentpilot.app.feature.sessiondetail.sendErrorResourceId
 import com.agentpilot.app.feature.sessiondetail.hasPendingOptimisticSend
 import com.agentpilot.app.feature.sessiondetail.RuntimeCommand
 import com.agentpilot.app.feature.sessiondetail.RuntimeCommandBlock
@@ -861,9 +862,9 @@ fun SessionDetailScreen(
                         attachments = pendingAttachments
                         retryClientMessageId = clientMessageId
                         saveComposerDraft(message, pendingAttachments, clientMessageId)
-                        val rawMessage = outcome.error.message
-                        val errorMessage = rawMessage
-                            ?.takeUnless(::isInternalRuntimeError)
+                        val errorMessage = sendErrorResourceId(outcome.error)?.let(context::getString)
+                            ?: outcome.error.message
+                                ?.takeUnless(::isInternalRuntimeError)
                             ?: context.getString(R.string.new_session_create_failed)
                         state = controller.markOptimisticMessage(
                             sessionId = localSessionId,
@@ -929,9 +930,9 @@ fun SessionDetailScreen(
                     )
                 }
                 .onFailure { error ->
-                    val rawMessage = error.message
-                    val message = rawMessage
-                        ?.takeUnless(::isInternalRuntimeError)
+                    val message = sendErrorResourceId(error)?.let(context::getString)
+                        ?: error.message
+                            ?.takeUnless(::isInternalRuntimeError)
                         ?: context.getString(R.string.session_send_failed)
                     if (controller.hasServerEcho(state, clientMessageId)) {
                         clearComposerDraft()

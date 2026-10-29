@@ -1,5 +1,8 @@
 package com.agentpilot.app.feature.sessiondetail
 
+import androidx.annotation.StringRes
+import com.agentpilot.app.R
+import com.agentpilot.app.api.ApiException
 import com.agentpilot.app.api.RemoteRuntimeModelCatalog
 import com.agentpilot.app.api.RemoteRuntimeNoticeAction
 import com.agentpilot.app.api.RemoteRuntimePermissionCatalog
@@ -499,6 +502,21 @@ internal fun sessionComposerEnabled(
 
 internal fun runtimeSelectionEnabled(takeoverEnabled: Boolean, capabilityUsable: Boolean): Boolean =
     takeoverEnabled && capabilityUsable
+
+/**
+ * Maps a send failure to a localized copy when the server tagged the response
+ * with a stable runtime-protocol code (e.g. "runtime_unavailable": the device
+ * runtime instance is not running). Returns null for everything else so the
+ * caller keeps showing the raw message.
+ */
+@StringRes
+internal fun sendErrorResourceId(error: Throwable): Int? {
+    val code = (error as? ApiException)?.errorCode ?: return null
+    return when (code) {
+        "runtime_unavailable" -> R.string.session_send_runtime_not_running
+        else -> null
+    }
+}
 
 internal fun isInternalRuntimeError(message: String?): Boolean {
     val normalized = message?.trim()?.lowercase().orEmpty()
