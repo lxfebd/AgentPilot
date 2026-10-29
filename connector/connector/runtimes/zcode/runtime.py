@@ -71,6 +71,7 @@ class ZCodeRuntime(AgentRuntime):
             float(dict(config.values).get("pollIntervalMs", 5_000)) / 1000
         )
         self._stopping = False
+        self._poll_task: asyncio.Task[None] | None = None
 
     @property
     def sync_mode(self) -> str:
@@ -91,28 +92,51 @@ class ZCodeRuntime(AgentRuntime):
             "message": "正在读取 ZCode 会话…",
             "retryable": True,
         })
-        try:
-            self._db.check_schema()
-            await self.host.runtime_health_update("running")
-        except (RuntimeUnavailableError, RuntimeUpstreamError) as exc:
-            await self.host.runtime_health_update("starting", {
-                "code": "runtime_unavailable",
-                "message": "正在等待 ZCode 启动；请先启动 ZCode 桌面应用。",
-                "retryable": True,
-            })
-            logger.warning(
-                "zcode startup failed error_type={}",
-                exc.__class__.__name__,
+        if self._poll_task is None:
+            self._poll_task = asyncio.create_task(
+                self._startup_loop(), name="zcode-startup-loop"
             )
-            self._schedule_restart()
 
     async def stop(self) -> None:
         self._stopping = True
+        task = self._poll_task
+        self._poll_task = None
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
-    def _schedule_restart(self) -> None:
-        # The supervisor owns reconnect retry for polling runtimes; we only
-        # keep the health state visible. Nothing to schedule here.
-        return None
+    async def _startup_loop(self) -> None:
+        """Retry the schema check until ZCode becomes available.
+
+        The supervisor does not retry polling providers on its own, so a
+        degraded start must keep reporting health from here; otherwise the
+        instance would stay in 'starting' forever and every session request
+        would fail with a bare "not running" error.
+        """
+        while not self._stopping:
+            try:
+                self._db.check_schema()
+            except (RuntimeUnavailableError, RuntimeUpstreamError) as exc:
+                await self.host.runtime_health_update("starting", {
+                    "code": "runtime_unavailable",
+                    "message": "正在等待 ZCode 启动；请先启动 ZCode 桌面应用。",
+                    "retryable": True,
+                })
+                logger.warning(
+                    f"zcode startup retry status=waiting "
+                    f"error_type={exc.__class__.__name__} "
+                    f"retry_in={self._poll_interval}s"
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    f"zcode startup retry status=waiting "
+                    f"error_type={exc.__class__.__name__} "
+                    f"retry_in={self._poll_interval}s"
+                )
+            else:
+                await self.host.runtime_health_update("running")
+                return
+            await asyncio.sleep(self._poll_interval)
 
     async def get_config(self) -> RuntimeConfig:
         return self.config
