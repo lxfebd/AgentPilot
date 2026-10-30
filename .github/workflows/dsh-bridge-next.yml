@@ -8,6 +8,7 @@ on:
       - server/**
       - web-next/**
       - desktop-workbench/**
+      - android/**
       - contracts/**
       - .github/workflows/dsh-bridge-next.yml
   push:
@@ -24,6 +25,7 @@ on:
       - server/**
       - web-next/**
       - desktop-workbench/**
+      - android/**
       - contracts/**
       - .github/workflows/dsh-bridge-next.yml
   workflow_dispatch:
