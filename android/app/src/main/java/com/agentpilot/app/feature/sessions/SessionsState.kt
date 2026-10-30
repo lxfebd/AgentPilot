@@ -68,6 +68,22 @@ fun SessionsState.withPatchedProject(project: AgentProject): SessionsState {
     )
 }
 
+/**
+ * Optimistic pin toggle for the home screen. Applies the flip locally and immediately
+ * (so a tap always visibly reorders the list) without waiting for the PATCH round trip;
+ * the caller rolls back to the returned previous state if the server refuses.
+ */
+fun SessionsState.withOptimisticProjectPin(projectId: String, pinned: Boolean): SessionsState {
+    val current = projects.firstOrNull { it.id == projectId } ?: return this
+    val nextProjects = projects.map { project ->
+        if (project.id != projectId) project else project.copy(
+            pinned = pinned,
+            pinnedAt = if (pinned) java.time.Instant.now().toString() else null,
+        )
+    }
+    return copy(projects = nextProjects.sortedWith(projectComparator()))
+}
+
 fun SessionsState.beginSessionRequest(ids: Collection<String> = emptyList()): SessionRequestStart {
     val generation = nextRequestGeneration
     val nextGenerations = if (ids.isEmpty()) {

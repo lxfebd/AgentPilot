@@ -63,6 +63,7 @@ import com.agentpilot.app.feature.sessions.replacedByDashboardSnapshot
 import com.agentpilot.app.feature.sessions.withDeletedDevice
 import com.agentpilot.app.feature.sessions.withPatchedDevice
 import com.agentpilot.app.feature.sessions.withPatchedProject
+import com.agentpilot.app.feature.sessions.withOptimisticProjectPin
 import com.agentpilot.app.feature.sessions.withPatchedSession
 import com.agentpilot.app.feature.sessions.withPatchedSessions
 import com.agentpilot.app.feature.sessions.withMissingSessionsRemoved
@@ -1010,10 +1011,20 @@ fun AgentPilotApp(
             if (!hasAuthSession) {
                 Result.failure(IllegalStateException("Sign in again to update this project."))
             } else {
+                // Settle a pin toggle locally first: on a congested mobile link the PATCH
+                // can take seconds, and waiting for it made the home-screen pin action look
+                // dead. Roll back to the captured state if the server refuses.
+                val previous = sessionsState
+                if (pinned != null) {
+                    sessionsState = sessionsState.withOptimisticProjectPin(projectId, pinned)
+                }
                 sessionsController.updateProject(projectId, name, pinned)
                     .onSuccess { project ->
                         projectsRequestVersion++
                         sessionsState = sessionsState.withPatchedProject(project)
+                    }
+                    .onFailure {
+                        if (pinned != null && sessionsState !== previous) sessionsState = previous
                     }
             }
         },
