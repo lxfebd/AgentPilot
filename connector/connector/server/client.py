@@ -35,6 +35,7 @@ from connector.server.ingest import ConnectorIngestClient
 from connector.server.notification_coalescer import (
     TimelineItemNotificationCoalescer,
 )
+from connector.server.notification_dedupe import NotificationFingerprintGate
 from connector.server.protocol_revision import ProtocolRevisionClock
 from connector.server.rpc import ConnectorRpcChannel, ConnectorWebSocketFrameTooLarge
 from connector.server.runtime_host import ConnectorRuntimeHost
@@ -117,6 +118,7 @@ class BackendRpcClient:
         self._timeline_notifications = TimelineItemNotificationCoalescer(
             self._send_backend_notification_now
         )
+        self._notification_dedupe = NotificationFingerprintGate()
         self._dispatcher = ConnectorRequestDispatcher(
             agent_runtime_supervisor=self.agent_runtime_supervisor,
             agent_runtime_host=self.agent_runtime_host,
@@ -258,6 +260,7 @@ class BackendRpcClient:
             proxy=None if is_loopback_url(self.config.server_url) else True,
         ) as ws:
             self._rpc.set_connection(ws)
+            self._notification_dedupe.reset()
             capabilities_task = asyncio.create_task(
                 self._publish_runtime_capabilities(request_session)
             )
@@ -350,6 +353,8 @@ class BackendRpcClient:
         # Host recursively copied every intermediate message's entire body.
         if isinstance(params, DeferredServerPayload):
             params = server_payload_without_turn_data(params)
+        if not self._notification_dedupe.should_send(method, params):
+            return
         if notification_requires_ingest(method):
             await self._ingest.enqueue(method, params)
             return

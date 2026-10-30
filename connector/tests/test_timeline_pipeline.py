@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from connector.runtime_protocol import RuntimeTimelineItem
 from connector.server import client as client_module
 from connector.server.notification_coalescer import TimelineItemNotificationCoalescer
+from connector.server.notification_dedupe import NotificationFingerprintGate
 from connector.server.runtime_host import ConnectorRuntimeHost
 
 
@@ -29,6 +30,7 @@ def test_projection_runs_after_coalescing_and_before_http_fallback(monkeypatch):
         transport = SimpleNamespace(
             _rpc=SimpleNamespace(connected=False),
             _ingest=SimpleNamespace(enqueue=enqueue),
+            _notification_dedupe=NotificationFingerprintGate(),
         )
 
         async def send_now(method, params):
@@ -84,7 +86,10 @@ def test_deferred_projection_preserves_websocket_path_and_unrelated_notification
             sent.append((method, params))
 
         transport = SimpleNamespace(
-            _rpc=SimpleNamespace(connected=True), _ingest=SimpleNamespace(has_pending=False), send_notification=send
+            _rpc=SimpleNamespace(connected=True),
+            _ingest=SimpleNamespace(has_pending=False),
+            send_notification=send,
+            _notification_dedupe=NotificationFingerprintGate(),
         )
         await client_module.BackendRpcClient._send_backend_notification_now(
             transport,
