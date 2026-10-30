@@ -36,7 +36,11 @@ from agent_server.services.session_revision_allocator import (
     SessionRevisionRepairNeeded,
 )
 
-DEFAULT_FLUSH_INTERVAL_SECONDS = 1.0
+# How often the sweeper materializes accepted-but-unflushed timeline items. Reads
+# (session snapshot, timeline pages) flush through first, so this window is visible as
+# first-paint latency on the phone; 0.25s keeps bursts batched without a quarter-second
+# stall. Raise it for throughput, lower it for freshness.
+DEFAULT_FLUSH_INTERVAL_SECONDS = 0.25
 DEFAULT_LANE_CACHE_ITEMS = 1024
 DEFAULT_LANE_IDLE_SECONDS = 900.0
 DEFAULT_MAX_LANES = 4096
