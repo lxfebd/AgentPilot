@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import time
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
@@ -37,6 +39,11 @@ from connector.runtime_protocol.supervisor_models import (
     same_effective_config,
 )
 
+STARTUP_WATCHDOG_SECONDS = float(
+    os.environ.get("CONNECTOR_STARTUP_WATCHDOG_SECONDS", "45")
+)
+STARTUP_WATCHDOG_POLL_SECONDS = 0.25
+
 
 class RuntimeSupervisor:
     """Own provider types and dynamically configured runtime instances."""
@@ -54,6 +61,7 @@ class RuntimeSupervisor:
         self._locks: dict[str, asyncio.Lock] = {}
         self._entries_guard = asyncio.Lock()
         self._resource_lock = asyncio.Lock()
+        self._watchdog_tasks: set[asyncio.Task[None]] = set()
 
     @property
     def runtimes(self) -> tuple[str, ...]:
@@ -326,6 +334,10 @@ class RuntimeSupervisor:
                 source_key=_provider_source_key(entry.provider, config),
                 status_reporter=report_health,
             )
+            logger.info(
+                f"runtime instance start requested runtime={instance.runtime_id} "
+                f"type={instance.runtime_type} name={instance.name}"
+            )
             native_runtime = await entry.provider.create_runtime(config, scoped_host)
             bound_runtime = RuntimeInstance(
                 instance=instance,
@@ -360,6 +372,17 @@ class RuntimeSupervisor:
             status=startup_status,
             error=startup_error,
         )
+        if startup_status != "running":
+            # A provider may return from start() while it is still recovering
+            # (a bridge that is not up yet, a missing desktop app, ...). Keep the
+            # runtime for a later promotion, but make sure a stuck "starting"
+            # state turns into an actionable error instead of blocking every
+            # session request forever.
+            logger.info(
+                f"runtime instance started degraded runtime={instance.runtime_id} "
+                f"type={instance.runtime_type} status={startup_status}"
+            )
+            self._arm_startup_watchdog(instance.runtime_id, bound_runtime)
         return bound_runtime
 
     async def stop(self, runtime_id: str) -> None:
@@ -409,6 +432,64 @@ class RuntimeSupervisor:
             return
         await self._set_entry(runtime_id, status=status, error=error)
 
+    def _arm_startup_watchdog(
+        self, runtime_id: str, bound_runtime: RuntimeInstance
+    ) -> None:
+        task = asyncio.create_task(
+            self._startup_watchdog(runtime_id, bound_runtime),
+            name=f"runtime-startup-watchdog:{runtime_id}",
+        )
+        self._watchdog_tasks.add(task)
+        task.add_done_callback(self._watchdog_tasks.discard)
+
+    async def _startup_watchdog(
+        self, runtime_id: str, bound_runtime: RuntimeInstance
+    ) -> None:
+        """Surface a provider that never leaves the startup phase.
+
+        Providers that report degraded health and return normally (DSH bridge
+        offline, ZCode desktop closed, ...) leave the entry in 'starting'. A
+        late health update may still promote the instance to running; until then
+        the entry must carry the provider's actionable message instead of a bare
+        status, so clients can show something better than "not running".
+        """
+
+        deadline = time.monotonic() + STARTUP_WATCHDOG_SECONDS
+        while time.monotonic() < deadline:
+            await asyncio.sleep(STARTUP_WATCHDOG_POLL_SECONDS)
+            entry = self._entries.get(runtime_id)
+            if entry is None or entry.runtime is not bound_runtime:
+                return
+            if entry.status != "starting":
+                return
+        entry = self._entries.get(runtime_id)
+        if (
+            entry is None
+            or entry.runtime is not bound_runtime
+            or entry.status != "starting"
+        ):
+            return
+        provider_error: Mapping[str, Any] = entry.error or {}
+        message = str(provider_error.get("message") or "").strip()
+        if not message:
+            message = (
+                f"runtime instance {runtime_id!r} did not become ready within "
+                f"{int(STARTUP_WATCHDOG_SECONDS)}s; the provider is still retrying"
+            )
+        logger.warning(
+            f"runtime instance still starting after watchdog timeout "
+            f"runtime={runtime_id} type={entry.instance.runtime_type} "
+            f"seconds={int(STARTUP_WATCHDOG_SECONDS)}"
+        )
+        await self._set_entry(
+            runtime_id,
+            error={
+                "code": provider_error.get("code") or "runtime_unavailable",
+                "message": message,
+                "retryable": True,
+            },
+        )
+
     def resolve_runtime(
         self,
         runtime_id: str,
@@ -421,9 +502,14 @@ class RuntimeSupervisor:
                 f"{entry.runtime_type!r}, not {runtime_type!r}"
             )
         if entry.status != "running" or entry.runtime is None:
+            detail = ""
+            if entry.error is not None:
+                message = str(entry.error.get("message") or "").strip()
+                if message:
+                    detail = f"; {message}"
             raise RuntimeUnavailableError(
                 f"runtime instance {runtime_id!r} is not running "
-                f"(status={entry.status!r})"
+                f"(status={entry.status!r}){detail}"
             )
         return entry.runtime
 
