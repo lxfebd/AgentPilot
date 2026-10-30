@@ -1,0 +1,9 @@
+# Normalize every text file to LF in the index and on checkout.
+# This checkout previously relied on core.autocrlf=true, which left 400+
+# text files (including regenerated contract artifacts) as CRLF on disk and
+# broke the byte-for-byte contract freshness tests.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF so cmd.exe behaves.
+*.bat text eol=crlf
+*.cmd text eol=crlf
