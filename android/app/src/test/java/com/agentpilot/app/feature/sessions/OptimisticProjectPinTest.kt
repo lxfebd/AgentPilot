@@ -69,4 +69,59 @@ class OptimisticProjectPinTest {
         val state = SessionsState(projects = listOf(project("a")))
         assertSame(state, state.withOptimisticProjectPin("nope", pinned = true))
     }
+
+    @Test
+    fun `a refresh that lands mid-flight cannot flip the pin back`() {
+        val state = SessionsState(projects = listOf(project("a"), project("b")))
+        val optimistic = state.withOptimisticProjectPin("b", pinned = true)
+
+        // The server list still carries pinned=false because the PATCH has not settled.
+        val stale = optimistic.copy(projects = listOf(project("a"), project("b")), pendingProjectPins = optimistic.pendingProjectPins)
+        val refreshed = stale.withPendingProjectPinsApplied()
+
+        assertTrue(refreshed.projects.first().id == "b")
+        assertTrue(refreshed.projects.first().pinned)
+        assertEquals(optimistic.projects.first().pinnedAt, refreshed.projects.first().pinnedAt)
+    }
+
+    @Test
+    fun `dashboard snapshot replacement keeps an in-flight pin`() {
+        val state = SessionsState(projects = listOf(project("a"), project("b")))
+        val optimistic = state.withOptimisticProjectPin("b", pinned = true)
+
+        val loaded = SessionsState(projects = listOf(project("a"), project("b")))
+        val replaced = optimistic.replacedByDashboardSnapshot(loaded)
+
+        assertTrue(replaced.projects.first().id == "b")
+        assertTrue(replaced.projects.first().pinned)
+        assertEquals(setOf("b"), replaced.pendingProjectPins.keys)
+    }
+
+    @Test
+    fun `confirming a pin applies the server row and stops overriding refreshes`() {
+        val state = SessionsState(projects = listOf(project("a"), project("b")))
+        val optimistic = state.withOptimisticProjectPin("b", pinned = true)
+
+        val confirmed = optimistic.withConfirmedProjectPin(
+            "b",
+            project("b", pinned = true, pinnedAt = "2026-03-01T00:00:00Z", updatedAt = "2026-03-01T00:00:00Z"),
+        )
+
+        assertTrue(confirmed.pendingProjectPins.isEmpty())
+        assertEquals("2026-03-01T00:00:00Z", confirmed.projects.first { it.id == "b" }.pinnedAt)
+    }
+
+    @Test
+    fun `a refused pin restores the pre-tap row and clears the override`() {
+        val state = SessionsState(projects = listOf(project("a"), project("b")))
+        val optimistic = state.withOptimisticProjectPin("b", pinned = true)
+
+        val rolledBack = optimistic.withRolledBackProjectPin("b")
+
+        assertTrue(rolledBack.pendingProjectPins.isEmpty())
+        assertTrue(rolledBack.projects.none { it.id == "b" && it.pinned })
+        // Both rows tie on the sort keys, so only the pin flag has to be restored.
+        assertEquals(state.projects.map { it.id }.toSet(), rolledBack.projects.map { it.id }.toSet())
+        assertTrue(rolledBack.projects.none { it.pinned })
+    }
 }

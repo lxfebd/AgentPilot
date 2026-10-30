@@ -24,7 +24,11 @@ class DashboardRealtimeController(
     private val sessionStore: AuthSessionReader,
     private val clientId: String,
     private val retryDelay: (Int) -> Long = ::reconnectDelayMillis,
-    private val firstSnapshotTimeoutMillis: Long = 2_500L,
+    // A dashboard snapshot has to cross the network before it can arrive, so a busy
+    // mobile link (LTE, a handoff, a cold TLS handshake) routinely needs more than the
+    // old 2.5s. Treating that as a failed connect caused a reconnect loop that looked
+    // like an unstable connection and delayed every refresh.
+    private val firstSnapshotTimeoutMillis: Long = 10_000L,
 ) {
     private val retryNow = Channel<Unit>(Channel.CONFLATED)
     private val activeSocket = AtomicReference<WebSocket?>()
