@@ -5,6 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionLogSnapshot } from '@deepseek-ai/dsh-session-query'
 import { createProjection, replayHistory, PROJECTION_VERSION, type SessionProjection } from './history.js'
+import { snapshotFingerprint } from './snapshot-fingerprint.js'
 import { sessionId } from './identity.js'
 import type { NativeChange, NativeRuntime } from './native.js'
 import { record, type TimelineItem } from './types.js'
@@ -50,6 +51,7 @@ export class SyncFeed {
   private bufferedBytes = 0
   private receivedCheckpoint: unknown
   private checkpointDirty = new Set<string>()
+  private emittedSnapshots = new Map<string, string>()
 
   constructor(private native: NativeRuntime, private namespace: string,
     private notify: (batch: SyncBatch) => void, private failed: (error: unknown) => void,
@@ -105,6 +107,7 @@ export class SyncFeed {
     this.queue = []; this.queuedBytes = 0; this.projections.clear()
     this.failedSessions.clear()
     this.bufferedOperations = undefined; this.bufferedBytes = 0
+    this.emittedSnapshots.clear()
   }
   private async send(operations: SyncOperation[]): Promise<void> {
     this.abort.signal.throwIfAborted()
@@ -157,6 +160,14 @@ export class SyncFeed {
   }
   private async notification(method: string, params: Record<string, unknown>): Promise<void> {
     await this.send([{ kind: 'notifications', notifications: [{ method, params }] }])
+  }
+  /** Suppress repeat full-snapshot notifications whose payload is unchanged. */
+  private emitIfChanged(scope: string, payload: unknown): boolean {
+    const fingerprint = snapshotFingerprint(payload)
+    if (!fingerprint) return true
+    if (this.emittedSnapshots.get(scope) === fingerprint) return false
+    this.emittedSnapshots.set(scope, fingerprint)
+    return true
   }
   private async items(kind: string, id: string, items: TimelineItem[], snapshotId?: string): Promise<void> {
     let page: TimelineItem[] = [], bytes = 0
@@ -324,21 +335,34 @@ export class SyncFeed {
     let reconcile = false
     for (const change of changes) {
       if (change.type === 'capabilities' || change.type === 'commands') {
-        await this.runtimeOperation('capabilities', async () => this.notification('runtime.capability.updated', await this.native.capabilities()))
+        await this.runtimeOperation('capabilities', async () => {
+          const payload = await this.native.capabilities()
+          if (this.emitIfChanged('runtime:capability', payload)) await this.notification('runtime.capability.updated', payload)
+        })
         for (const id of this.published.keys()) await this.sessionOperation(id, 'capabilities', async () => {
-          await this.notification('session.capability.updated', await this.native.capabilities(this.published.get(id), id as SessionId))
+          const payload = await this.native.capabilities(this.published.get(id), id as SessionId)
+          if (this.emitIfChanged(`session:capability:${id}`, payload)) await this.notification('session.capability.updated', payload)
         })
         continue
       }
       if (change.type === 'catalogs') {
         if (change.catalogType === 'model' && this.native.ctx.get('llm')) {
-          await this.runtimeOperation('models', async () => this.notification('catalog.model.update', { ...await this.native.catalogs.models() }))
+          await this.runtimeOperation('models', async () => {
+            const payload = { ...await this.native.catalogs.models() }
+            if (this.emitIfChanged('catalog:model', payload)) await this.notification('catalog.model.update', payload)
+          })
         }
         if (change.catalogType === 'permission' && this.native.ctx.get('permissionPresets')) {
-          await this.runtimeOperation('permissions', async () => this.notification('catalog.permission.update', this.native.catalogs.permissions()))
+          await this.runtimeOperation('permissions', async () => {
+            const payload = this.native.catalogs.permissions()
+            if (this.emitIfChanged('catalog:permission', payload)) await this.notification('catalog.permission.update', payload)
+          })
         }
         if (change.catalogType === 'model') {
-          await this.runtimeOperation('capabilities', async () => this.notification('runtime.capability.updated', await this.native.capabilities()))
+          await this.runtimeOperation('capabilities', async () => {
+            const payload = await this.native.capabilities()
+            if (this.emitIfChanged('runtime:capability', payload)) await this.notification('runtime.capability.updated', payload)
+          })
         }
         continue
       }
