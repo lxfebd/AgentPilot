@@ -107,6 +107,8 @@ curl http://127.0.0.1:8000/api/v2/health/ready
 | `AGENT_SERVER_EVENT_THRESHOLD_BYTES` | Minimum UTF-8 envelope size sent to a compute subprocess. Defaults to `262144` (256 KiB). Smaller events use shared inline preparation. |
 | `AGENT_SERVER_EVENT_QUEUE_ITEMS` | Maximum admitted large-event jobs per Uvicorn worker, including waiting and running jobs. Defaults to `32`. |
 | `AGENT_SERVER_EVENT_QUEUE_BYTES` | Maximum admitted large-event input bytes per Uvicorn worker. Defaults to `33554432` (32 MiB). This is not a limit on total process memory. |
+| `AGENT_SERVER_SNAPSHOT_FACTS_TIMEOUT_SECONDS` | Budget in seconds for the connector round trips (`session.notices`, `session.capabilities`) inside `GET /sessions/{id}/snapshot`. When it expires the request is cancelled and the snapshot falls back to persisted capability facts and no notices, so a busy runtime cannot stall first paint. Defaults to `3`. |
+| `AGENT_SERVER_SESSION_RPC_TIMEOUT_SECONDS` | Timeout in seconds for individual live session reads (`session.state`, `session.notices`, `session.capabilities`). Defaults to `10`. |
 | `AGENT_SERVER_HOST` / `AGENT_SERVER_PORT` | Bind address/port for `agent_server.main`. Defaults to `127.0.0.1:8000`; the Docker image sets the host to `0.0.0.0`. |
 | `AGENT_SERVER_DB_URL` | Required PostgreSQL SQLAlchemy URL using the `postgresql+asyncpg` scheme. |
 | `AGENT_SERVER_DB_BACKEND` | Optional backend assertion. When set for runtime use, it must be `postgres`. |

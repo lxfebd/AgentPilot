@@ -4870,6 +4870,54 @@ def test_session_snapshot_falls_back_when_live_notices_and_capabilities_timeout(
     assert notices.json()["detail"]["code"] == "runtime_notices_timeout"
 
 
+def test_session_snapshot_cuts_hanging_connector_facts_within_budget(
+    tmp_path,
+    monkeypatch,
+):
+    """A connector that merely hangs (e.g. a runtime busy compacting) must not hold first paint.
+
+    The RPC helpers only raise immediately in the timeout test above; here the fake connector
+    keeps the request open, so the snapshot can only stay fast if the connector facts are
+    cancelled once the budget expires.
+    """
+
+    client = make_client(tmp_path)
+    connector_id, _access_token, session_id, headers = create_connector_and_session(client)
+    seed_codex_model_catalog(client.app, connector_id)
+    seed_codex_permission_catalog(client.app, connector_id)
+
+    class HangingSessionRpc(FakeLocalRpc):
+        async def request(
+            self,
+            connector_id: str,
+            method: str,
+            params: dict[str, Any],
+            *,
+            timeout: float = 30,
+        ) -> Any:
+            if method in {"session.notices", "session.capabilities"}:
+                await asyncio.sleep(5)
+            return await super().request(
+                connector_id,
+                method,
+                params,
+                timeout=timeout,
+            )
+
+    client.app.state.rpc = HangingSessionRpc()
+    monkeypatch.setenv("AGENT_SERVER_SNAPSHOT_FACTS_TIMEOUT_SECONDS", "0.05")
+
+    started = time.monotonic()
+    snapshot = client.get(f"/sessions/{session_id}/snapshot", headers=headers)
+    elapsed = time.monotonic() - started
+
+    assert snapshot.status_code == 200, snapshot.text
+    body = snapshot.json()
+    assert body["notices"] == []
+    assert body["runtimeCapabilities"]["revision"] == 1
+    assert elapsed < 2.5, f"snapshot waited {elapsed:.2f}s on hanging connector facts"
+
+
 def test_session_snapshot_does_not_block_on_runtime_state_read(tmp_path):
     client = make_client(tmp_path)
     _connector_id, _access_token, session_id, headers = create_connector_and_session(
