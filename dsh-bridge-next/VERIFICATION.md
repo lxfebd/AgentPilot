@@ -1,5 +1,9 @@
 # DSH Bridge Next 验证记录
 
+## Compaction marker 合并，投影版本升 4（2026-10-30）
+
+一次上下文压缩在原生层依次发出 `compaction/start`、`compaction/summary`、`compaction/end`、`compaction/prune` 四个事件，此前每个事件各投影为一条 `compact` 时间线 marker，手机端一次压缩显示 3 到 4 条。现在压缩只产生一条 marker：正常以 `summary` 负载的那条为准；无 summary 的异常流由 `end` 补发一条；`start`/`prune` 不再入时间线。为让既有持久化检查点重建时间线，投影版本升为 4，Connector 同时接受版本 2、3 和 4。`runtime-history.test.ts` 18 项全部通过，新增用例覆盖单次压缩只发一条 marker 及独立 `compaction/prune` 零 marker 的回归。本轮没有做 DSH Desktop、Windows 或手机实机验收。
+
 ## DSH 0.2.0-rc.2 与版本声明统一（2026-09-30）
 
 DSH 开发依赖统一升级到 `0.2.0-rc.2`；Typert peer 从精确的 `0.2.0-rc.1` 改为范围 `>=0.2.0-rc.1 <0.3.0-0`。DSH 0.2.0-rc.2 起在安装和 profile 启动时按 DSH peer 检查插件，精确版本会让后续 rc 拒绝加载插件。握手上报的 `runtimeVersion` 与 `bridgeVersion` 改为运行时读取，不再写死。兼容旧版 DSH 的代码分支不变。
