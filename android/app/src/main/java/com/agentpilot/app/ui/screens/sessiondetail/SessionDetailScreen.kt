@@ -152,6 +152,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
@@ -2449,21 +2450,23 @@ private fun Context.uploadPart(attachment: PendingAttachment): UploadFilePart {
     if (!isValidAttachmentMediaType(mediaType)) {
         throw IllegalStateException(getString(R.string.session_attachment_media_type_invalid, attachment.name))
     }
-    val bytes = contentResolver.openInputStream(attachment.uri)?.use { input ->
+    val sourceBytes = contentResolver.openInputStream(attachment.uri)?.use { input ->
         input.readBytes()
     } ?: throw IllegalStateException(getString(R.string.session_upload_file_read_failed, attachment.name))
-    if (bytes.isEmpty()) throw IllegalStateException(getString(R.string.session_upload_file_empty, attachment.name))
-    // The byte copy above is required for the SHA-256/local preview metadata;
-    // keep the stream handle so uploads can avoid re-reading it if the caller
-    // only needs the bytes once.
+    if (sourceBytes.isEmpty()) throw IllegalStateException(getString(R.string.session_upload_file_empty, attachment.name))
+    // The connector downloads every attachment from the server over the shared
+    // public link before the turn can start, so an untouched camera photo can
+    // hold the send for ~20 s. Shrink images here, where the CPU is free and
+    // the upload shrinks with them.
+    val prepared = prepareUploadBytes(sourceBytes, attachment.name, mediaType)
+    if (prepared.bytes.size > MAX_ATTACHMENT_BYTES) {
+        throw IllegalStateException(getString(R.string.session_attachment_file_too_large, attachment.name))
+    }
     return UploadFilePart(
-        name = attachment.name,
-        mediaType = mediaType,
-        bytes = bytes,
-        openStream = {
-            contentResolver.openInputStream(attachment.uri)
-                ?: throw IllegalStateException(getString(R.string.session_upload_file_read_failed, attachment.name))
-        },
+        name = prepared.name,
+        mediaType = prepared.mediaType,
+        bytes = prepared.bytes,
+        openStream = { ByteArrayInputStream(prepared.bytes) },
     )
 }
 
