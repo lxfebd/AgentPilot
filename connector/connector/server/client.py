@@ -256,6 +256,10 @@ class BackendRpcClient:
                 "X-Device-OS": device_os(),
             },
             proxy=None if is_loopback_url(self.config.server_url) else True,
+            # The connector shares one event loop with local runtime work; a
+            # brief stall must not tear the websocket down (default 20s).
+            ping_interval=20.0,
+            ping_timeout=60.0,
         ) as ws:
             self._rpc.set_connection(ws)
             capabilities_task = asyncio.create_task(
