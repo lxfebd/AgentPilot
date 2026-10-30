@@ -5,6 +5,7 @@ from typing import Any
 
 from agent_server.api.connector_ingress import (
     _ConnectorNotificationPump,
+    _drain_notification_pump,
     _read_connector_messages,
 )
 from agent_server.infra.connector_rpc import ConnectorRpcManager
@@ -489,5 +490,125 @@ def test_accidental_disconnect_drains_before_replacement_can_register():
         replacement = await manager.register("conn", FakeWebSocket())
         assert manager.accepts_notifications(replacement)
         await manager.unregister("conn", replacement)
+
+    asyncio.run(run())
+
+
+
+def test_drain_applies_accepted_notifications_before_stopping() -> None:
+    async def run() -> None:
+        applied: list[str] = []
+
+        class Ingest:
+            async def handle_notification_message(self, **kwargs: Any) -> None:
+                applied.append(kwargs["method"])
+
+        pump = _ConnectorNotificationPump("conn", Ingest())
+        pump.start()
+        pump.enqueue_message({"method": "session.meta.upsert", "params": {}})
+        await asyncio.wait_for(_drain_notification_pump(pump, timeout_seconds=1), 2)
+        assert applied == ["session.meta.upsert"]
+        assert pump.pending == 0
+
+    asyncio.run(run())
+
+
+def test_drain_timeout_aborts_the_old_pump_so_no_writer_survives() -> None:
+    """A replacement connection may own the connector id right after a drain.
+
+    Waiting forever would leave the old pump applying notifications in the
+    background, so the drain budget must end in cancellation.
+    """
+
+    async def run() -> None:
+        entered = asyncio.Event()
+        finished = asyncio.Event()
+
+        class BlockingIngest:
+            async def handle_notification_message(self, **kwargs: Any) -> None:
+                entered.set()
+                await asyncio.sleep(30)
+                finished.set()
+
+        pump = _ConnectorNotificationPump("conn", BlockingIngest())
+        pump.start()
+        pump.enqueue_message({"method": "timeline.itemUpsert", "params": {}})
+        await asyncio.wait_for(entered.wait(), 1)
+        assert pump.pending == 1
+
+        await asyncio.wait_for(_drain_notification_pump(pump, timeout_seconds=0.05), 2)
+
+        assert pump.pending == 0
+        assert not pump._lane_tasks
+        assert not pump._inflight_tasks
+        assert not finished.is_set()
+
+    asyncio.run(run())
+
+
+def test_queued_capability_snapshots_for_one_runtime_coalesce() -> None:
+    """A slower store must not let stale capability snapshots pile up.
+
+    Every ``runtime.capability.updated`` carries the complete capability set of
+    one runtime and each apply republishes it to every session of the connector.
+    Applying a superseded snapshot is pure cost, so it is dropped before it runs.
+    """
+
+    async def run() -> None:
+        applied: list[Any] = []
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        class SlowFirstIngest:
+            async def handle_notification_message(self, **kwargs: Any) -> None:
+                applied.append(kwargs["params"].get("marker"))
+                if len(applied) == 1:
+                    entered.set()
+                    await release.wait()
+
+        pump = _ConnectorNotificationPump("conn", SlowFirstIngest())
+        pump.start()
+        pump.enqueue_message(
+            {"method": "runtime.capability.updated", "params": {"runtimeId": "rti_a", "marker": 1}}
+        )
+        await asyncio.wait_for(entered.wait(), 1)
+        pump.enqueue_message(
+            {"method": "runtime.capability.updated", "params": {"runtimeId": "rti_a", "marker": 2}}
+        )
+        pump.enqueue_message(
+            {"method": "runtime.capability.updated", "params": {"runtimeId": "rti_a", "marker": 3}}
+        )
+        release.set()
+        await asyncio.wait_for(pump.flush(), 2)
+
+        assert applied == [1, 3]
+        assert pump.coalesced == 1
+        assert pump.pending == 0
+
+    asyncio.run(run())
+
+
+def test_capability_snapshots_of_different_runtimes_are_both_applied() -> None:
+    """Coalescing is per runtime: one runtime must never swallow another's set."""
+
+    async def run() -> None:
+        applied: list[Any] = []
+
+        class Ingest:
+            async def handle_notification_message(self, **kwargs: Any) -> None:
+                applied.append(kwargs["params"].get("runtimeId"))
+
+        pump = _ConnectorNotificationPump("conn", Ingest())
+        pump.start()
+        pump.enqueue_message(
+            {"method": "runtime.capability.updated", "params": {"runtimeId": "rti_a"}}
+        )
+        pump.enqueue_message(
+            {"method": "runtime.capability.updated", "params": {"runtimeId": "rti_b"}}
+        )
+        await asyncio.wait_for(pump.flush(), 2)
+
+        assert applied == ["rti_a", "rti_b"]
+        assert pump.coalesced == 0
 
     asyncio.run(run())

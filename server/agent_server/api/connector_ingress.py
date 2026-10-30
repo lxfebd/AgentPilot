@@ -77,6 +77,7 @@ router = APIRouter(tags=["connector-ingress"])
 
 
 DEFAULT_NOTIFICATION_CONCURRENCY = 4
+NOTIFICATION_DRAIN_TIMEOUT_SECONDS = 10.0
 
 
 @dataclass(slots=True)
@@ -254,6 +255,16 @@ class _ConnectorNotificationPump:
         else:
             self._idle.clear()
 
+    @property
+    def connector_id(self) -> str:
+        return self._connector_id
+
+    @property
+    def pending(self) -> int:
+        """Notifications accepted but not yet fully applied."""
+
+        return self._pending
+
     async def _run(self) -> None:
         try:
             while True:
@@ -393,17 +404,76 @@ class _ConnectorNotificationPump:
 
     @staticmethod
     def _item_key(method: str, params: dict[str, Any]) -> str | None:
-        """Return the stable item ID a full-replacement notification targets."""
+        """Return the stable item ID a full-replacement notification targets.
 
-        if method != "timeline.itemUpsert":
-            return None
-        item = params.get("item")
-        if not isinstance(item, dict):
-            return None
-        item_id = item.get("id")
-        if not isinstance(item_id, str) or not item_id:
-            return None
-        return item_id
+        Only methods whose payload is the complete replacement of one scope can
+        be coalesced here: dropping the queued older value loses nothing because
+        the newer one carries the whole scope as well. Capability snapshots are
+        the important case - a connector under active sessions emits them faster
+        than the store applies them (one connector capability update publishes to
+        every session of the connector), and the queue used to grow without
+        bound until the keepalive ping died and the connection was recycled.
+        """
+
+        if method == "timeline.itemUpsert":
+            item = params.get("item")
+            if not isinstance(item, dict):
+                return None
+            item_id = item.get("id")
+            if not isinstance(item_id, str) or not item_id:
+                return None
+            return item_id
+        if method == "runtime.capability.updated":
+            return "capability:" + str(notification_runtime_id(params))
+        if method == "session.capability.updated":
+            return "session.capability"
+        if method == "protocol.capabilitiesUpdated":
+            return "protocol.capabilities"
+        if method == "connector.preferencesUpdated":
+            return "connector.preferences"
+        if method == "connector.heartbeat":
+            return "connector.heartbeat"
+        if method == "catalog.model.update":
+            return "catalog:model"
+        if method == "catalog.permission.update":
+            return "catalog:permission"
+        if method == "runtime.catalog.updated":
+            catalog_type = params.get("catalogType")
+            return "catalog:" + str(notification_runtime_id(params)) + ":" + str(catalog_type)
+        return None
+
+
+async def _drain_notification_pump(
+    pump: _ConnectorNotificationPump,
+    *,
+    timeout_seconds: float = NOTIFICATION_DRAIN_TIMEOUT_SECONDS,
+) -> None:
+    """Let accepted notifications settle, then stop the pump for good.
+
+    A draining connection may hand its connector id to a replacement, so no
+    writer may outlive this call: when accepted work takes longer than the
+    drain budget we cancel it instead of leaving a second pump applying
+    notifications for the same connector in the background.
+    """
+
+    try:
+        async with asyncio.timeout(timeout_seconds):
+            await pump.close()
+    except TimeoutError:
+        pending = pump.pending
+        await pump.abort()
+        logger.warning(
+            "connector notification drain timed out connector_id={} pending={} aborted=true",
+            pump.connector_id,
+            pending,
+        )
+    else:
+        logger.info(
+            "connector notification drain complete connector_id={} coalesced={} obsolete={}",
+            pump.connector_id,
+            pump.coalesced,
+            pump.obsolete,
+        )
 
 
 @router.post("/connector/auth", response_model=ConnectorAuthResponse)
@@ -679,10 +749,7 @@ async def connector_ws(
                 if await manager.begin_drain(connection):
                     # The lease remains reserved until accepted work has settled.
                     # Explicit invalidation can interrupt this drain at any time.
-                    async with asyncio.timeout(10):
-                        await notification_pump.close()
-            except TimeoutError:
-                logger.warning("connector notification drain timed out connector_id={}", connector_id)
+                    await _drain_notification_pump(notification_pump)
             finally:
                 await manager.unregister(connector_id, connection)
             removed_terminals = await broker.remove_ephemeral_for_connector(
