@@ -1375,7 +1375,8 @@
       "invalidServer": "请输入有效的 HTTP 或 HTTPS 服务器地址，不要包含账号、密码或页面路径。",
       "serverUnavailable": "无法连接服务器，请检查地址和网络后重试。",
       "invalidHealth": "该地址未返回正常的 AgentPilot 服务，请检查后端地址。",
-      "serverTimeout": "连接服务器超时，请检查地址和网络后重试。"
+      "serverTimeout": "连接服务器超时，请检查地址和网络后重试。",
+      "sessionExpired": "登录状态已过期，请重新登录"
     },
     "bootstrap": {
       "description": "全新安装。这里创建的账号会成为实例管理员。",
