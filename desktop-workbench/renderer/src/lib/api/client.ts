@@ -7,10 +7,18 @@ import { desktopApiProxyBase, getDesktopServerConnection } from "@/features/desk
 
 export type ApiTokenProvider = () => string | null | undefined;
 
+export type ApiAuthRefreshResult =
+  | { status: "refreshed"; accessToken: string }
+  | { status: "expired"; reason: "rejected" | "no-refresh-token" }
+  | { status: "network"; detail?: string };
+
+export type ApiAuthRefresh = () => Promise<ApiAuthRefreshResult>;
+
 export type ApiClientOptions = {
   baseUrl?: string;
   getToken?: ApiTokenProvider;
   fetcher?: typeof fetch;
+  refreshAuth?: ApiAuthRefresh;
 };
 
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
@@ -55,11 +63,22 @@ export class ApiClient {
   private readonly baseUrl?: string;
   private readonly getToken?: ApiTokenProvider;
   private readonly fetcher: typeof fetch;
+  private refreshAuth?: ApiAuthRefresh;
 
   constructor(options: ApiClientOptions = {}) {
     this.baseUrl = options.baseUrl;
     this.getToken = options.getToken;
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
+    this.refreshAuth = options.refreshAuth;
+  }
+
+  /**
+   * Installs (or clears) the handler used when an authenticated request answers
+   * 401. The handler owns token rotation and persistence; this client only
+   * replays the request once with the rotated access token.
+   */
+  setRefreshAuth(handler: ApiAuthRefresh | null): void {
+    this.refreshAuth = handler ?? undefined;
   }
 
   get<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
@@ -95,6 +114,14 @@ export class ApiClient {
   }
 
   async request<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+    return this.send<T>(path, options, false);
+  }
+
+  private async send<T>(
+    path: string,
+    options: ApiRequestOptions,
+    replayed: boolean,
+  ): Promise<T> {
     const url = this.buildUrl(path, options.query);
     const headers = new Headers(options.headers);
     const body = normalizeBody(options.body);
@@ -127,7 +154,7 @@ export class ApiClient {
     const payload = await readPayload(response);
     if (!response.ok) {
       const normalized = extractErrorPayload(payload);
-      throw new ApiError({
+      const error = new ApiError({
         status: response.status,
         kind: apiErrorKind(response.status),
         detail: normalized.detail || `HTTP ${response.status}`,
@@ -135,9 +162,41 @@ export class ApiClient {
         payload,
         url
       });
+      if (this.shouldRefreshAfter(response.status, path, options, token, replayed)) {
+        const refreshed = await this.refreshAuth!();
+        if (refreshed.status === "refreshed") {
+          return this.send<T>(path, { ...options, token: refreshed.accessToken }, true);
+        }
+        if (refreshed.status === "network") {
+          // The session could not be revalidated, so this is a connectivity
+          // failure rather than a confirmed expiry.
+          throw new ApiError({
+            status: 0,
+            kind: "network",
+            detail: refreshed.detail ?? "Session refresh failed.",
+            url
+          });
+        }
+      }
+      throw error;
     }
 
     return payload as T;
+  }
+
+  private shouldRefreshAfter(
+    status: number,
+    path: string,
+    options: ApiRequestOptions,
+    token: string | null | undefined,
+    replayed: boolean,
+  ): boolean {
+    return status === 401
+      && Boolean(this.refreshAuth)
+      && !replayed
+      && Boolean(token)
+      && options.auth !== false
+      && !isAuthRefreshPath(path);
   }
 
   private buildUrl(
@@ -159,6 +218,11 @@ export class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+function isAuthRefreshPath(path: string): boolean {
+  const withoutQuery = path.split("?")[0] ?? path;
+  return withoutQuery === "/auth/refresh" || withoutQuery.endsWith("/auth/refresh");
+}
 
 async function readPayload(response: Response): Promise<unknown> {
   const text = await response.text();

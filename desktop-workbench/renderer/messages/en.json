@@ -1375,7 +1375,8 @@
       "invalidServer": "Enter a valid HTTP or HTTPS server address without credentials or a page path.",
       "serverUnavailable": "Could not reach the server. Check the address and your connection, then try again.",
       "invalidHealth": "This address did not return a healthy AgentPilot server. Check the backend address.",
-      "serverTimeout": "The connection timed out. Check the address and your connection, then try again."
+      "serverTimeout": "The connection timed out. Check the address and your connection, then try again.",
+      "sessionExpired": "Your session has expired. Please sign in again."
     },
     "bootstrap": {
       "description": "Fresh install. The account you create here becomes the instance admin.",

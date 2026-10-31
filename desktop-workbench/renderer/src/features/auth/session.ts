@@ -14,10 +14,41 @@ export function loadStoredSession(): StoredSession | null {
       userId: parsed.userId,
       role: parsed.role,
       serverUrl: typeof parsed.serverUrl === "string" ? parsed.serverUrl : undefined,
+      refreshToken:
+        typeof parsed.refreshToken === "string" && parsed.refreshToken
+          ? parsed.refreshToken
+          : undefined,
+      expiresAt:
+        typeof parsed.expiresAt === "string" && parsed.expiresAt
+          ? parsed.expiresAt
+          : undefined,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Applies rotated tokens to the persisted session. No-ops when the stored
+ * session has been cleared or replaced in the meantime (e.g. after sign-out),
+ * so a late refresh response can never resurrect a dead session.
+ */
+export function updateStoredSessionTokens(tokens: {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: string;
+}): StoredSession | null {
+  const stored = loadStoredSession();
+  if (!stored) return null;
+  const next: StoredSession = {
+    ...stored,
+    accessToken: tokens.accessToken,
+    // Keep the previous values when the server omits them on rotation.
+    ...(tokens.refreshToken ? { refreshToken: tokens.refreshToken } : {}),
+    ...(tokens.expiresAt ? { expiresAt: tokens.expiresAt } : {}),
+  };
+  saveStoredSession(next);
+  return next;
 }
 
 export function saveStoredSession(session: StoredSession): void {

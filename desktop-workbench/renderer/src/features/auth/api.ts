@@ -34,6 +34,18 @@ export class AuthApi {
     return this.client.get<AuthConfig>("/auth/config", { auth: false });
   }
 
+  /**
+   * Rotates the refresh token. Sent without an access token: the refresh token
+   * alone identifies the session, so a stale access token cannot block it.
+   */
+  refreshSession(refreshToken: string): Promise<AuthResponse> {
+    return this.client.post<AuthResponse>(
+      "/auth/refresh",
+      { refreshToken },
+      { auth: false },
+    );
+  }
+
   passwordSalt(email: string): Promise<AuthPasswordSaltResponse> {
     return this.client.post<AuthPasswordSaltResponse>(
       "/auth/password-salt",

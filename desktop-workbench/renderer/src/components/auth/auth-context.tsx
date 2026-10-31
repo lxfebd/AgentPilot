@@ -8,6 +8,11 @@ import {
   saveStoredSession,
 } from "@/features/auth/session"
 import type { AuthMe, StoredSession } from "@/features/auth/types"
+import {
+  installSessionRefresh,
+  subscribeSessionAuthEvents,
+} from "@/features/auth/session-refresh"
+import { ApiError } from "@/lib/api/errors"
 import { normalizeAuthMe, normalizeDesktopOAuthMe } from "@/features/auth/normalize-me"
 import { getDesktopWorkbenchBridge } from "@/features/desktop/bridge"
 import { getDesktopServerConnection, setDesktopServerConnection } from "@/features/desktop/server-connection"
@@ -75,6 +80,10 @@ function screenToHash(screen: AuthScreen): string {
   return map[screen]
 }
 
+function isTransientAuthFailure(error: unknown): boolean {
+  return error instanceof ApiError && (error.kind === "network" || error.kind === "server")
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const t = useTranslations("auth")
   const [screen, setScreenState] = React.useState<AuthScreen>("login")
@@ -91,6 +100,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setEmailVerificationRequired(config.emailVerificationRequired)
   }, [])
   const desktopAuthBridge = getDesktopWorkbenchBridge()?.auth ?? null
+
+  // A 401 anywhere in the app rotates the stored tokens once; when the refresh
+  // token is dead the session is dropped and the login screen is shown.
+  React.useEffect(() => {
+    installSessionRefresh()
+    return subscribeSessionAuthEvents((event) => {
+      if (event.type === "refreshed") {
+        setSession(event.session)
+        return
+      }
+      setSession(null)
+      setMe(null)
+      setError(t("errors.sessionExpired"))
+      setScreenState("login")
+    })
+  }, [t])
 
   React.useEffect(() => {
     let cancelled = false
@@ -132,8 +157,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return
         setMe(currentUser)
         setScreenState(nextScreen === "login" ? "app" : nextScreen)
-      } catch {
-        clearStoredSession()
+      } catch (error) {
+        // Only an authentication failure invalidates the saved session; a
+        // transient network error must not sign the user out on every launch.
+        if (!isTransientAuthFailure(error)) clearStoredSession()
         if (cancelled) return
         setSession(null)
         setMe(null)
@@ -157,13 +184,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setScreenState(nextScreen)
   }, [])
 
-  const finishDesktopOAuth = React.useCallback(async (accessToken: string) => {
-    const currentUser = normalizeDesktopOAuthMe(await authApi.me(accessToken))
+  const finishDesktopOAuth = React.useCallback(async (auth: {
+    accessToken: string
+    refreshToken?: string
+    expiresAt?: string
+  }) => {
+    const currentUser = normalizeDesktopOAuthMe(await authApi.me(auth.accessToken))
     const nextSession: StoredSession = {
-      accessToken,
+      accessToken: auth.accessToken,
       userId: currentUser.userId,
       role: currentUser.role,
       serverUrl: getDesktopServerConnection()?.serverUrl,
+      ...(auth.refreshToken ? { refreshToken: auth.refreshToken } : {}),
+      ...(auth.expiresAt ? { expiresAt: auth.expiresAt } : {}),
     }
     saveStoredSession(nextSession)
     setSession(nextSession)
@@ -202,7 +235,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setDesktopServerConnection(result.server)
         setOAuthStatus("opening")
         setError(null)
-        await finishDesktopOAuth(result.accessToken)
+        await finishDesktopOAuth({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresAt: result.expiresAt,
+        })
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : t("errors.oauth"))

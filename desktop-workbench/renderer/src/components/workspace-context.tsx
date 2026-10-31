@@ -36,6 +36,8 @@ import {
 import { sortSessionViews } from "@/components/session/session-list-order"
 import { hasDesktopConnectorBridge } from "@/features/desktop/bridge"
 import { isApiError } from "@/lib/api/errors"
+import { expireSession } from "@/features/auth/session-refresh"
+import { realtimeBackoffDelay, realtimeFailureKind } from "@/lib/realtime-channel"
 
 // ─── Panel / page types ───────────────────────────────────────
 
@@ -837,14 +839,52 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       }, 2500)
     }
 
+    let attempt = 0
+    let stopped = false
+    let paused = document.hidden
+
+    const stopChannel = () => {
+      stopped = true
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
+      reconnectTimer = null
+      socket?.close()
+      socket = null
+    }
+
+    const scheduleReconnect = (kind: "auth" | "transient" | "permanent") => {
+      if (cancelled || stopped || paused) return
+      if (kind === "auth") {
+        // The API client already tried to rotate the token, so a 401 here
+        // means the session is dead: stop instead of hammering ws-ticket.
+        expireSession("rejected")
+        stopChannel()
+        return
+      }
+      if (kind === "permanent") {
+        stopChannel()
+        return
+      }
+      const delay = realtimeBackoffDelay(attempt)
+      attempt += 1
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null
+        void connect()
+      }, delay)
+    }
+
     const connect = async () => {
+      if (cancelled || stopped || paused) return
       try {
         const ticket = await dashboardApi.createDashboardWsTicket(
-          authSession.accessToken,
+          tokenRef.current ?? authSession.accessToken,
           "web-dashboard",
         )
-        if (cancelled) return
+        if (cancelled || stopped || paused) return
         socket = new WebSocket(dashboardApi.dashboardWebSocketUrl(ticket.ticket))
+        socket.onopen = () => {
+          // The live connection came back; start the backoff over.
+          attempt = 0
+        }
         socket.onmessage = (event) => {
           if (cancelled || typeof event.data !== "string") return
           try {
@@ -859,29 +899,40 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           } catch { /* ignore malformed */ }
         }
         socket.onclose = () => {
-          if (cancelled) return
+          if (cancelled || stopped) return
           socket = null
           scheduleInitialFallback()
-          reconnectTimer = window.setTimeout(() => {
-            reconnectTimer = null
-            void connect()
-          }, 2000)
+          scheduleReconnect("transient")
         }
         socket.onerror = () => {
           socket?.close()
         }
-      } catch {
-        if (cancelled) return
+      } catch (error) {
+        if (cancelled || stopped) return
         scheduleInitialFallback()
-        reconnectTimer = window.setTimeout(() => {
-          reconnectTimer = null
-          void connect()
-        }, 2000)
+        scheduleReconnect(realtimeFailureKind(error))
       }
     }
 
     scheduleInitialFallback()
     void connect()
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        // Backgrounded windows stop the channel instead of reconnecting.
+        paused = true
+        if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
+        reconnectTimer = null
+        socket?.close()
+        socket = null
+        return
+      }
+      if (cancelled || stopped) return
+      paused = false
+      attempt = 0
+      void connect()
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange)
 
     return () => {
       cancelled = true
@@ -890,6 +941,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (fallbackTimer !== null) window.clearTimeout(fallbackTimer)
       if (snapshotFrame !== null) window.cancelAnimationFrame(snapshotFrame)
       pendingSnapshot = null
+      document.removeEventListener("visibilitychange", onVisibilityChange)
     }
   }, [applyDashboardSnapshot, authSession?.accessToken, fetchData])
 

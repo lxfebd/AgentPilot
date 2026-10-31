@@ -157,7 +157,7 @@ export type DesktopWorkbenchBridge = {
       | { status: "error"; code: "invalidServer" | "serverUnavailable" | "invalidHealth" | "serverTimeout" | "oauth"; error: string }
     >
     consumeOAuthResult: () => Promise<
-      | { status: "success"; accessToken: string; server: DesktopServerConnection }
+      | { status: "success"; accessToken: string; refreshToken?: string; expiresAt?: string; server: DesktopServerConnection }
       | { status: "error"; error: string }
       | null
     >
