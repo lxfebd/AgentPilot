@@ -254,6 +254,20 @@ class UserRepositoryMixin(EmailAccountRepositoryMixin):
         return row is not None
 
 
+    async def user_password_hash(self, user_id: str) -> str | None:
+        """Stored password hash for token-fingerprint checks (never leaves the server)."""
+        normalized = (user_id or "").strip().lower()
+        if not normalized:
+            return None
+        async with self._engine.connect() as conn:
+            row = (
+                await conn.execute(
+                    select(users_t.c.password_hash).where(users_t.c.id == normalized)
+                )
+            ).first()
+        return None if row is None else str(row[0] or "")
+
+
     async def get_user(self, user_id: str) -> UserView:
         normalized = (user_id or "").strip().lower()
         async with self._engine.connect() as conn:

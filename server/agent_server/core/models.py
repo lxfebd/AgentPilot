@@ -249,6 +249,14 @@ class AuthResponse(BaseModel):
     accessToken: str
     tokenType: str = "bearer"
     serverTime: str
+    # Present on register / login / oauth finalize / mobile exchange / refresh.
+    # Rotated on every refresh; expires in USER_REFRESH_EXPIRES_IN.
+    refreshToken: str | None = None
+    expiresAt: str | None = None
+
+
+class AuthRefreshRequest(BaseModel):
+    refreshToken: str
 
 
 class AuthMeResponse(BaseModel):
