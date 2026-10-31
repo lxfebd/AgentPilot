@@ -9,6 +9,10 @@ data class AuthResponse(
     val email: String? = null,
     val displayName: String = "",
     val emailVerified: Boolean = false,
+    /** Rotated on every login and refresh; null only on servers that predate refresh tokens. */
+    val refreshToken: String? = null,
+    /** RFC 3339 expiry of the refresh token (30 days from login/rotation). */
+    val expiresAt: String? = null,
 )
 
 data class AuthMeResponse(

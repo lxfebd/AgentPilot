@@ -17,6 +17,7 @@ import org.json.JSONException
 
 class ApiClient(
     private val onUnauthorized: (accessToken: String) -> Unit = {},
+    private val accessTokenRefresher: AccessTokenRefresher? = null,
 ) {
     fun requireHtmlDocument(
         serverUrl: String,
@@ -206,6 +207,22 @@ class ApiClient(
         files: List<UploadFilePart>,
         authorizationToken: String? = null,
     ): JSONObject {
+        return requestWithAutoRefresh(serverUrl = serverUrl, authorizationToken = authorizationToken) { token ->
+            executeMultipartRequest(
+                serverUrl = serverUrl,
+                path = path,
+                files = files,
+                authorizationToken = token,
+            )
+        }
+    }
+
+    private fun executeMultipartRequest(
+        serverUrl: String,
+        path: String,
+        files: List<UploadFilePart>,
+        authorizationToken: String?,
+    ): JSONObject {
         return try {
             val endpoint = URL(apiUrl(serverUrl, path))
             val boundary = "AA-${System.currentTimeMillis()}"
@@ -249,7 +266,6 @@ class ApiClient(
                 val responseText = response.body?.string().orEmpty()
                 val responseCode = response.code
                 if (responseCode !in 200..299) {
-                    notifyUnauthorized(responseCode, authorizationToken)
                     throw ApiException(
                         message = parseErrorMessage(responseText) ?: defaultErrorMessage(responseCode),
                         statusCode = responseCode,
@@ -260,6 +276,8 @@ class ApiClient(
             }
         } catch (exc: ApiException) {
             throw exc
+        } catch (exc: IllegalArgumentException) {
+            throw ApiException("The server URL is invalid.", cause = exc)
         } catch (exc: IOException) {
             throw ApiException("Could not reach the server. Check the URL and network.", cause = exc)
         }
@@ -273,6 +291,28 @@ class ApiClient(
         authorizationToken: String?,
         readTimeoutSeconds: Long? = null,
         requestBody: RequestBody? = null,
+    ): JSONObject {
+        return requestWithAutoRefresh(serverUrl = serverUrl, authorizationToken = authorizationToken) { token ->
+            executeJsonRequest(
+                serverUrl = serverUrl,
+                path = path,
+                method = method,
+                bodyText = bodyText,
+                authorizationToken = token,
+                readTimeoutSeconds = readTimeoutSeconds,
+                requestBody = requestBody,
+            )
+        }
+    }
+
+    private fun executeJsonRequest(
+        serverUrl: String,
+        path: String,
+        method: String,
+        bodyText: String?,
+        authorizationToken: String?,
+        readTimeoutSeconds: Long?,
+        requestBody: RequestBody?,
     ): JSONObject {
         return try {
             val resolvedRequestBody = requestBody ?: when {
@@ -304,7 +344,6 @@ class ApiClient(
                 val responseText = response.body?.string().orEmpty()
 
                 if (!response.isSuccessful) {
-                    notifyUnauthorized(response.code, authorizationToken)
                     throw ApiException(
                         message = parseErrorMessage(responseText) ?: defaultErrorMessage(response.code),
                         statusCode = response.code,
@@ -321,6 +360,59 @@ class ApiClient(
         } catch (exc: IOException) {
             throw ApiException("Could not reach the server. Check the URL and network.", cause = exc)
         }
+    }
+
+    /**
+     * Run [execute] and, when it fails with a 401 and a refresher is available,
+     * rotate the access token once and replay the request exactly once.
+     *
+     * The intermediate 401 is not reported to [onUnauthorized]: a session only
+     * ends when the refresh itself is rejected. A refresh that fails for
+     * network reasons keeps the session and surfaces a retryable error.
+     */
+    private fun requestWithAutoRefresh(
+        serverUrl: String,
+        authorizationToken: String?,
+        execute: (authorizationToken: String?) -> JSONObject,
+    ): JSONObject {
+        var token = authorizationToken
+        var alreadyRefreshed = false
+        while (true) {
+            try {
+                return execute(token)
+            } catch (exc: ApiException) {
+                if (!alreadyRefreshed && exc.statusCode == 401 && !token.isNullOrBlank()) {
+                    when (val refresh = requestAccessTokenRefresh(serverUrl, token)) {
+                        is AccessTokenRefreshResult.Refreshed -> {
+                            if (refresh.accessToken.isNotBlank() && refresh.accessToken != token) {
+                                token = refresh.accessToken
+                                alreadyRefreshed = true
+                                continue
+                            }
+                        }
+                        is AccessTokenRefreshResult.Rejected -> {
+                            notifyUnauthorized(401, token)
+                            throw exc
+                        }
+                        is AccessTokenRefreshResult.Failed -> throw ApiException(
+                            message = "Could not refresh the session. Check the network and try again.",
+                            cause = refresh.error,
+                        )
+                        null -> Unit
+                    }
+                }
+                notifyUnauthorized(exc.statusCode ?: 0, token)
+                throw exc
+            }
+        }
+    }
+
+    private fun requestAccessTokenRefresh(
+        serverUrl: String,
+        failedAccessToken: String,
+    ): AccessTokenRefreshResult? {
+        val refresher = accessTokenRefresher ?: return null
+        return runCatching { refresher.refresh(serverUrl, failedAccessToken) }.getOrNull()
     }
 
     internal fun notifyUnauthorized(statusCode: Int, authorizationToken: String?) {

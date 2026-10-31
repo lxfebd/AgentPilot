@@ -317,6 +317,7 @@ internal fun completeWebLoginSession(
             accessToken = token.accessToken,
             tokenType = token.tokenType,
             serverTime = me.serverTime,
+            refreshToken = token.refreshToken,
         ),
     )
 }
