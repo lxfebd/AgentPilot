@@ -59,8 +59,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -445,28 +443,6 @@ internal fun MessageList(
                     .fillMaxSize()
                     .imePadding()
                     .nestedScroll(scrollInput)
-                    .pointerInput(sessionId) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val down = awaitPointerEvent(PointerEventPass.Initial)
-                                    .changes
-                                    .firstOrNull { it.pressed && !it.previousPressed }
-                                    ?: continue
-                                val pointerId = down.id
-                                var previousY = down.position.y
-
-                                while (true) {
-                                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                                    val change = event.changes.firstOrNull { it.id == pointerId }
-                                        ?: event.changes.firstOrNull { it.pressed }
-                                        ?: break
-                                    if (!change.pressed) break
-                                    observeUserScroll(change.position.y - previousY)
-                                    previousY = change.position.y
-                                }
-                            }
-                        }
-                    }
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
