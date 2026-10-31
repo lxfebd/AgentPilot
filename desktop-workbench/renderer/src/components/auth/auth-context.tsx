@@ -157,13 +157,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setScreenState(nextScreen)
   }, [])
 
-  const finishDesktopOAuth = React.useCallback(async (accessToken: string) => {
-    const currentUser = normalizeDesktopOAuthMe(await authApi.me(accessToken))
+  const finishDesktopOAuth = React.useCallback(async (auth: {
+    accessToken: string
+    refreshToken?: string
+    expiresAt?: string
+  }) => {
+    const currentUser = normalizeDesktopOAuthMe(await authApi.me(auth.accessToken))
     const nextSession: StoredSession = {
-      accessToken,
+      accessToken: auth.accessToken,
       userId: currentUser.userId,
       role: currentUser.role,
       serverUrl: getDesktopServerConnection()?.serverUrl,
+      ...(auth.refreshToken ? { refreshToken: auth.refreshToken } : {}),
+      ...(auth.expiresAt ? { expiresAt: auth.expiresAt } : {}),
     }
     saveStoredSession(nextSession)
     setSession(nextSession)
@@ -202,7 +208,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setDesktopServerConnection(result.server)
         setOAuthStatus("opening")
         setError(null)
-        await finishDesktopOAuth(result.accessToken)
+        await finishDesktopOAuth({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresAt: result.expiresAt,
+        })
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : t("errors.oauth"))

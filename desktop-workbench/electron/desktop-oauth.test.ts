@@ -28,7 +28,7 @@ test("creates a first-party Desktop authorization request with PKCE", () => {
 
 test("exchanges the authorization code on its own backend with the original PKCE verifier", async () => {
   const server = resolveDesktopServer("https://self.example");
-  const token = await exchangeDesktopOAuthCode("code-from-self-host", "original-verifier", server, async (url, init) => {
+  const tokens = await exchangeDesktopOAuthCode("code-from-self-host", "original-verifier", server, async (url, init) => {
     assert.equal(url, "https://self.example/api/v2/oauth/token");
     assert.equal(init?.method, "POST");
     assert.equal(init?.redirect, "error");
@@ -38,10 +38,23 @@ test("exchanges the authorization code on its own backend with the original PKCE
     assert.equal(body.get("client_id"), DESKTOP_OAUTH_CLIENT_ID);
     assert.equal(body.get("redirect_uri"), DESKTOP_OAUTH_REDIRECT_URI);
     return Response.json({ access_token: "desktop-token" });
-  });
-  assert.equal(token, "desktop-token");
+  }, 1_000_000);
+  assert.equal(tokens.accessToken, "desktop-token");
+  assert.equal(tokens.refreshToken, undefined);
+  assert.equal(tokens.expiresAt, undefined);
   await assert.rejects(exchangeDesktopOAuthCode("code", "verifier", server, async () => Response.json({})), /invalid/);
   await assert.rejects(exchangeDesktopOAuthCode("code", "verifier", server, async () => Response.json({ detail: "expired code" }, { status: 400 })), /expired code/);
+});
+
+test("carries the refresh token and access-token expiry from the token response", async () => {
+  const server = resolveDesktopServer("https://self.example");
+  const tokens = await exchangeDesktopOAuthCode("code", "verifier", server, async () =>
+    Response.json({ access_token: "access-token", refresh_token: "refresh-token", expires_in: 900 }),
+    Date.UTC(2026, 0, 1),
+  );
+  assert.equal(tokens.accessToken, "access-token");
+  assert.equal(tokens.refreshToken, "refresh-token");
+  assert.equal(tokens.expiresAt, "2026-01-01T00:15:00.000Z");
 });
 
 test("accepts only a matching, unexpired Desktop callback", () => {

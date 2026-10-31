@@ -22,6 +22,10 @@ export type AuthResponse = {
   accessToken: string;
   tokenType: string;
   serverTime: string;
+  /** Issued with the refresh token rotation; missing on older servers. */
+  refreshToken?: string;
+  /** RFC3339 timestamp of accessToken expiry; missing on older servers. */
+  expiresAt?: string;
 };
 
 export type AuthMe = {
@@ -168,6 +172,10 @@ export type StoredSession = {
   role: UserRole;
   /** Desktop-only: which self-hosted or Cloud server this session belongs to. */
   serverUrl?: string;
+  /** Desktop-only: rotating refresh token used to restore an expired access token. */
+  refreshToken?: string;
+  /** RFC3339 timestamp of accessToken expiry; rotated together with the tokens. */
+  expiresAt?: string;
 };
 
 // ─── Mobile sign-in ──────────────────────────────────────────────

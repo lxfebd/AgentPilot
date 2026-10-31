@@ -15,8 +15,16 @@ export type DesktopOAuthPending = {
   createdAt: number;
 };
 
+export type DesktopOAuthTokens = {
+  accessToken: string;
+  /** Rotating refresh token from the token endpoint, when the server issues one. */
+  refreshToken?: string;
+  /** RFC3339 access-token expiry, derived from expires_in when present. */
+  expiresAt?: string;
+};
+
 export type DesktopOAuthResult =
-  | { status: "success"; accessToken: string; server: DesktopServerConnection }
+  | ({ status: "success"; server: DesktopServerConnection } & DesktopOAuthTokens)
   | { status: "error"; error: string };
 
 export async function exchangeDesktopOAuthCode(
@@ -24,7 +32,8 @@ export async function exchangeDesktopOAuthCode(
   verifier: string,
   server: DesktopServerConnection,
   fetcher: typeof fetch,
-): Promise<string> {
+  now = Date.now(),
+): Promise<DesktopOAuthTokens> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.oauth.tokenTimeoutMs);
   try {
@@ -42,17 +51,40 @@ export async function exchangeDesktopOAuthCode(
       }).toString(),
       signal: controller.signal,
     });
-    const payload = await response.json() as { access_token?: unknown; detail?: unknown };
+    const payload = await response.json() as {
+      access_token?: unknown;
+      refresh_token?: unknown;
+      expires_in?: unknown;
+      expiresAt?: unknown;
+      detail?: unknown;
+    };
     if (!response.ok) {
       throw new Error(typeof payload.detail === "string" ? payload.detail : `Desktop login failed (${response.status}).`);
     }
     if (typeof payload.access_token !== "string" || !payload.access_token) {
       throw new Error("Desktop login token response was invalid.");
     }
-    return payload.access_token;
+    const expiresAt = tokenExpiryIso(payload, now);
+    return {
+      accessToken: payload.access_token,
+      ...(typeof payload.refresh_token === "string" && payload.refresh_token
+        ? { refreshToken: payload.refresh_token }
+        : {}),
+      ...(expiresAt ? { expiresAt } : {}),
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function tokenExpiryIso(
+  payload: { expires_in?: unknown; expiresAt?: unknown },
+  now: number,
+): string | undefined {
+  if (typeof payload.expiresAt === "string" && payload.expiresAt) return payload.expiresAt;
+  const seconds = typeof payload.expires_in === "number" ? payload.expires_in : Number(payload.expires_in);
+  if (!Number.isFinite(seconds) || seconds <= 0) return undefined;
+  return new Date(now + seconds * 1000).toISOString();
 }
 
 export function createDesktopOAuthRequest(

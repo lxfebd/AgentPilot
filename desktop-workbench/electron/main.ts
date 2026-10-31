@@ -244,13 +244,13 @@ async function handleDesktopOAuthCallback(rawUrl: string): Promise<void> {
   try {
     const code = desktopOAuthCodeFromCallback(rawUrl, pending);
     pendingDesktopOAuth = null;
-    const accessToken = await exchangeDesktopOAuthCode(code, pending.verifier, pending.server, (url, init) => net.fetch(String(url), init));
+    const tokens = await exchangeDesktopOAuthCode(code, pending.verifier, pending.server, (url, init) => net.fetch(String(url), init));
     if (pending.attempt !== desktopOAuthAttempt) return;
     if (!serverStore) throw new Error("Desktop server settings are not ready.");
     serverStore.save(pending.server);
     // The renderer starts provisioning as soon as it sees this result.
     await syncBackendServerConnection();
-    publishDesktopOAuthResult({ status: "success", accessToken, server: pending.server });
+    publishDesktopOAuthResult({ status: "success", ...tokens, server: pending.server });
   } catch (error) {
     if (pending.attempt !== desktopOAuthAttempt) return;
     publishDesktopOAuthResult({ status: "error", error: errorMessage(error) });
