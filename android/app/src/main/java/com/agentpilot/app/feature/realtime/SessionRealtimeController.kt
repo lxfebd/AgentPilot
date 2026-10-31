@@ -1,5 +1,6 @@
 package com.agentpilot.app.feature.realtime
 
+import com.agentpilot.app.api.ApiException
 import com.agentpilot.app.api.RealtimeTransport
 import com.agentpilot.app.api.RemoteSessionEventEnvelope
 import com.agentpilot.app.api.eventCursorSequence
@@ -208,6 +209,19 @@ class SessionRealtimeController(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (authFailure: ApiException) {
+                if (authFailure.statusCode == 401) {
+                    // The refresh token was rejected (or never existed): the
+                    // session is gone, so reconnecting can never succeed. Stop
+                    // permanently instead of looping with backoff.
+                    if (isCurrentConnection(connectionGeneration)) {
+                        onConnectionChanged(false, false, attempt, null)
+                    }
+                    return@launch
+                }
+                if (isCurrentConnection(connectionGeneration)) {
+                    onConnectionChanged(false, false, attempt, authFailure.message)
+                }
             } catch (error: Exception) {
                 if (isCurrentConnection(connectionGeneration)) {
                     onConnectionChanged(false, false, attempt, error.message)
@@ -228,7 +242,9 @@ class SessionRealtimeController(
             }
             if (!isActive) break
             if (opened.get()) attempt = 0 else attempt = (attempt + 1).coerceAtMost(30)
-            val requested = withTimeoutOrNull(retryDelay(attempt)) { retryNow.receive() } != null
+            // attempt counts failures (1-based, for the UI); the first retry waits
+            // the 1s base delay, the next one 2s, and so on.
+            val requested = withTimeoutOrNull(retryDelay((attempt - 1).coerceAtLeast(0))) { retryNow.receive() } != null
             if (requested) attempt = 0
         }
         }

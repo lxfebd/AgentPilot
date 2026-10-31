@@ -18,7 +18,7 @@ import com.agentpilot.app.api.normalizeServerOrigin
  * Backup / device-transfer exclusions for both file names live in
  * res/xml/backup_rules.xml and res/xml/data_extraction_rules.xml.
  */
-class AuthSessionStore(context: Context) : AuthSessionReader {
+class AuthSessionStore(context: Context) : AuthSessionReader, SessionRefreshStore {
     private val preferences = SessionPreferences.open(appContext = context.applicationContext)
 
     override fun readServerUrl(): String {
@@ -38,6 +38,14 @@ class AuthSessionStore(context: Context) : AuthSessionReader {
         return preferences.getString(KEY_ROLE, "").orEmpty()
     }
 
+    override fun readRefreshToken(): String {
+        return preferences.getString(KEY_REFRESH_TOKEN, "").orEmpty()
+    }
+
+    fun readRefreshExpiresAt(): String {
+        return preferences.getString(KEY_REFRESH_EXPIRES_AT, "").orEmpty()
+    }
+
     fun hasAuthSession(): Boolean {
         return readServerUrl().isNotBlank() && readAccessToken().isNotBlank()
     }
@@ -48,14 +56,27 @@ class AuthSessionStore(context: Context) : AuthSessionReader {
             .apply()
     }
 
-    fun saveAuthSession(serverUrl: String, auth: AuthResponse) {
-        preferences.edit()
+    override fun saveAuthSession(serverUrl: String, auth: AuthResponse) {
+        val editor = preferences.edit()
             .putString(KEY_SERVER_URL, serverUrl.asServerOrigin())
             .putString(KEY_ACCESS_TOKEN, auth.accessToken)
             .putString(KEY_TOKEN_TYPE, auth.tokenType)
             .putString(KEY_USER_ID, auth.userId)
             .putString(KEY_ROLE, auth.role)
-            .apply()
+        // A response without a refresh token (older server, or a client that
+        // signed in before refresh tokens existed) must not inherit the
+        // previous account's token.
+        if (!auth.refreshToken.isNullOrBlank()) {
+            editor.putString(KEY_REFRESH_TOKEN, auth.refreshToken)
+        } else {
+            editor.remove(KEY_REFRESH_TOKEN)
+        }
+        if (!auth.expiresAt.isNullOrBlank()) {
+            editor.putString(KEY_REFRESH_EXPIRES_AT, auth.expiresAt)
+        } else {
+            editor.remove(KEY_REFRESH_EXPIRES_AT)
+        }
+        editor.apply()
     }
 
     fun saveMobileAuthSession(serverUrl: String, exchange: MobileLoginExchangeResponse) {
@@ -179,24 +200,14 @@ private object SessionPreferences {
                 AuthSessionStore.LEGACY_PREFERENCES_NAME,
                 Context.MODE_PRIVATE,
             )
-            val hasSession = legacy.all.isNotEmpty()
-            var copied = true
-            if (hasSession) {
-                val editor = encrypted.edit()
-                for (key in AuthSessionStore.LEGACY_KEYS) {
-                    val value = legacy.getString(key, null)
-                    if (value != null) editor.putString(key, value)
-                }
-                // commit() (not apply()) so the encrypted copy is durable before we
-                // delete the plaintext file; a crash in between must not lose the token.
-                copied = editor.commit()
-            }
-
-            // Drop the legacy file entirely (also removes server_url when no session existed).
-            if (copied) {
-                context.deleteSharedPreferences(AuthSessionStore.LEGACY_PREFERENCES_NAME)
-                migrated = true
-            }
+            val completed = migrateLegacySessionValues(
+                legacy = legacy,
+                encrypted = encrypted,
+                deleteLegacy = {
+                    context.deleteSharedPreferences(AuthSessionStore.LEGACY_PREFERENCES_NAME)
+                },
+            )
+            if (completed) migrated = true
             // If the copy failed, leave the plaintext store in place and let the next
             // launch retry the migration rather than stranding the user signed out.
         }
@@ -211,4 +222,33 @@ interface AuthSessionReader {
 
 internal fun shouldClearAuthSession(currentAccessToken: String, unauthorizedAccessToken: String): Boolean {
     return unauthorizedAccessToken.isNotBlank() && currentAccessToken == unauthorizedAccessToken
+}
+
+/**
+ * Copy every [AuthSessionStore.LEGACY_KEYS] value out of the plaintext store
+ * into the encrypted one, then delete the plaintext store.
+ *
+ * commit() (not apply()) is required so the encrypted copy is durable before
+ * the plaintext file is removed; a crash in between must not lose the token.
+ * The legacy file is dropped even when it held no session, only a server URL.
+ *
+ * Returns whether the migration completed and the legacy store may be deleted.
+ */
+internal fun migrateLegacySessionValues(
+    legacy: android.content.SharedPreferences,
+    encrypted: android.content.SharedPreferences,
+    deleteLegacy: () -> Unit,
+): Boolean {
+    if (legacy.all.isEmpty()) {
+        deleteLegacy()
+        return true
+    }
+    val editor = encrypted.edit()
+    for (key in AuthSessionStore.LEGACY_KEYS) {
+        val value = legacy.getString(key, null)
+        if (value != null) editor.putString(key, value)
+    }
+    if (!editor.commit()) return false
+    deleteLegacy()
+    return true
 }

@@ -16,6 +16,23 @@ class AuthApi(
         ).toAuthMeResponse()
     }
 
+    /**
+     * Exchange the stored refresh token for a fresh access token.
+     *
+     * Carries no Authorization header on purpose: the request must not be able
+     * to re-trigger the automatic refresh that calls it.
+     */
+    fun refreshSession(
+        serverUrl: String,
+        refreshToken: String,
+    ): AuthResponse {
+        return client.postJson(
+            serverUrl = serverUrl,
+            path = "/auth/refresh",
+            body = JSONObject().put("refreshToken", refreshToken),
+        ).toAuthResponse()
+    }
+
     fun authConfig(serverUrl: String): AuthConfigResponse {
         return client.getJson(
             serverUrl = serverUrl,
@@ -233,6 +250,8 @@ class AuthApi(
             accessToken = getString("accessToken"),
             tokenType = optString("tokenType", "bearer"),
             serverTime = getString("serverTime"),
+            refreshToken = optNullableString("refreshToken"),
+            expiresAt = optNullableString("expiresAt"),
         )
     }
 

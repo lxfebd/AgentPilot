@@ -36,6 +36,7 @@ import com.agentpilot.app.api.SessionsApi
 import com.agentpilot.app.api.TerminalApi
 import com.agentpilot.app.config.AppConfig
 import com.agentpilot.app.feature.auth.AuthController
+import com.agentpilot.app.feature.auth.AuthSessionRefresher
 import com.agentpilot.app.feature.auth.AuthSessionStore
 import com.agentpilot.app.feature.auth.WebLoginState
 import com.agentpilot.app.feature.auth.WebLoginViewModel
@@ -139,10 +140,23 @@ fun AgentPilotApp(
     var deviceSetupReturnDestinationName by rememberSaveable { mutableStateOf(AppDestination.Devices.name) }
     var selectedHomeTabName by rememberSaveable { mutableStateOf(HomeTab.Active.name) }
     val unauthorizedTokens = remember { Channel<String>(capacity = Channel.UNLIMITED) }
-    val apiClient = remember(unauthorizedTokens) {
-        ApiClient(onUnauthorized = { accessToken ->
-            unauthorizedTokens.trySend(accessToken)
-        })
+    val sessionExpiredEvents = remember { Channel<Unit>(capacity = Channel.CONFLATED) }
+    val accessTokenRefresher = remember(sessionStore) {
+        AuthSessionRefresher(
+            store = sessionStore,
+            refreshCall = { serverUrl, refreshToken ->
+                AuthApi().refreshSession(serverUrl = serverUrl, refreshToken = refreshToken)
+            },
+            onSessionRejected = { sessionExpiredEvents.trySend(Unit) },
+        )
+    }
+    val apiClient = remember(unauthorizedTokens, accessTokenRefresher) {
+        ApiClient(
+            onUnauthorized = { accessToken ->
+                unauthorizedTokens.trySend(accessToken)
+            },
+            accessTokenRefresher = accessTokenRefresher,
+        )
     }
     val realtimeApi = remember(apiClient) { RealtimeApi(client = apiClient) }
     val announcementsApi = remember(apiClient) { AnnouncementsApi(apiClient) }
@@ -399,6 +413,12 @@ fun AgentPilotApp(
     LaunchedEffect(unauthorizedTokens) {
         for (accessToken in unauthorizedTokens) {
             clearSessionAndReturnToLogin(expectedToken = accessToken)
+        }
+    }
+
+    LaunchedEffect(sessionExpiredEvents) {
+        for (ignored in sessionExpiredEvents) {
+            Toast.makeText(context, "会话已过期，请重新登录", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -1,5 +1,6 @@
 package com.agentpilot.app.feature.realtime
 
+import com.agentpilot.app.api.ApiException
 import com.agentpilot.app.api.RealtimeTransport
 import com.agentpilot.app.api.RemoteDashboardSnapshot
 import com.agentpilot.app.feature.auth.AuthSessionReader
@@ -99,6 +100,19 @@ class DashboardRealtimeController(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (authFailure: ApiException) {
+                if (authFailure.statusCode == 401) {
+                    // Session is gone; reconnect would only ever 401 again.
+                    if (!receivedSnapshot && !initialFailureReported) {
+                        initialFailureReported = true
+                        onInitialFailure()
+                    }
+                    return@launch
+                }
+                if (!receivedSnapshot && !initialFailureReported) {
+                    initialFailureReported = true
+                    onInitialFailure()
+                }
             } catch (_: Exception) {
                 if (!receivedSnapshot && !initialFailureReported) {
                     initialFailureReported = true
@@ -112,7 +126,9 @@ class DashboardRealtimeController(
             }
             if (!isActive) break
             if (opened.get() || receivedSnapshot) attempt = 0 else attempt = (attempt + 1).coerceAtMost(30)
-            val requested = withTimeoutOrNull(retryDelay(attempt)) { retryNow.receive() } != null
+            // attempt counts failures (1-based, for the UI); the first retry waits
+            // the 1s base delay, the next one 2s, and so on.
+            val requested = withTimeoutOrNull(retryDelay((attempt - 1).coerceAtLeast(0))) { retryNow.receive() } != null
             if (requested) attempt = 0
         }
         }

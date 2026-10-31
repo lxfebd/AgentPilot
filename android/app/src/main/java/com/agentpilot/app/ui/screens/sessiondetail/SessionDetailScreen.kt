@@ -81,6 +81,7 @@ import androidx.core.content.FileProvider
 import com.agentpilot.app.R
 import com.agentpilot.app.api.AttachmentTransferException
 import com.agentpilot.app.api.AttachmentTransferFailure
+import com.agentpilot.app.api.RemoteSessionEventEnvelope
 import com.agentpilot.app.api.UploadFilePart
 import com.agentpilot.app.feature.files.FilesController
 import com.agentpilot.app.feature.realtime.SessionRealtimeController
@@ -148,6 +149,7 @@ import com.agentpilot.app.ui.designsystem.runtimePermissionLocalizer
 import com.agentpilot.app.ui.designsystem.ScreenScaffold
 import com.agentpilot.app.ui.designsystem.noRippleClickable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -1290,19 +1292,25 @@ fun SessionDetailScreen(
     LaunchedEffect(sessionId, appVisible, state.initialized, realtimeController) {
         if (sessionId == null || !appVisible || !state.initialized) return@LaunchedEffect
         val id = sessionId
-        realtimeController.start(
-            scope = this,
-            sessionId = id,
-            cursor = { withContext(Dispatchers.Main.immediate) { state.realtime.cursor } },
-            onEvents = { events ->
-                if (sessionId != id || !appVisible) return@start
-                // Timeline projection re-serializes every item's JSON (content.toString(2))
-                // and redacts diagnostics; a 30 Hz batch can be hundreds of items. Compute
-                // the immutable next state off the main thread and commit only the result.
+        // Timeline projection re-serializes every item's JSON (content.toString(2))
+        // and redacts diagnostics, so a burst of realtime batches must not cost one
+        // projection and one recomposition each. Buffer the batches and project at
+        // most once per frame: nothing is dropped, ordering is preserved, and the
+        // final state equals applying the batches one by one.
+        val pendingEventBatches = Channel<List<RemoteSessionEventEnvelope>>(Channel.UNLIMITED)
+        val eventApplier = launch {
+            for (firstBatch in pendingEventBatches) {
+                delay(REALTIME_FRAME_MILLIS)
+                val mergedEvents = ArrayList<RemoteSessionEventEnvelope>(firstBatch)
+                while (true) {
+                    val more = pendingEventBatches.tryReceive().getOrNull() ?: break
+                    mergedEvents += more
+                }
+                if (sessionId != id || !appVisible) continue
                 val before = withContext(Dispatchers.Main.immediate) { state }
                 val devicesSnapshot = withContext(Dispatchers.Main.immediate) { currentDevices }
                 val next = withContext(Dispatchers.Default) {
-                    controller.applyRealtimeEvents(before, events, devicesSnapshot)
+                    controller.applyRealtimeEvents(before, mergedEvents, devicesSnapshot)
                 }
                 withContext(Dispatchers.Main.immediate) {
                     if (sessionId != id || !appVisible) return@withContext
@@ -1312,7 +1320,13 @@ fun SessionDetailScreen(
                     }
                     if (next.session != before.session) next.session?.let(currentOnSessionChanged)
                 }
-            },
+            }
+        }
+        realtimeController.start(
+            scope = this,
+            sessionId = id,
+            cursor = { withContext(Dispatchers.Main.immediate) { state.realtime.cursor } },
+            onEvents = { events -> pendingEventBatches.send(events) },
             onCursorAdvanced = { cursor ->
                 withContext(Dispatchers.Main.immediate) {
                     if (sessionId == id) {
@@ -1362,6 +1376,8 @@ fun SessionDetailScreen(
                 }
             },
         ).join()
+        eventApplier.cancel()
+        pendingEventBatches.close()
     }
 
     val isPreparedSession = preparedSession != null
@@ -2562,3 +2578,9 @@ private fun uniqueGalleryFile(directory: File, displayName: String): File {
 
 private const val MAX_ATTACHMENT_FILES = 6
 private const val MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+
+/**
+ * One display frame. Realtime batches arriving inside the same frame are merged
+ * and projected once instead of once per wire batch (~30 per second).
+ */
+private const val REALTIME_FRAME_MILLIS = 16L
