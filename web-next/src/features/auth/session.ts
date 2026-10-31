@@ -51,14 +51,13 @@ export function authResponseToSession(auth: AuthResponse): StoredSession {
     accessToken: auth.accessToken,
     userId: auth.userId,
     role: auth.role,
+    ...(auth.refreshToken ? { refreshToken: auth.refreshToken } : {}),
   });
 }
 
-export function loadStoredSession(): StoredSession | null {
-  if (typeof window === "undefined") return null;
+function parseStoredSession(raw: string | null): StoredSession | null {
+  if (!raw) return null;
   try {
-    const raw = safeGet(SESSION_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredSession>;
     if (!parsed.accessToken || !parsed.userId || !parsed.role) return null;
     const session: StoredSession = {
@@ -66,12 +65,34 @@ export function loadStoredSession(): StoredSession | null {
       userId: parsed.userId,
       role: parsed.role,
       ...(typeof parsed.expiresAt === "string" ? { expiresAt: parsed.expiresAt } : {}),
+      ...(typeof parsed.refreshToken === "string" && parsed.refreshToken
+        ? { refreshToken: parsed.refreshToken }
+        : {}),
     };
-    if (isSessionExpired(session)) return null;
     return session;
   } catch {
     return null;
   }
+}
+
+export function loadStoredSession(): StoredSession | null {
+  const session = loadStoredSessionForRefresh();
+  if (!session) return null;
+  if (isSessionExpired(session)) return null;
+  return session;
+}
+
+/**
+ * Reads the stored session without the local-expiry check. The refresh flow
+ * needs the refresh token even when the access token has already expired.
+ */
+export function loadStoredSessionForRefresh(): StoredSession | null {
+  if (typeof window === "undefined") return null;
+  return parseStoredSession(safeGet(SESSION_KEY));
+}
+
+export function loadStoredRefreshToken(): string | null {
+  return loadStoredSessionForRefresh()?.refreshToken ?? null;
 }
 
 export function saveStoredSession(session: StoredSession): void {

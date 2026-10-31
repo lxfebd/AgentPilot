@@ -28,10 +28,26 @@ import type {
 } from "@/features/auth/types";
 
 export class AuthApi {
-  constructor(private readonly client: ApiClient = apiClient) {}
+  private readonly client: ApiClient;
+
+  constructor(client: ApiClient = apiClient) {
+    this.client = client;
+  }
 
   config(): Promise<AuthConfig> {
     return this.client.get<AuthConfig>("/auth/config", { auth: false });
+  }
+
+  /**
+   * Rotates an access token with its refresh token. Uses `auth: false` so a
+   * rejected refresh cannot recurse into another refresh attempt.
+   */
+  refresh(refreshToken: string): Promise<AuthResponse> {
+    return this.client.post<AuthResponse>(
+      "/auth/refresh",
+      { refreshToken },
+      { auth: false },
+    );
   }
 
   passwordSalt(email: string): Promise<AuthPasswordSaltResponse> {

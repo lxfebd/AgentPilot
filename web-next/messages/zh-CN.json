@@ -1265,7 +1265,8 @@
       "generic": "操作失败。",
       "oauth": "OAuth 登录失败。",
       "loginFailed": "登录失败。",
-      "registerFailed": "注册失败。"
+      "registerFailed": "注册失败。",
+      "sessionExpired": "登录状态已失效，请重新登录。"
     },
     "bootstrap": {
       "description": "全新安装。这里创建的账号会成为实例管理员。",

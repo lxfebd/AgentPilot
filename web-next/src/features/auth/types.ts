@@ -22,6 +22,10 @@ export type AuthResponse = {
   accessToken: string;
   tokenType: string;
   serverTime: string;
+  /** Rotating refresh token (30 天); 旧服务器不返回此字段。 */
+  refreshToken?: string;
+  /** refreshToken 的绝对过期时间（ISO 8601），与 refreshToken 一起返回。 */
+  expiresAt?: string;
 };
 
 export type AuthMe = {
@@ -168,6 +172,8 @@ export type StoredSession = {
   role: UserRole;
   /** Absolute expiry of accessToken (ISO 8601); absent on legacy stored entries. */
   expiresAt?: string;
+  /** Rotating refresh token (30 天); 旧服务器与遗留存储条目没有此字段。 */
+  refreshToken?: string;
 };
 
 // ─── Mobile sign-in ──────────────────────────────────────────────

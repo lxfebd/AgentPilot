@@ -13,6 +13,9 @@ import { ApiError } from "@/lib/api/errors"
 import type { AuthMe, OAuthFinalizePayload, StoredSession } from "@/features/auth/types"
 import { useTranslations } from "next-intl"
 import { authFlowHash, clearAuthFlow, rememberAuthFlow, takeAuthFlow } from "@/features/auth/continuation"
+import { canRefreshSession, refreshAccessTokenHandler, refreshSession } from "@/features/auth/refresh"
+import { subscribeSessionEvents } from "@/features/auth/session-events"
+import { registerAccessTokenRefresh, resetAccessTokenRefresh } from "@/lib/api/refresh"
 
 export type AuthScreen =
   | "bootstrap"
@@ -222,16 +225,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return
       }
-      if (!stored) {
+      // A locally expired access token is still usable when the refresh token
+      // is valid, so try one rotation before falling back to the login screen.
+      let activeSession = stored
+      if (!activeSession && canRefreshSession()) {
+        activeSession = await refreshSession(null)
+        if (cancelled) return
+      }
+      if (!activeSession) {
         if (!cancelled) {
           setScreenState(nextScreen === "app" ? "login" : nextScreen)
           setLoading(false)
         }
         return
       }
-      setSession(stored)
+      setSession(activeSession)
       try {
-        const currentUser = await authApi.me(stored.accessToken)
+        const currentUser = await authApi.me(activeSession.accessToken)
         if (cancelled) return
         setMe(currentUser)
         setScreenState(nextScreen === "login" || nextScreen === "register" || nextScreen === "forgot-password" ? "app" : nextScreen)
@@ -407,6 +417,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setScreenState("signed-out")
   }, [])
 
+  // Bind the ApiClient 401 refresh hook and react to session rotations: a
+  // successful rotation swaps in the new session; a rejected refresh clears it
+  // and shows a visible prompt (the realtime channel stops once session is null).
+  React.useEffect(() => {
+    registerAccessTokenRefresh(refreshAccessTokenHandler)
+    const unsubscribe = subscribeSessionEvents((event) => {
+      if (event.type === "refreshed") {
+        setSession(event.session)
+        return
+      }
+      setError(t("errors.sessionExpired"))
+      signOut()
+    })
+    return () => {
+      unsubscribe()
+      resetAccessTokenRefresh()
+    }
+  }, [signOut, t])
+
   // The access token is persisted in localStorage in plain text, so enforce its
   // JWT expiry locally and re-validate it against the server regularly; a token
   // the server rejected (401) must not linger until the next page load.
@@ -415,14 +444,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const current = session
     let cancelled = false
     const expiryTimer = window.setInterval(() => {
-      if (isSessionExpired(current)) signOut()
+      if (!isSessionExpired(current)) return
+      if (canRefreshSession()) {
+        void refreshSession(current.accessToken)
+        return
+      }
+      signOut()
     }, 60_000)
     async function validate() {
       try {
         await authApi.me(current.accessToken)
       } catch (err) {
         if (!cancelled && err instanceof ApiError && err.kind === "unauthorized") {
-          signOut()
+          if (canRefreshSession()) void refreshSession(current.accessToken)
+          else signOut()
         }
       }
     }
