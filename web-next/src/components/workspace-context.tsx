@@ -35,6 +35,7 @@ import {
 } from "@/components/session/optimistic-timeline"
 import { sortSessionViews } from "@/components/session/session-list-order"
 import { isApiError } from "@/lib/api/errors"
+import { realtimeBackoffDelay, realtimeFailureKind } from "@/lib/realtime-channel"
 import { safeGet, safeSet } from "@/lib/safe-storage"
 
 // ─── Panel / page types ───────────────────────────────────────
@@ -748,14 +749,51 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       }, 2500)
     }
 
+    let attempt = 0
+    let stopped = false
+    let paused = document.hidden
+
+    const stopChannel = () => {
+      stopped = true
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
+      reconnectTimer = null
+      socket?.close()
+      socket = null
+    }
+
+    const scheduleReconnect = (kind: "auth" | "transient" | "permanent") => {
+      if (cancelled || stopped || paused) return
+      if (kind === "auth") {
+        // 认证失败：ApiClient 已经尝试过刷新令牌，这里再收到 401 说明会话已失效。
+        // 刷新层已清会话并触发重新登录提示，实时通道只需停止，不再重连。
+        stopChannel()
+        return
+      }
+      if (kind === "permanent") {
+        stopChannel()
+        return
+      }
+      const delay = realtimeBackoffDelay(attempt)
+      attempt += 1
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null
+        void connect()
+      }, delay)
+    }
+
     const connect = async () => {
+      if (cancelled || stopped || paused) return
       try {
         const ticket = await dashboardApi.createDashboardWsTicket(
           authSession.accessToken,
           "web-dashboard",
         )
-        if (cancelled) return
+        if (cancelled || stopped || paused) return
         socket = new WebSocket(dashboardApi.dashboardWebSocketUrl(ticket.ticket))
+        socket.onopen = () => {
+          // 连接成功后从第一档重新开始退避。
+          attempt = 0
+        }
         socket.onmessage = (event) => {
           if (cancelled || typeof event.data !== "string") return
           try {
@@ -770,32 +808,44 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           } catch { /* ignore malformed */ }
         }
         socket.onclose = () => {
-          if (cancelled) return
+          if (cancelled || stopped) return
           socket = null
           scheduleInitialFallback()
-          reconnectTimer = window.setTimeout(() => {
-            reconnectTimer = null
-            void connect()
-          }, 2000)
+          scheduleReconnect("transient")
         }
         socket.onerror = () => {
           socket?.close()
         }
-      } catch {
-        if (cancelled) return
+      } catch (error) {
+        if (cancelled || stopped) return
         scheduleInitialFallback()
-        reconnectTimer = window.setTimeout(() => {
-          reconnectTimer = null
-          void connect()
-        }, 2000)
+        scheduleReconnect(realtimeFailureKind(error))
       }
     }
 
     scheduleInitialFallback()
     void connect()
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面不可见时暂停实时通道，避免后台持续重连。
+        paused = true
+        if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
+        reconnectTimer = null
+        socket?.close()
+        socket = null
+        return
+      }
+      if (cancelled || stopped) return
+      paused = false
+      attempt = 0
+      void connect()
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange)
+
     return () => {
       cancelled = true
+      document.removeEventListener("visibilitychange", onVisibilityChange)
       socket?.close()
       if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
       if (fallbackTimer !== null) window.clearTimeout(fallbackTimer)
