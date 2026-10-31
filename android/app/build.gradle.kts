@@ -113,6 +113,16 @@ android {
     }
 }
 
+// Compose compiler metrics are opt-in: run with -PcomposeMetrics to dump
+// per-module stability/inference reports under build/compose-metrics and
+// build/compose-reports. Handy when a screen starts skipping recomposition.
+composeCompiler {
+    if (project.hasProperty("composeMetrics")) {
+        metricsDestination.set(layout.buildDirectory.dir("compose-metrics"))
+        reportsDestination.set(layout.buildDirectory.dir("compose-reports"))
+    }
+}
+
 dependencies {
     implementation(platform(libs.sora.bom))
     implementation(libs.androidx.activity.compose)
