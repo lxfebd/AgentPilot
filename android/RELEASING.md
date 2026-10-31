@@ -1,6 +1,6 @@
 # AgentPilot Android 发布流程
 
-本文件描述把一个已合入 master 的版本（当前 2.3.5 / versionCode 26）发布到更新服务器需要的步骤。源码合入不等于发布成功；只有第 4 步之后，设备上的应用才会收到更新。
+本文件描述把一个已合入 master 的版本（当前 2.4.0 / versionCode 27）发布到更新服务器需要的步骤。源码合入不等于发布成功；只有第 4 步之后，设备上的应用才会收到更新。
 
 ## 1. 准备签名密钥（每台发布机一次性）
 
@@ -32,17 +32,17 @@
 ## 4. 发布到更新服务器
 
 1. 上传 APK 到服务端更新目录（AppConfig.updateDownloadUrl 指向的地址，现网为 smartcare 服务）。
-2. 服务端更新清单追加一条：versionCode 26 / versionName 2.3.5 / downloadUrl / sha256。
-3. 验证：设备进入设置 > 检查更新应看到 2.3.5；下载后签名校验通过才会进入安装。
+2. 服务端更新清单追加一条：versionCode 27 / versionName 2.4.0 / downloadUrl / sha256。
+3. 验证：设备进入设置 > 检查更新应看到 2.4.0；下载后签名校验通过才会进入安装。
 
 上传与清单写入是生产操作，由发布管理员执行；本仓库不包含这些凭据。
 
 ## 5. 发布后
 
-- 给 master 打 tag（如 android-v2.3.5）并 git push --tags。
+- 给 master 打 tag（如 android-v2.4.0）并 git push --tags。
 - 在 GitHub Releases 附上 APK 与 sha256，便于追溯。
 - 若该版本有跨端变更，按 AGENTS.md 同步所有端版本号并更新 README。
 
 ## 回滚
 
-清单里把指向 2.3.5 的条目改回上一个 versionCode 即可；已下载未安装的包不受影响。设备若已装 2.3.5 出现严重问题，只能发更高 versionCode 的修复版（Android 不允许降级安装）。
+清单里把指向 2.4.0 的条目改回上一个 versionCode 即可；已下载未安装的包不受影响。设备若已装 2.4.0 出现严重问题，只能发更高 versionCode 的修复版（Android 不允许降级安装）。

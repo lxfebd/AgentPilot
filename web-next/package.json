@@ -1,7 +1,7 @@
 {
   "name": "agent-pilot-web-next",
   "private": true,
-  "version": "2.3.3",
+  "version": "2.4.0",
   "packageManager": "yarn@4.6.0",
   "type": "module",
   "scripts": {

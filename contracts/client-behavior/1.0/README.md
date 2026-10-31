@@ -128,8 +128,8 @@ directory (`1.0` → `1.1`), regardless of app version.
 
 | Client | App version | Contract 1.0 |
 | --- | --- | --- |
-| Web (`web-next`) | 2.3.3 | partial |
-| Desktop (`desktop-workbench`) | 2.3.3 | partial |
+| Web (`web-next`) | 2.4.0 | partial |
+| Desktop (`desktop-workbench`) | 2.4.0 | partial |
 | Android | 2.3.2 (master) / 2.3.4 (release branch) | partial |
 | iOS | — | unknown |
 
