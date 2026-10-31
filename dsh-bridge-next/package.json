@@ -1,6 +1,6 @@
 {
   "name": "@agent-pilot/dsh-bridge-next",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "description": "AgentPilot onboarding, Connector management and event-driven session runtime for DeepSeek Harness",
   "type": "module",
   "main": "./lib/index.js",
