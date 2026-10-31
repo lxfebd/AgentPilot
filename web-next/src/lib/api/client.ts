@@ -3,12 +3,28 @@ import {
   apiErrorKind,
   extractErrorPayload
 } from "@/lib/api/errors";
+import { requestAccessTokenRefresh } from "@/lib/api/refresh";
 
 export type ApiTokenProvider = () => string | null | undefined;
+
+/**
+ * Exchanges the refresh token for a fresh access token.
+ *
+ * Receives the access token that was rejected so a handler can skip a second
+ * refresh when another request already rotated the session. Resolves to null
+ * when the session cannot be refreshed.
+ */
+export type ApiTokenRefresh = (failedToken: string | null) => Promise<string | null>;
 
 export type ApiClientOptions = {
   baseUrl?: string;
   getToken?: ApiTokenProvider;
+  /**
+   * Refresh hook used when an authenticated request comes back 401. Defaults to
+   * the app-wide single-flight handler registered by the auth layer, so every
+   * ApiClient instance shares one refresh per session rotation.
+   */
+  refreshAccessToken?: ApiTokenRefresh;
   fetcher?: typeof fetch;
 };
 
@@ -35,14 +51,21 @@ function normalizeApiNamespace(value: string): string {
   return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
 }
 
+/** Paths that rotate tokens themselves; never auto-refresh a 401 from them. */
+function isTokenRefreshPath(path: string): boolean {
+  return path.includes("/auth/refresh");
+}
+
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly getToken?: ApiTokenProvider;
+  private readonly refreshAccessToken: ApiTokenRefresh;
   private readonly fetcher: typeof fetch;
 
   constructor(options: ApiClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? "";
     this.getToken = options.getToken;
+    this.refreshAccessToken = options.refreshAccessToken ?? requestAccessTokenRefresh;
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
   }
 
@@ -87,31 +110,40 @@ export class ApiClient {
     }
     headers.set("accept", headers.get("accept") ?? "application/json");
 
-    const token = options.token ?? (options.auth === false ? null : this.getToken?.());
-    if (token) headers.set("authorization", `Bearer ${token}`);
+    const authenticated = options.auth !== false;
+    let token = options.token ?? (authenticated ? this.getToken?.() : null);
+    const mayRefresh = authenticated && !isTokenRefreshPath(path);
 
-    let response: Response;
-    try {
-      response = await this.fetcher(url, {
-        ...options,
-        body,
-        headers
-      });
-    } catch (error) {
-      throw new ApiError({
-        status: 0,
-        kind: "network",
-        detail: error instanceof Error ? error.message : "network error",
-        url
-      });
-    }
+    // One replay: a 401 rotates the session once and the request is retried with
+    // the new token. A second 401 is surfaced, so a broken session cannot loop.
+    for (let attempt = 0; ; attempt += 1) {
+      const requestHeaders = new Headers(headers);
+      if (token) requestHeaders.set("authorization", `Bearer ${token}`);
+      else requestHeaders.delete("authorization");
 
-    if (response.status === 204) return undefined as T;
+      let response: Response;
+      try {
+        response = await this.fetcher(url, {
+          ...options,
+          body,
+          headers: requestHeaders
+        });
+      } catch (error) {
+        throw new ApiError({
+          status: 0,
+          kind: "network",
+          detail: error instanceof Error ? error.message : "network error",
+          url
+        });
+      }
 
-    const payload = await readPayload(response);
-    if (!response.ok) {
+      if (response.status === 204) return undefined as T;
+
+      const payload = await readPayload(response);
+      if (response.ok) return payload as T;
+
       const normalized = extractErrorPayload(payload);
-      throw new ApiError({
+      const error = new ApiError({
         status: response.status,
         kind: apiErrorKind(response.status),
         detail: normalized.detail || `HTTP ${response.status}`,
@@ -119,9 +151,25 @@ export class ApiClient {
         payload,
         url
       });
-    }
 
-    return payload as T;
+      if (response.status === 401 && attempt === 0 && mayRefresh && token) {
+        const nextToken = await this.tryRefreshAccessToken(token);
+        if (nextToken) {
+          token = nextToken;
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async tryRefreshAccessToken(failedToken: string): Promise<string | null> {
+    try {
+      return await this.refreshAccessToken(failedToken);
+    } catch {
+      // A failed refresh keeps the original 401: the auth layer owns sign-out.
+      return null;
+    }
   }
 
   private buildUrl(

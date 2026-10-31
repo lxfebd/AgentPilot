@@ -1265,7 +1265,8 @@
       "generic": "Something went wrong.",
       "oauth": "OAuth sign-in failed.",
       "loginFailed": "Sign in failed.",
-      "registerFailed": "Registration failed."
+      "registerFailed": "Registration failed.",
+      "sessionExpired": "Your sign-in expired. Please sign in again."
     },
     "bootstrap": {
       "description": "Fresh install. The account you create here becomes the instance admin.",

@@ -9,7 +9,7 @@ import { AuthShell } from "./auth-shell"
 
 export function SignedOutScreen() {
   const t = useTranslations("auth.signedOut")
-  const { navigate } = useAuth()
+  const { navigate, error } = useAuth()
 
   return (
     <AuthShell>
@@ -19,6 +19,7 @@ export function SignedOutScreen() {
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{t("description")}</p>
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         <Button className="mt-8 w-full" onClick={() => navigate("login")}>
           <LogIn data-icon="inline-start" />
           {t("login")}
