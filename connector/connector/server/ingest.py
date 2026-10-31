@@ -9,6 +9,7 @@ import httpx
 from connector.logging import logger
 from connector.server.auth import ConnectorAuthenticationError
 from connector.server.errors import ConnectorNetworkError
+from connector.server.ingest_dedupe import IngestFingerprintGate
 from connector.server.urls import api_v2_url
 
 # HTTP ingest owns explicit bulk sync and disconnected WebSocket fallback.
@@ -42,6 +43,7 @@ class ConnectorIngestClient:
         self._http_client_factory = http_client_factory
         self._notify_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=1024)
         self._inflight: list[dict[str, Any]] = []
+        self._dedupe = IngestFingerprintGate()
         self._retry_delay = 1.0
         self._closed: Exception | None = None
         self._post_lock = asyncio.Lock()
@@ -141,6 +143,7 @@ class ConnectorIngestClient:
         if not notifications:
             return
         notifications = coalesce_timeline_item_upserts(notifications)
+        notifications = self._dedupe.filter(notifications)
         if not notifications:
             return
         access_token = await self._access_token_provider(False)
@@ -179,6 +182,7 @@ class ConnectorIngestClient:
                 raise ConnectorNetworkError(f"backend ingest temporarily unavailable: HTTP {status}")
             response.raise_for_status()
             _raise_for_rejected_notifications(response)
+            self._dedupe.remember(notifications)
         finally:
             if owned:
                 await client.aclose()
