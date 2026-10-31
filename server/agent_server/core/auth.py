@@ -107,6 +107,17 @@ def hash_password_verifier(verifier: str, *, salt: str) -> str:
     return f"pbkdf2_sha256${salt}${verifier}"
 
 
+def password_fingerprint(stored_password_hash: str | None) -> str:
+    """Short, non-reversible tag of the stored password hash.
+
+    Refresh tokens embed this tag instead of a server-side session row, so a
+    password (or password-hash) change invalidates every outstanding refresh
+    token immediately without an extra migration.
+    """
+    digest = hashlib.sha256((stored_password_hash or "").encode("utf-8")).hexdigest()
+    return digest[:32]
+
+
 def create_user_access_token(user_id: str, expires_in: int = DEFAULT_USER_EXPIRES_IN) -> str:
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {"sub": user_id, "exp": int(time.time()) + expires_in}

@@ -11,9 +11,11 @@ from fastapi.responses import RedirectResponse
 
 from agent_server.core.api_namespace import api_v2_path
 from agent_server.core.auth import (
+    DEFAULT_USER_EXPIRES_IN,
     create_signed_token,
     create_user_access_token,
     hash_password_verifier,
+    password_fingerprint,
     verify_signed_token,
 )
 from agent_server.core.models import (
@@ -21,6 +23,7 @@ from agent_server.core.models import (
     AuthMeResponse,
     AuthPasswordSaltRequest,
     AuthPasswordSaltResponse,
+    AuthRefreshRequest,
     AuthRequest,
     AuthResponse,
     BindEmailRequest,
@@ -75,6 +78,10 @@ MOBILE_LOGIN_TOKEN_KIND = "mobile_login"
 MOBILE_REFRESH_TOKEN_KIND = "mobile_refresh"
 MOBILE_LOGIN_EXPIRES_IN = 120
 MOBILE_REFRESH_EXPIRES_IN = 60 * 60 * 24 * 30
+# Unified refresh token shared by every client (desktop / web / android / ios).
+USER_REFRESH_TOKEN_KIND = "user_refresh"
+USER_REFRESH_EXPIRES_IN = 60 * 60 * 24 * 30
+USER_REFRESH_AUDIENCE = "agent-pilot-user"
 
 
 @router.get("/auth/config", response_model=AuthConfigResponse)
@@ -160,7 +167,7 @@ async def auth_register(
 
     if bootstrap_user is not None:
         await _setup_token(request).consume()
-        return _auth_response(bootstrap_user)
+        return await _auth_response(bootstrap_user, db)
 
     if not await db.is_registration_open():
         raise HTTPException(status_code=403, detail="registration is closed")
@@ -177,7 +184,7 @@ async def auth_register(
         )
     except ValueError as exc:
         raise _value_error_to_http(exc) from exc
-    return _auth_response(user)
+    return await _auth_response(user, db)
 
 
 @router.post("/auth/login", response_model=AuthResponse)
@@ -190,7 +197,29 @@ async def auth_login(payload: AuthRequest, db: Store = Depends(get_store)) -> Au
         raise _value_error_to_http(exc) from exc
     if user is None:
         raise HTTPException(status_code=401, detail="invalid credentials")
-    return _auth_response(user)
+    return await _auth_response(user, db)
+
+
+@router.post("/auth/refresh", response_model=AuthResponse)
+async def auth_refresh(
+    payload: AuthRefreshRequest, db: Store = Depends(get_store),
+) -> AuthResponse:
+    claims = verify_signed_token(USER_REFRESH_TOKEN_KIND, payload.refreshToken)
+    if claims is None or claims.get("aud") != USER_REFRESH_AUDIENCE:
+        raise HTTPException(status_code=401, detail="refresh token is invalid or expired")
+    user_id = str(claims.get("sub") or "")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="refresh token is invalid or expired")
+    try:
+        user = await db.get_user(user_id)
+    except KeyError:
+        raise HTTPException(status_code=401, detail="refresh token is invalid or expired") from None
+    if user.disabled:
+        raise HTTPException(status_code=401, detail="account disabled")
+    stored = await db.user_password_hash(user_id)
+    if str(claims.get("fp") or "") != password_fingerprint(stored):
+        raise HTTPException(status_code=401, detail="password changed; sign in again")
+    return await _auth_response(user, db)
 
 
 @router.post("/auth/email-code", response_model=EmailCodeResponse)
@@ -350,7 +379,7 @@ async def oauth_finalize(
         raise HTTPException(status_code=401, detail="oauth session expired")
     existing = await db.oauth_user_for_subject(provider=identity.provider, subject=identity.subject)
     if existing is not None:
-        return OAuthFinalizeResponse(auth=_auth_response(existing), serverTime=utc_now())
+        return OAuthFinalizeResponse(auth=await _auth_response(existing, db), serverTime=utc_now())
     try:
         email = normalize_email(payload.email or "")
         target = await db.user_for_email(email)
@@ -364,7 +393,7 @@ async def oauth_finalize(
                 user_id=verified.userId, provider=identity.provider, subject=identity.subject,
                 email=identity.email, display_name=identity.display_name,
             )
-            return OAuthFinalizeResponse(auth=_auth_response(user), serverTime=utc_now())
+            return OAuthFinalizeResponse(auth=await _auth_response(user, db), serverTime=utc_now())
         if not await db.is_oauth_registration_open():
             raise HTTPException(status_code=403, detail="oauth registration is closed")
         password_hash = _password_hash_from_oauth_finalize(payload)
@@ -380,7 +409,7 @@ async def oauth_finalize(
         )
     except ValueError as exc:
         raise _value_error_to_http(exc) from exc
-    return OAuthFinalizeResponse(auth=_auth_response(user), serverTime=utc_now())
+    return OAuthFinalizeResponse(auth=await _auth_response(user, db), serverTime=utc_now())
 
 
 @router.get("/auth/me", response_model=AuthMeResponse)
@@ -495,19 +524,11 @@ async def exchange_mobile_login(
         raise HTTPException(status_code=401, detail="user no longer exists") from None
     if user.disabled:
         raise HTTPException(status_code=403, detail="account disabled")
-    refresh_token = create_signed_token(
-        MOBILE_REFRESH_TOKEN_KIND,
-        {
-            "sub": user.userId,
-            "aud": "agent-pilot-mobile",
-            "nonce": secrets.token_urlsafe(16),
-        },
-        MOBILE_REFRESH_EXPIRES_IN,
-    )
+    auth = await _auth_response(user, db)
     return MobileLoginExchangeResponse(
-        auth=_auth_response(user),
-        refreshToken=refresh_token,
-        expiresAt=_iso_from_epoch(int(time.time()) + MOBILE_REFRESH_EXPIRES_IN),
+        auth=auth,
+        refreshToken=auth.refreshToken or "",
+        expiresAt=_iso_from_epoch(int(time.time()) + USER_REFRESH_EXPIRES_IN),
         serverTime=utc_now(),
     )
 
@@ -583,13 +604,33 @@ def _me_response(user: UserView) -> AuthMeResponse:
     )
 
 
-def _auth_response(user: UserView) -> AuthResponse:
+async def _auth_response(user: UserView, db: Store) -> AuthResponse:
+    now = int(time.time())
+    refresh_token = await _issue_refresh_token(user.userId, db)
     return AuthResponse(
         userId=user.userId,
         role=user.role,
         email=user.email, emailVerified=user.emailVerified, displayName=user.displayName,
         accessToken=create_user_access_token(user.userId),
+        refreshToken=refresh_token,
+        expiresAt=_iso_from_epoch(now + DEFAULT_USER_EXPIRES_IN),
         serverTime=utc_now(),
+    )
+
+
+async def _issue_refresh_token(user_id: str, db: Store) -> str:
+    stored = await db.user_password_hash(user_id)
+    return create_signed_token(
+        USER_REFRESH_TOKEN_KIND,
+        {
+            "sub": user_id,
+            "aud": USER_REFRESH_AUDIENCE,
+            "fp": password_fingerprint(stored),
+            # A fresh nonce keeps every rotation distinct even when two tokens
+            # are issued within the same second.
+            "jti": secrets.token_urlsafe(8),
+        },
+        USER_REFRESH_EXPIRES_IN,
     )
 
 
