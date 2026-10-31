@@ -89,6 +89,12 @@ async function performRefresh(): Promise<ApiAuthRefreshResult> {
         expireSession("rejected")
         return { status: "expired", reason: "rejected" }
       }
+      if (error.status === 404 || error.status === 405) {
+        // The server predates the refresh endpoint, so this session can never
+        // be rotated here. Ask for a re-login rather than looking offline.
+        expireSession("rejected")
+        return { status: "expired", reason: "rejected" }
+      }
       // Offline or a gateway failure: keep the session and let the caller
       // retry instead of forcing a re-login.
       return { status: "network", detail: error.detail }

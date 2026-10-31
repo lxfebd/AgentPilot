@@ -102,6 +102,21 @@ test("a rejected refresh token clears the session and reports expiry", async (t)
   unsubscribe()
 })
 
+test("a server without the refresh endpoint asks for a re-login", async (t) => {
+  for (const status of [404, 405]) {
+    storeSession()
+    t.mock.method(authApi, "refreshSession", async () => {
+      throw new ApiError({ status, kind: status === 404 ? "notFound" : "http", detail: `HTTP ${status}` })
+    })
+    const { events, unsubscribe } = collectEvents()
+    const outcome = await refreshStoredSession()
+    assert.deepEqual(outcome, { status: "expired", reason: "rejected" })
+    assert.equal(loadStoredSession(), null)
+    assert.deepEqual(events, [{ type: "expired", reason: "rejected" }])
+    unsubscribe()
+  }
+})
+
 test("a refresh network failure keeps the stored session", async (t) => {
   storeSession()
   t.mock.method(authApi, "refreshSession", async () => {
