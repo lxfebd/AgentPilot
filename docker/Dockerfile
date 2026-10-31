@@ -9,6 +9,12 @@ ENV NODE_ENV=production \
 
 WORKDIR /app/web-next
 
+# web-next depends on the repo-local packages/ui-core package via a
+# yarn portal dependency ("@agentpilot/ui-core": "portal:../packages/ui-core").
+# Copy it into the image before install so the portal resolves; the path
+# matches the workspace-relative portal target.
+COPY packages /app/packages
+
 COPY web-next/package.json web-next/.yarnrc.yml ./
 RUN corepack enable \
     && if [ -n "$YARN_REGISTRY" ]; then yarn config set npmRegistryServer "$YARN_REGISTRY"; fi \
