@@ -8,10 +8,12 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from loguru import logger
 
 from agent_server.core.api_namespace import api_v2_path
 from agent_server.core.auth import (
     DEFAULT_USER_EXPIRES_IN,
+    USER_REFRESH_EXPIRES_IN,
     create_signed_token,
     create_user_access_token,
     hash_password_verifier,
@@ -80,7 +82,6 @@ MOBILE_LOGIN_EXPIRES_IN = 120
 MOBILE_REFRESH_EXPIRES_IN = 60 * 60 * 24 * 30
 # Unified refresh token shared by every client (desktop / web / android / ios).
 USER_REFRESH_TOKEN_KIND = "user_refresh"
-USER_REFRESH_EXPIRES_IN = 60 * 60 * 24 * 30
 USER_REFRESH_AUDIENCE = "agent-pilot-user"
 
 
@@ -202,7 +203,7 @@ async def auth_login(payload: AuthRequest, db: Store = Depends(get_store)) -> Au
 
 @router.post("/auth/refresh", response_model=AuthResponse)
 async def auth_refresh(
-    payload: AuthRefreshRequest, db: Store = Depends(get_store),
+    payload: AuthRefreshRequest, request: Request, db: Store = Depends(get_store),
 ) -> AuthResponse:
     claims = verify_signed_token(USER_REFRESH_TOKEN_KIND, payload.refreshToken)
     if claims is None or claims.get("aud") != USER_REFRESH_AUDIENCE:
@@ -210,6 +211,22 @@ async def auth_refresh(
     user_id = str(claims.get("sub") or "")
     if not user_id:
         raise HTTPException(status_code=401, detail="refresh token is invalid or expired")
+    jti = str(claims.get("jti") or "")
+    family_id = str(claims.get("fam") or "")
+    if not jti:
+        raise HTTPException(status_code=401, detail="refresh token is invalid or expired")
+    refresh_tokens = request.app.state.refresh_tokens
+    # Theft detection: if the whole family is already revoked, reject immediately.
+    if await refresh_tokens.is_family_revoked(family_id):
+        raise HTTPException(status_code=401, detail="refresh token family revoked")
+    # Single-use: atomically claim this jti.  A second use means replay/theft.
+    if not await refresh_tokens.consume_jti(jti, family_id):
+        logger.warning(
+            "Refresh token jti {} replayed for family {} (user {}); revoking family",
+            jti, family_id, user_id,
+        )
+        await refresh_tokens.revoke_family(family_id)
+        raise HTTPException(status_code=401, detail="refresh token reuse detected")
     try:
         user = await db.get_user(user_id)
     except KeyError:
@@ -219,7 +236,7 @@ async def auth_refresh(
     stored = await db.user_password_hash(user_id)
     if str(claims.get("fp") or "") != password_fingerprint(stored):
         raise HTTPException(status_code=401, detail="password changed; sign in again")
-    return await _auth_response(user, db)
+    return await _auth_response(user, db, family_id=family_id)
 
 
 @router.post("/auth/email-code", response_model=EmailCodeResponse)
@@ -604,9 +621,9 @@ def _me_response(user: UserView) -> AuthMeResponse:
     )
 
 
-async def _auth_response(user: UserView, db: Store) -> AuthResponse:
+async def _auth_response(user: UserView, db: Store, *, family_id: str | None = None) -> AuthResponse:
     now = int(time.time())
-    refresh_token = await _issue_refresh_token(user.userId, db)
+    refresh_token = await _issue_refresh_token(user.userId, db, family_id=family_id)
     return AuthResponse(
         userId=user.userId,
         role=user.role,
@@ -618,8 +635,12 @@ async def _auth_response(user: UserView, db: Store) -> AuthResponse:
     )
 
 
-async def _issue_refresh_token(user_id: str, db: Store) -> str:
+async def _issue_refresh_token(user_id: str, db: Store, *, family_id: str | None = None) -> str:
     stored = await db.user_password_hash(user_id)
+    # A new login / registration always starts a fresh family.  Rotation
+    # (refresh) reuses the incoming token's family so theft detection can
+    # revoke the whole chain.
+    fam = family_id or secrets.token_urlsafe(8)
     return create_signed_token(
         USER_REFRESH_TOKEN_KIND,
         {
@@ -629,6 +650,8 @@ async def _issue_refresh_token(user_id: str, db: Store) -> str:
             # A fresh nonce keeps every rotation distinct even when two tokens
             # are issued within the same second.
             "jti": secrets.token_urlsafe(8),
+            # Token family: all rotations from one original grant share this id.
+            "fam": fam,
         },
         USER_REFRESH_EXPIRES_IN,
     )

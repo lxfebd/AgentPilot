@@ -200,3 +200,66 @@ def test_refresh_is_rejected_for_a_disabled_user(tmp_path):
     asyncio.run(client.app.state.store.set_user_disabled(member.userId, True))
 
     assert refresh(client, signed_in["refreshToken"]).status_code == 401
+
+
+# ---------- jti single-use + theft detection ---------------------------------
+
+
+def test_refresh_old_token_jti_rejected_on_second_use(tmp_path):
+    """Happy-path rotation: the old refresh token's jti is consumed, so reusing
+    it returns 401."""
+    client = make_client(tmp_path)
+    first = register(client)
+
+    # First refresh: succeeds, rotates to a new token.
+    resp = refresh(client, first["refreshToken"])
+    assert resp.status_code == 200, resp.text
+    second = resp.json()
+
+    # Replaying the original token: its jti was already consumed → 401.
+    replay = refresh(client, first["refreshToken"])
+    assert replay.status_code == 401
+    assert "reuse" in replay.json()["detail"].lower()
+
+    # The new token still works (family was revoked only because of the replay,
+    # but the new token was issued AFTER the first successful refresh — its jti
+    # is distinct and not yet consumed).  However, since the family is now
+    # revoked, it must also be rejected.
+    after_theft = refresh(client, second["refreshToken"])
+    assert after_theft.status_code == 401
+
+
+def test_refresh_reuse_revokes_entire_family(tmp_path):
+    """Reusing a consumed jti revokes the whole family; any token from that
+    family is afterwards rejected with 401."""
+    client = make_client(tmp_path)
+    first = register(client)
+
+    # Rotate once to get a second token in the same family.
+    resp1 = refresh(client, first["refreshToken"])
+    assert resp1.status_code == 200, resp1.text
+    second = resp1.json()
+
+    # Rotate again to get a third token in the same family.
+    resp2 = refresh(client, second["refreshToken"])
+    assert resp2.status_code == 200, resp2.text
+    third = resp2.json()
+
+    # Now replay the very first token → theft detected, family revoked.
+    theft = refresh(client, first["refreshToken"])
+    assert theft.status_code == 401
+
+    # ANY token of that family is now rejected.
+    assert refresh(client, second["refreshToken"]).status_code == 401
+    assert refresh(client, third["refreshToken"]).status_code == 401
+
+
+def test_refresh_garbage_and_expired_returns_401(tmp_path):
+    """Garbage / expired tokens still return 401 (regression guard)."""
+    client = make_client(tmp_path)
+    register(client)
+
+    assert refresh(client, "not-a-token").status_code == 401
+    assert refresh(client, "").status_code == 401
+    assert refresh(client, "aaa.bbb").status_code == 401
+

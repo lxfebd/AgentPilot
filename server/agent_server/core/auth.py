@@ -14,6 +14,9 @@ from agent_server.core.secret import resolve_secret
 
 DEFAULT_EXPIRES_IN = 900
 DEFAULT_USER_EXPIRES_IN = 60 * 60 * 24 * 7
+# Refresh-token lifetime (30 days). Shared by the API layer and the
+# RefreshTokenService so consumed-jti / revoked-family keys use the same TTL.
+USER_REFRESH_EXPIRES_IN = 60 * 60 * 24 * 30
 
 # Username format: 3-32 chars, lowercase letters / digits / hyphen / underscore.
 # Stored lowercase regardless of input.
