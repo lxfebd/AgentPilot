@@ -66,6 +66,7 @@ from agent_server.services.device_runtimes import DeviceRuntimeService
 from agent_server.services.effective_capabilities import (
     publish_connector_session_capabilities,
 )
+from agent_server.services.refresh_tokens import RefreshTokenService
 from agent_server.services.schedule_executor import ScheduleExecutor
 from agent_server.services.session_runtime_state_cache import SessionRuntimeStateCache
 from agent_server.services.setup_tokens import SetupTokenService
@@ -282,6 +283,7 @@ def create_app(
         app.state.timeline_write_buffer, app.state.session_runtime_state_cache, app.state.timeline_broker,
     )
     app.state.ws_tickets = ClientWsTicketManager(app.state.redis)
+    app.state.refresh_tokens = RefreshTokenService(app.state.redis)
     app.state.setup_token = SetupToken()
     app.state.started_at_iso = utc_now()
     app.state.started_at_monotonic = time.monotonic()
