@@ -22,6 +22,17 @@ data class SessionsState(
     val archivedFirstPageIds: Set<String> = emptySet(),
     val sessionRequestGenerations: Map<String, Long> = emptyMap(),
     val nextRequestGeneration: Long = 1L,
+    /**
+     * Pin flips whose PATCH has not settled yet. Kept so a dashboard/session refresh that
+     * arrives mid-flight cannot revert the optimistic row (see [withPendingProjectPinsApplied]).
+     */
+    val pendingProjectPins: Map<String, PendingProjectPin> = emptyMap(),
+)
+
+data class PendingProjectPin(
+    val pinned: Boolean,
+    val pinnedAt: String?,
+    val previous: AgentProject,
 )
 
 data class SessionRequestStart(
@@ -66,6 +77,66 @@ fun SessionsState.withPatchedProject(project: AgentProject): SessionsState {
         errorMessage = null,
         hasLoaded = true,
     )
+}
+
+/**
+ * Optimistic pin toggle for the home screen. Applies the flip locally and immediately
+ * (so a tap always visibly reorders the list) without waiting for the PATCH round trip;
+ * the caller rolls back to the returned previous state if the server refuses.
+ */
+fun SessionsState.withOptimisticProjectPin(projectId: String, pinned: Boolean): SessionsState {
+    val current = projects.firstOrNull { it.id == projectId } ?: return this
+    val pinnedAt = if (pinned) java.time.Instant.now().toString() else null
+    val firstTap = pendingProjectPins[projectId]?.previous ?: current
+    return copy(
+        projects = projects
+            .map { project ->
+                if (project.id != projectId) project else project.copy(pinned = pinned, pinnedAt = pinnedAt)
+            }
+            .sortedWith(projectComparator()),
+        pendingProjectPins = pendingProjectPins + (
+            projectId to PendingProjectPin(pinned = pinned, pinnedAt = pinnedAt, previous = firstTap)
+        ),
+    )
+}
+
+/**
+ * Server accepted the pin PATCH: apply its authoritative row and stop overriding refetches.
+ */
+fun SessionsState.withConfirmedProjectPin(projectId: String, project: AgentProject): SessionsState {
+    val next = withPatchedProject(project)
+    return if (projectId in pendingProjectPins) {
+        next.copy(pendingProjectPins = next.pendingProjectPins - projectId)
+    } else {
+        next
+    }
+}
+
+/**
+ * Server refused the PATCH: restore the project as it looked before the tap.
+ */
+fun SessionsState.withRolledBackProjectPin(projectId: String): SessionsState {
+    val pending = pendingProjectPins[projectId] ?: return this
+    return copy(
+        projects = projects
+            .map { project -> if (project.id == projectId) pending.previous else project }
+            .sortedWith(projectComparator()),
+        pendingProjectPins = pendingProjectPins - projectId,
+    )
+}
+
+/**
+ * Re-apply in-flight pin flips on top of a fresh server list. Without this a dashboard
+ * refresh that lands while the PATCH is still in flight returns the old `pinned` value
+ * and the row visibly jumps back, which reads as "the pin button does not work".
+ */
+fun SessionsState.withPendingProjectPinsApplied(): SessionsState {
+    if (pendingProjectPins.isEmpty()) return this
+    val patched = projects.map { project ->
+        val pending = pendingProjectPins[project.id] ?: return@map project
+        project.copy(pinned = pending.pinned, pinnedAt = pending.pinnedAt)
+    }
+    return copy(projects = patched.sortedWith(projectComparator()))
 }
 
 fun SessionsState.beginSessionRequest(ids: Collection<String> = emptyList()): SessionRequestStart {
@@ -233,7 +304,8 @@ fun SessionsState.replacedByDashboardSnapshot(loaded: SessionsState): SessionsSt
         archivedSessions = accepted.filter { it.archived }.sortedWith(archivedSessionComparator()),
         sessionRequestGenerations = sessionRequestGenerations,
         nextRequestGeneration = nextRequestGeneration,
-    )
+        pendingProjectPins = pendingProjectPins,
+    ).withPendingProjectPinsApplied()
 }
 
 fun SessionsState.withSessionPageLoading(archived: Boolean, loading: Boolean): SessionsState {

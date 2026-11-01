@@ -65,6 +65,7 @@ class SessionsApi(
             path = "/projects/${projectId.urlEncode()}",
             body = body,
             authorizationToken = authorizationToken,
+            readTimeoutSeconds = PROJECT_MUTATION_READ_TIMEOUT_SECONDS,
         )
         return RemoteProjectResponse(
             project = response.getJSONObject("project").toRemoteProject(),
@@ -335,6 +336,19 @@ class SessionsApi(
         ).toRemoteSessionTimelinePage()
     }
 
+    fun getSessionTimelineLatest(
+        serverUrl: String,
+        authorizationToken: String,
+        sessionId: String,
+        limit: Int = 100,
+    ): RemoteSessionTimelinePage {
+        return client.getJson(
+            serverUrl = serverUrl,
+            path = "/sessions/${sessionId.urlEncode()}/timeline?mode=latest&limit=$limit",
+            authorizationToken = authorizationToken,
+        ).toRemoteSessionTimelinePage()
+    }
+
     fun getSessionSnapshot(
         serverUrl: String,
         authorizationToken: String,
@@ -488,6 +502,7 @@ class SessionsApi(
             path = "/sessions/${sessionId.urlEncode()}/runtime/messages",
             body = body,
             authorizationToken = authorizationToken,
+            readTimeoutSeconds = SEND_MESSAGE_READ_TIMEOUT_SECONDS,
         ).toRemoteRpcResponse()
     }
 
@@ -1067,6 +1082,23 @@ class SessionsApi(
 
     private companion object {
         const val CREATE_AND_START_READ_TIMEOUT_SECONDS = 75L
+
+        /**
+         * Server-to-connector RPC for `session.send_message` waits up to 30s by default, and the
+         * connector itself then waits for the bridge to admit the turn. The default 15s read
+         * timeout cut that wait short and surfaced a failure even when the message had already
+         * been accepted. Delivery is confirmed by the timeline echo, so this timeout only needs
+         * to cover admission, not the whole turn.
+         */
+        const val SEND_MESSAGE_READ_TIMEOUT_SECONDS = 75L
+
+        /**
+         * Project mutations (pin/unpin/rename) are small local writes, but they share the
+         * server round trip over a mobile network and the caller rolls its optimistic
+         * update back on failure. The default 15s read timeout made a slow tap look like a
+         * dead button, so allow the request to outlive a congested link before giving up.
+         */
+        const val PROJECT_MUTATION_READ_TIMEOUT_SECONDS = 45L
         const val MAX_ATTACHMENT_DOWNLOAD_BYTES = 25L * 1024L * 1024L
         const val MAX_ATTACHMENT_DOWNLOAD_BASE64_CHARS = 34_952_536
     }

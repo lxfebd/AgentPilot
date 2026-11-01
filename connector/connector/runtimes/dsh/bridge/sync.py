@@ -31,12 +31,18 @@ _DURABLE_NOTIFICATIONS = {
     "session.inventory.begin", "session.inventory.complete",
 }
 
+# Projection versions this Connector can consume. A version bump means the
+# bridge changed how it derives the timeline projection, so its own replay
+# still produces the same item shape; the version only guards stale durable
+# checkpoints and lets the bridge decide to replay history.
+SUPPORTED_PROJECTION_VERSIONS = (2, 3, 4)
+
 
 def _checkpoint(value: Any) -> dict[str, Any] | None:
     if not isinstance(value, Mapping):
         return None
     seq, fingerprint = value.get("throughSeq"), value.get("historyHash")
-    if (value.get("version") != 1 or value.get("projectionVersion") not in (2, 3)
+    if (value.get("version") != 1 or value.get("projectionVersion") not in SUPPORTED_PROJECTION_VERSIONS
         or type(seq) is not int or not -1 <= seq <= 9007199254740991
         or type(value.get("settled")) is not bool or not isinstance(fingerprint, str)
         or len(fingerprint) != 64 or any(c not in "0123456789abcdef" for c in fingerprint)):
@@ -293,7 +299,7 @@ class SyncRelay:
         try:
             subscription = await self.client.request("runtime.sync.subscribe", {"checkpointVersion": 1})
             projection_version = subscription.get("projectionVersion")
-            if projection_version not in (2, 3):
+            if projection_version not in SUPPORTED_PROJECTION_VERSIONS:
                 raise ValueError("Unsupported DSH projection version")
             stream_id, expected = subscription["streamId"], 1
             self.durable_checkpoints = subscription.get("checkpointVersion") == 1

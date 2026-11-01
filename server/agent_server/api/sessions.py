@@ -342,6 +342,49 @@ def _session_rpc_timeout_seconds() -> float:
         return 10.0
 
 
+def _snapshot_facts_timeout_seconds() -> float:
+    """Budget for connector round trips inside a snapshot.
+
+    First paint must not wait out the full live-RPC timeout when the runtime is busy (for
+    example mid-compaction): once the budget expires the RPC is cancelled and the snapshot
+    falls back to persisted capability facts / no notices.
+    """
+    try:
+        return float(os.environ.get("AGENT_SERVER_SNAPSHOT_FACTS_TIMEOUT_SECONDS", "3"))
+    except ValueError:
+        return 3.0
+
+
+async def _read_notices_with_snapshot_budget(
+    manager: ConnectorRpcManager,
+    session: SessionView,
+) -> list[NoticeIn]:
+    try:
+        return await asyncio.wait_for(
+            read_session_notices_for_snapshot(manager, session),
+            timeout=_snapshot_facts_timeout_seconds(),
+        )
+    except TimeoutError:
+        return []
+
+
+async def _read_capabilities_with_snapshot_budget(
+    db: Store,
+    manager: ConnectorRpcManager,
+    session: SessionView,
+    user_id: str | None,
+) -> ProtocolCapabilitySet:
+    try:
+        return await asyncio.wait_for(
+            read_session_capabilities_with_fallback(db, manager, session, user_id),
+            timeout=_snapshot_facts_timeout_seconds(),
+        )
+    except TimeoutError:
+        return ProtocolCapabilitySet.model_validate(
+            await db.get_protocol_capabilities(session.connectorId, user_id=user_id)
+        )
+
+
 @router.post("")
 async def create_session(
     payload: SessionCreateRequest,
@@ -916,45 +959,44 @@ async def session_snapshot(
         log_snapshot_stage("authorization", stage_started_at)
 
         stage_started_at = time.monotonic()
-        notices = await read_session_notices_for_snapshot(manager, session)
-        log_snapshot_stage("notices", stage_started_at)
+        # The local facts are independent of the connector round trips: gather them so the
+        # DB-backed reads do not stack behind the slower RPCs.
+        (
+            runtime_state,
+            session_with_status,
+            model_catalog,
+            permission_catalog,
+        ) = await asyncio.gather(
+            read_runtime_state_snapshot(
+                db,
+                runtime_state_cache,
+                session,
+                user_id,
+            ),
+            with_effective_session_connector_status(manager, session),
+            catalogs.model_catalog(
+                session.connectorId,
+                runtime_id=_session_runtime_id(session),
+                user_id=user_id,
+            ),
+            catalogs.permission_catalog(
+                session.connectorId,
+                runtime_id=_session_runtime_id(session),
+                user_id=user_id,
+            ),
+        )
+        session = session_with_runtime_state(session_with_status, runtime_state)
+        log_snapshot_stage("local_facts", stage_started_at)
 
         stage_started_at = time.monotonic()
-        # First paint must not wait on a runtime-owned history read.
-        runtime_state = await read_runtime_state_snapshot(
-            db,
-            runtime_state_cache,
-            session,
-            user_id,
+        # Connector round trips run inside a short budget so a busy runtime (for example
+        # mid-compaction) can no longer hold the first paint for the full RPC timeout. On
+        # expiry the RPC is cancelled and the snapshot falls back to persisted facts.
+        runtime_capabilities, notices = await asyncio.gather(
+            _read_capabilities_with_snapshot_budget(db, manager, session, user_id),
+            _read_notices_with_snapshot_budget(manager, session),
         )
-        log_snapshot_stage("runtime_state", stage_started_at)
-        session = session_with_runtime_state(session, runtime_state)
-
-        stage_started_at = time.monotonic()
-        session = await with_effective_session_connector_status(manager, session)
-        log_snapshot_stage("connector_status", stage_started_at)
-
-        stage_started_at = time.monotonic()
-        runtime_capabilities = await read_session_capabilities_with_fallback(
-            db,
-            manager,
-            session,
-            user_id,
-        )
-        log_snapshot_stage("capabilities", stage_started_at)
-
-        stage_started_at = time.monotonic()
-        model_catalog = await catalogs.model_catalog(
-            session.connectorId,
-            runtime_id=_session_runtime_id(session),
-            user_id=user_id,
-        )
-        permission_catalog = await catalogs.permission_catalog(
-            session.connectorId,
-            runtime_id=_session_runtime_id(session),
-            user_id=user_id,
-        )
-        log_snapshot_stage("catalogs", stage_started_at)
+        log_snapshot_stage("connector_facts", stage_started_at)
 
         stage_started_at = time.monotonic()
         async with timeline_write_buffer.session_fence(session_id):

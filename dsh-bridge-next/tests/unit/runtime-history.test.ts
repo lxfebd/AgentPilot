@@ -192,6 +192,30 @@ test('compaction keeps original messages and ignores internal informational even
   assert.ok(!items.some(item => item.content.eventType === 'extension/notice'))
 })
 
+test('one compaction emits a single marker even though it fires start/summary/end/prune', () => {
+  const snapshot = log([...start,
+    { type: 'compaction/start', data: { compactionId: 'c1' } },
+    { type: 'compaction/summary', data: { summary: 'compressed', shadowedTokenCount: 5000 } },
+    { type: 'compaction/prune', data: { compactionId: 'c1' } },
+    { type: 'compaction/end', data: { compactionId: 'c1' } },
+    { type: 'compaction/start', data: { compactionId: 'c2' } },
+    // c2 never emits a summary (e.g. baseline began mid-compaction): end alone still
+    // yields exactly one marker so the loss is not invisible — but never two.
+    { type: 'compaction/end', data: { compactionId: 'c2' } },
+  ])
+  const compact = projectHistory(snapshot, 'platform')
+    .filter(item => item.type === 'marker' && item.content.kind === 'compact')
+  assert.equal(compact.length, 2)
+  assert.equal(compact[0]?.content.eventType, 'compaction/summary')
+  assert.equal(compact[1]?.content.eventType, 'compaction/end')
+})
+
+test('standalone compaction/prune produces no timeline marker', () => {
+  const snapshot = log([...start, { type: 'compaction/prune', data: { seqs: [1, 2, 3] } }])
+  const items = projectHistory(snapshot, 'platform')
+  assert.ok(!items.some(item => item.type === 'marker' && item.content.kind === 'compact'))
+})
+
 test('canonical identities and hashes match the shared cross-language fixtures', async () => {
   const fixture = JSON.parse(await readFile(new URL('../../../contracts/dsh-bridge/1.0/fixtures/identity.json', import.meta.url), 'utf8'))
   for (const entry of fixture.sessionIds) assert.equal(sessionId(entry.connectorId, entry.externalSessionId), entry.sessionId)

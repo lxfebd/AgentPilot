@@ -8,7 +8,7 @@ import { enrichToolResult, parentToolItem, resultContent, toolContent } from './
 import { json, record, type Data, type ItemStatus, type ItemType, type TimelineItem } from './types.js'
 
 // Bump when replay semantics change so old checkpoints rebuild their timeline.
-export const PROJECTION_VERSION = 3
+export const PROJECTION_VERSION = 4
 
 // Older persisted logs and fixtures can still carry the pre-rc.1 chunk vocabulary.
 type LegacyChunk = { type: 'assistant/chunk', seq: SessionEvent['seq'], time: number,
@@ -48,6 +48,12 @@ export function createProjection(externalId: string, platformId: string, fingerp
   let turnId: string | null = null
   let turnStart = -1
   let nextOrder = 0
+  // One compaction produces several events (start/summary/end/prune). Emitting a
+  // marker for each floods the timeline with 3-4 "上下文压缩" rows per compaction,
+  // which on mobile wastes the visible window and reads as "满屏压缩". Coalesce
+  // them into a single marker, emitted on summary (start says nothing happened yet
+  // and prune is pure housekeeping).
+  let compactionPending: { seq: number, summarized: boolean } | null = null
 
   // The platform is the only reader of contentHash, so it is computed once per
   // drain/snapshot instead of on every streaming chunk. Canonical hashing walks
@@ -241,9 +247,23 @@ export function createProjection(externalId: string, platformId: string, fingerp
         ...previous?.content, kind: 'permission', title: '工具授权记录', readOnly: true,
         ...json(data) as Data,
       })
-    } else if (String(event.type).startsWith('compaction/')) {
+    } else if (eventType === 'compaction/start') {
+      compactionPending = { seq: Number(event.seq), summarized: false }
+    } else if (eventType === 'compaction/summary') {
       put('event', String(event.seq), event, 'marker', 'done', 'system',
-        { kind: 'compact', title: '上下文压缩', eventType: event.type, details: json(event.data) })
+        { kind: 'compact', title: '上下文压缩', eventType, details: json(data) })
+      if (compactionPending) compactionPending.summarized = true
+    } else if (eventType === 'compaction/end') {
+      // A compaction that never emitted its summary (e.g. the baseline began after
+      // start) still deserves one marker so the loss is visible; otherwise end only
+      // closes the coalesced row already emitted by summary.
+      if (!compactionPending?.summarized) {
+        put('event', String(event.seq), event, 'marker', 'done', 'system',
+          { kind: 'compact', title: '上下文压缩', eventType, details: json(data) })
+      }
+      compactionPending = null
+    } else if (eventType === 'compaction/prune') {
+      // Pure housekeeping folded into the compaction marker; emit nothing.
     }
     // Internal and unknown informational events deliberately produce no Timeline item.
   }

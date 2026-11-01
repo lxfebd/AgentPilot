@@ -16,12 +16,22 @@ import com.agentpilot.app.model.AgentSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.max
 import org.json.JSONObject
 
 private const val INITIAL_TIMELINE_LIMIT = 100
 private const val TIMELINE_PAGE_LIMIT = 100
+
+/** How many newest timeline items to scan for the echo of an indeterminate send. */
+private const val SEND_ECHO_LOOKUP_LIMIT = 100
+
+/** Wait between echo polls; the server can take seconds to fan the message back through the connector. */
+private const val SEND_ECHO_RETRY_DELAY_MILLIS = 2_000L
+
+/** Total echo polls before giving up and surfacing the failure (2s * 6 = up to 12s). */
+private const val SEND_ECHO_CONFIRM_ATTEMPTS = 6
 
 class SessionDetailController(
     private val sessionsApi: SessionsApi,
@@ -762,12 +772,13 @@ class SessionDetailController(
         status: String,
         attachments: List<TimelineAttachment> = emptyList(),
         errorMessage: String? = null,
+        badge: String? = null,
     ): SessionDetailState {
         val updatedMessages = state.messages.map { message ->
             if (message.id == clientMessageId && message.optimistic) {
                 message.copy(
                     status = status,
-                    badge = status.statusLabel(),
+                    badge = badge ?: status.statusLabel(),
                     attachments = attachments.ifEmpty { message.attachments },
                     errorMessage = errorMessage,
                 )
@@ -797,6 +808,45 @@ class SessionDetailController(
         return state.messages.any { message ->
             !message.optimistic && message.matchesClientMessage(clientMessageId)
         }
+    }
+
+    /**
+     * Reads only the newest timeline page and reports whether the server ever echoed the
+     * [clientMessageId] back as a real user message. Used after a send whose HTTP outcome is
+     * unknown (transport error / 5xx), so a message that was actually admitted server-side is
+     * never shown pinned as failed.
+     */
+    suspend fun findSendEcho(sessionId: String, clientMessageId: String): Boolean =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                val page = sessionsApi.getSessionTimelineLatest(
+                    serverUrl = auth.serverUrl,
+                    authorizationToken = auth.accessToken,
+                    sessionId = sessionId,
+                    limit = SEND_ECHO_LOOKUP_LIMIT,
+                )
+                page.items.any { item ->
+                    item.type == "message" &&
+                        item.source.optString("clientMessageId") == clientMessageId
+                }
+            }.getOrDefault(false)
+        }
+
+    /**
+     * Polls the newest timeline page for the echo of an indeterminate send. Returns true as soon
+     * as the message shows up; otherwise keeps polling for up to ~12s before giving up.
+     */
+    suspend fun confirmSendEcho(
+        sessionId: String,
+        clientMessageId: String,
+        attempts: Int = SEND_ECHO_CONFIRM_ATTEMPTS,
+    ): Boolean {
+        repeat(attempts) {
+            if (findSendEcho(sessionId, clientMessageId)) return true
+            delay(SEND_ECHO_RETRY_DELAY_MILLIS)
+        }
+        return false
     }
 
     fun optimisticMessages(sessionId: String): List<TimelineMessage> = optimisticStore.read(sessionId)

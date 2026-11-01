@@ -36,6 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -123,6 +124,7 @@ private val SessionWelcomeFontFamily = FontFamily(
     Font(R.font.newsreader_opsz_wght, FontWeight(650)),
 )
 
+@Immutable
 internal sealed interface TimelineRenderItem {
     val key: String
     val messages: List<TimelineMessage>
@@ -131,25 +133,42 @@ internal sealed interface TimelineRenderItem {
     val sourceRuntime: String
         get() = messages.firstOrNull()?.sourceRuntime.orEmpty()
 
+    @Immutable
     data class Single(val message: TimelineMessage) : TimelineRenderItem {
         override val key: String = message.id
         override val messages: List<TimelineMessage> = listOf(message)
     }
 
+    @Immutable
     data class ToolRun(override val messages: List<TimelineMessage>) : TimelineRenderItem {
         override val key: String = "tool-run:${messages.firstOrNull()?.id ?: "unknown"}"
     }
 
+    @Immutable
     data class Reconnect(override val messages: List<TimelineMessage>) : TimelineRenderItem {
         override val key: String = "reconnect:${messages.firstOrNull()?.id ?: "unknown"}"
     }
 
+    @Immutable
     data class AgentCalls(
         val parentItemId: String,
         override val messages: List<TimelineMessage>,
     ) : TimelineRenderItem {
         override val key: String = "agent-calls:$parentItemId:${messages.firstOrNull()?.id ?: "unknown"}"
     }
+
+    /**
+     * Reuse key for the lazy list slot: rows are only recycled between items of the
+     * same shape, so switching between a text message and a tool-run group cannot
+     * force a full re-measure of an unrelated row's slot.
+     */
+    val renderContentType: String
+        get() = when (this) {
+            is Single -> "message"
+            is ToolRun -> "tool-run"
+            is Reconnect -> "reconnect"
+            is AgentCalls -> "agent-calls"
+        }
 }
 
 @Composable
@@ -446,15 +465,19 @@ internal fun MessageList(
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                item(key = "bottom-space") { Spacer(Modifier.height(bottomContentPadding)) }
+                item(key = "bottom-space", contentType = "spacer") { Spacer(Modifier.height(bottomContentPadding)) }
                 if (displayWorkingLabel != null) {
-                    item(key = "working-indicator") {
+                    item(key = "working-indicator", contentType = "working") {
                         DisableSelection {
                             WorkingIndicator(label = displayWorkingLabel)
                         }
                     }
                 }
-                items(detachedNotices.asReversed(), key = { "notice:${it.noticeId}" }) { notice ->
+                items(
+                    detachedNotices.asReversed(),
+                    key = { "notice:${it.noticeId}" },
+                    contentType = { "notice" },
+                ) { notice ->
                     RuntimeNoticeCard(
                         notice = notice,
                         busy = notice.noticeId in respondingNoticeIds,
@@ -464,7 +487,11 @@ internal fun MessageList(
                         notificationOnly = notice.type == "notification",
                     )
                 }
-                items(timelineItems.asReversed(), key = { it.key }) { item ->
+                items(
+                    timelineItems.asReversed(),
+                    key = { it.key },
+                    contentType = { item -> item.renderContentType },
+                ) { item ->
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         runtimeDividerByItemId[item.key]?.let { runtime ->
                             RuntimeSourceDivider(runtime = runtime, darkMode = darkMode)
@@ -516,13 +543,13 @@ internal fun MessageList(
                     }
                 }
                 if (loadingOlder) {
-                    item(key = "loading-older") {
+                    item(key = "loading-older", contentType = "loading") {
                         DisableSelection {
                             OlderMessagesLoadingIndicator()
                         }
                     }
                 }
-                item(key = "top-space") { Spacer(Modifier.height(74.dp)) }
+                item(key = "top-space", contentType = "spacer") { Spacer(Modifier.height(74.dp)) }
             }
         }
 

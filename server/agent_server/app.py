@@ -239,6 +239,9 @@ def create_app(
     app.state.terminal_stream_hub = TerminalStreamHub(app.state.redis)
     app.state.timeline_broker = TimelineBroker(
         app.state.redis,
+        # Coalesce the per-second dashboard.changed fan-out: one flush per
+        # 0.5s window instead of one full snapshot per timeline flush.
+        dashboard_debounce_seconds=float(os.getenv("AGENT_SERVER_DASHBOARD_DEBOUNCE_SECONDS", "0.5")),
         event_workers=process_settings.event_workers,
         event_threshold_bytes=int(os.getenv("AGENT_SERVER_EVENT_THRESHOLD_BYTES", str(256 * 1024))),
         event_queue_items=int(os.getenv("AGENT_SERVER_EVENT_QUEUE_ITEMS", "32")),

@@ -162,6 +162,7 @@ class ApiClient(
         path: String,
         body: JSONObject,
         authorizationToken: String? = null,
+        readTimeoutSeconds: Long? = null,
     ): JSONObject {
         return requestJson(
             serverUrl = serverUrl,
@@ -169,6 +170,7 @@ class ApiClient(
             method = "PATCH",
             bodyText = body.toString(),
             authorizationToken = authorizationToken,
+            readTimeoutSeconds = readTimeoutSeconds,
         )
     }
 

@@ -63,6 +63,10 @@ import com.agentpilot.app.feature.sessions.replacedByDashboardSnapshot
 import com.agentpilot.app.feature.sessions.withDeletedDevice
 import com.agentpilot.app.feature.sessions.withPatchedDevice
 import com.agentpilot.app.feature.sessions.withPatchedProject
+import com.agentpilot.app.feature.sessions.withOptimisticProjectPin
+import com.agentpilot.app.feature.sessions.withConfirmedProjectPin
+import com.agentpilot.app.feature.sessions.withRolledBackProjectPin
+import com.agentpilot.app.feature.sessions.withPendingProjectPinsApplied
 import com.agentpilot.app.feature.sessions.withPatchedSession
 import com.agentpilot.app.feature.sessions.withPatchedSessions
 import com.agentpilot.app.feature.sessions.withMissingSessionsRemoved
@@ -509,7 +513,7 @@ fun AgentPilotApp(
         val version = ++projectsRequestVersion
         return sessionsController.loadProjects().onSuccess { projects ->
             if (sessionStore.readAccessToken() == token && projectsRequestVersion == version) {
-                sessionsState = sessionsState.copy(projects = projects)
+                sessionsState = sessionsState.copy(projects = projects).withPendingProjectPinsApplied()
             }
         }
     }
@@ -706,7 +710,9 @@ fun AgentPilotApp(
         val serverUrl = realtimeServerUrl
         val accessToken = realtimeAccessToken
         while (true) {
-            kotlinx.coroutines.delay(20_000)
+            // Foreground fallback poll: 8s — the WS carries the live stream,
+            // this only closes the gap while the dashboard socket is down.
+            kotlinx.coroutines.delay(8_000)
             if (sessionStore.readServerUrl() != serverUrl ||
                 sessionStore.readAccessToken() != accessToken
             ) return@LaunchedEffect
@@ -1010,10 +1016,20 @@ fun AgentPilotApp(
             if (!hasAuthSession) {
                 Result.failure(IllegalStateException("Sign in again to update this project."))
             } else {
+                // Settle a pin toggle locally first: on a congested mobile link the PATCH
+                // can take seconds, and waiting for it made the home-screen pin action look
+                // dead. The pending entry also keeps refreshes from reverting the row while
+                // the request is in flight; failure restores the pre-tap row.
+                if (pinned != null) {
+                    sessionsState = sessionsState.withOptimisticProjectPin(projectId, pinned)
+                }
                 sessionsController.updateProject(projectId, name, pinned)
                     .onSuccess { project ->
                         projectsRequestVersion++
-                        sessionsState = sessionsState.withPatchedProject(project)
+                        sessionsState = sessionsState.withConfirmedProjectPin(projectId, project)
+                    }
+                    .onFailure {
+                        if (pinned != null) sessionsState = sessionsState.withRolledBackProjectPin(projectId)
                     }
             }
         },

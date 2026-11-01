@@ -1,5 +1,7 @@
 package com.agentpilot.app.feature.sessiondetail
 
+import androidx.compose.runtime.Immutable
+
 data class SessionTimelineState(
     val messages: List<TimelineMessage> = emptyList(),
     val orderingItems: List<TimelineOrderingItem> = emptyList(),
@@ -23,6 +25,15 @@ data class TimelineOrderingItem(
     val updatedSeq: Int,
 )
 
+/**
+ * Rows are rendered inside a [LazyColumn] fed by the realtime streaming pipeline:
+ * every batch produces a new message list, but unchanged messages keep the same
+ * instance. Declaring the model immutable lets the compiler treat it (and the
+ * wrappers holding it) as stable, so untouched rows are skipped instead of being
+ * recomposed on every batch. The list properties must never be mutated in place —
+ * projections build new lists instead.
+ */
+@Immutable
 data class TimelineMessage(
     val id: String,
     val sourceItemId: String = id,

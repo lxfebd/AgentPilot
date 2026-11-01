@@ -284,8 +284,13 @@ class SessionRealtimeController(
     }
 
     private companion object {
-        /** Bounded incoming message buffer; overflow triggers a cursor recovery. */
-        const val SESSION_EVENT_CHANNEL_CAPACITY = 128
+        /**
+         * Bounded incoming message buffer; overflow cancels the socket and forces a cursor
+         * recovery. A busy session (a long turn streaming text, a compaction burst) easily
+         * exceeds a few hundred frames while the consumer replays a batch, and every
+         * overflow used to cost a full reconnect + recovery cycle on the phone.
+         */
+        const val SESSION_EVENT_CHANNEL_CAPACITY = 512
         const val MAX_RECOVERY_PAGES = 8
         const val MAX_TIMELINE_EVENT_BATCH_SIZE = 100
         const val MAX_WIRE_EVENT_BATCH_SIZE = 128

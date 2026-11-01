@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
+from contextlib import suppress
 
 from agent_server.infra.timeline_broker import TimelineBroker
 
@@ -19,6 +21,75 @@ def test_dashboard_events_are_debounced() -> None:
         assert payload["type"] == "dashboard.changed"
         assert payload["serverTime"] == "t2"
         assert queue.empty()
+
+    asyncio.run(exercise())
+
+
+def test_cancelled_flush_does_not_wedge_the_debounce() -> None:
+    async def exercise() -> None:
+        # A request-scoped teardown can cancel the in-flight flush; without
+        # self-cleanup the dead task stays registered and every later publish
+        # skips scheduling, silencing the dashboard stream until restart.
+        for started in (False, True):
+            broker = TimelineBroker(dashboard_debounce_seconds=5.0)
+            queue = await broker.register_dashboard("user1")
+
+            await broker.publish_dashboard(
+                "user1", {"reason": "first", "serverTime": "t1"}
+            )
+            scheduled = broker._dashboard_tasks["user1"]
+            if started:
+                # Let the task reach its sleep so the finally branch runs.
+                await asyncio.sleep(0)
+            scheduled.cancel()
+            with suppress(asyncio.CancelledError):
+                await scheduled
+            if started:
+                assert "user1" not in broker._dashboard_tasks
+
+            await broker.publish_dashboard(
+                "user1", {"reason": "second", "serverTime": "t2"}
+            )
+            broker._dashboard_debounce_seconds = 0.01
+            payload = json.loads(await asyncio.wait_for(queue.get(), timeout=1))
+            assert payload["serverTime"] == "t2", started
+
+    asyncio.run(exercise())
+
+
+def test_dashboard_flush_runs_on_the_subscriber_loop() -> None:
+    async def exercise() -> None:
+        broker = TimelineBroker(dashboard_debounce_seconds=0.05)
+        ready = threading.Event()
+        received: list[dict] = []
+
+        async def consume() -> None:
+            queue = await broker.register_dashboard("user1")
+            ready.set()
+            received.append(
+                json.loads(await asyncio.wait_for(queue.get(), timeout=3))
+            )
+
+        consumer_loop = asyncio.new_event_loop()
+        thread = threading.Thread(
+            target=consumer_loop.run_forever, daemon=True
+        )
+        thread.start()
+        consumer = asyncio.run_coroutine_threadsafe(consume(), consumer_loop)
+        try:
+            while not ready.is_set():
+                await asyncio.sleep(0.001)
+            # Publish from this loop, standing in for a request handler on a
+            # throwaway loop: the flush must still reach the subscriber.
+            await broker.publish_dashboard(
+                "user1", {"reason": "cross-loop", "serverTime": "t9"}
+            )
+            consumer.result(timeout=5)
+            assert received[0]["serverTime"] == "t9"
+        finally:
+            consumer_loop.call_soon_threadsafe(consumer_loop.stop)
+            thread.join(timeout=5)
+            consumer_loop.close()
 
     asyncio.run(exercise())
 

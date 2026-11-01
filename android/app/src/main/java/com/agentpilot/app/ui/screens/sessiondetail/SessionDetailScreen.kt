@@ -99,6 +99,7 @@ import com.agentpilot.app.feature.sessiondetail.completeSnapshotLoad
 import com.agentpilot.app.feature.sessiondetail.failSnapshotLoad
 import com.agentpilot.app.feature.sessiondetail.isValidAttachmentMediaType
 import com.agentpilot.app.feature.sessiondetail.isInternalRuntimeError
+import com.agentpilot.app.feature.sessiondetail.isIndeterminateSendFailure
 import com.agentpilot.app.feature.sessiondetail.sendErrorResourceId
 import com.agentpilot.app.feature.sessiondetail.hasPendingOptimisticSend
 import com.agentpilot.app.feature.sessiondetail.RuntimeCommand
@@ -800,6 +801,39 @@ fun SessionDetailScreen(
         }
     }
 
+    /**
+     * Quietly pulls the pages above the initial snapshot so opening a long session does not
+     * stop at the newest 100 items. No spinner and no error surface: a failed fill just ends
+     * and the manual scroll paging still works.
+     */
+    fun backfillHistory() {
+        val id = sessionId ?: return
+        if (!appVisible || !state.initialized) return
+        if (!state.hasMore || state.timeline.loadingOlder) return
+        if (!olderInFlight.compareAndSet(false, true)) return
+        scope.launch {
+            try {
+                var pages = 0
+                var beforeOrderSeq = state.timeline.orderingItems
+                    .minOfOrNull { it.orderSeq }
+                    ?: state.messages.filterNot { it.optimistic }.minOfOrNull { it.orderSeq }
+                while (pages < AUTO_BACKFILL_PAGES && appVisible && state.hasMore &&
+                    beforeOrderSeq != null && beforeOrderSeq > 1
+                ) {
+                    val older = controller.loadOlder(id, beforeOrderSeq).getOrNull() ?: break
+                    if (!appVisible) break
+                    state = controller.applyOlder(id, state, older)
+                    beforeOrderSeq = older.orderingItems.minOfOrNull { it.orderSeq }
+                        ?: older.messages.minOfOrNull { it.orderSeq }
+                        ?: beforeOrderSeq
+                    pages += 1
+                }
+            } finally {
+                olderInFlight.set(false)
+            }
+        }
+    }
+
     fun sendText(text: String) {
         val pending = preparedSession
         if (pending != null) {
@@ -941,6 +975,46 @@ fun SessionDetailScreen(
                         clearComposerDraft()
                         return@onFailure
                     }
+                    if (isIndeterminateSendFailure(error)) {
+                        // The HTTP call failed, but the request may already have been admitted
+                        // server-side (timeout / transport failure / 5xx). Keep the message
+                        // pending and confirm against the timeline instead of pinning it as
+                        // failed — that is what made delivered messages look unsent.
+                        state = controller.markOptimisticMessage(
+                            sessionId = id,
+                            state = state,
+                            clientMessageId = clientMessageId,
+                            status = "pending",
+                            attachments = optimisticAttachments,
+                            badge = context.getString(R.string.session_send_confirming),
+                        )
+                        scope.launch {
+                            if (controller.confirmSendEcho(id, clientMessageId)) {
+                                clearComposerDraft()
+                                if (retryClientMessageId == clientMessageId) retryClientMessageId = null
+                                state = controller.markOptimisticMessage(
+                                    sessionId = id,
+                                    state = state,
+                                    clientMessageId = clientMessageId,
+                                    status = "running",
+                                    attachments = optimisticAttachments,
+                                )
+                            } else {
+                                retryClientMessageId = clientMessageId
+                                saveComposerDraft(text, pendingAttachments, clientMessageId)
+                                state = controller.markOptimisticMessage(
+                                    sessionId = id,
+                                    state = state,
+                                    clientMessageId = clientMessageId,
+                                    status = "failed",
+                                    attachments = optimisticAttachments,
+                                    errorMessage = message,
+                                ).copy(actionError = message)
+                                showError(message)
+                            }
+                        }
+                        return@onFailure
+                    }
                     retryClientMessageId = clientMessageId
                     saveComposerDraft(text, pendingAttachments, clientMessageId)
                     state = controller.markOptimisticMessage(
@@ -957,7 +1031,10 @@ fun SessionDetailScreen(
 
     LaunchedEffect(state.messages, retryClientMessageId) {
         val retryId = retryClientMessageId ?: return@LaunchedEffect
-        if (controller.hasServerEcho(state, retryId)) clearComposerDraft()
+        if (controller.hasServerEcho(state, retryId)) {
+            clearComposerDraft()
+            retryClientMessageId = null
+        }
     }
 
     fun applyTakeover(enabled: Boolean) {
@@ -1287,6 +1364,13 @@ fun SessionDetailScreen(
     LaunchedEffect(sessionId, appVisible) {
         if (sessionId == null || !appVisible) return@LaunchedEffect
         if (!state.initialized) loadInitialSnapshot()
+    }
+
+    // After the snapshot lands, fill older pages in the background so a long session shows
+    // more than the newest page without the user scrolling up first.
+    LaunchedEffect(sessionId, appVisible, state.initialized) {
+        if (sessionId == null || !appVisible || !state.initialized) return@LaunchedEffect
+        backfillHistory()
     }
 
     LaunchedEffect(sessionId, appVisible, state.initialized, realtimeController) {
@@ -2584,3 +2668,10 @@ private const val MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
  * and projected once instead of once per wire batch (~30 per second).
  */
 private const val REALTIME_FRAME_MILLIS = 16L
+
+/**
+ * Older pages fetched automatically when a session opens. The snapshot only carries the
+ * newest page, so a long-running session otherwise looks like it never synced past its
+ * start until the user scrolls up ("还在开头", m00001).
+ */
+private const val AUTO_BACKFILL_PAGES = 3

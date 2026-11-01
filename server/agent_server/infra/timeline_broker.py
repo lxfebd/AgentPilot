@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import suppress
+from typing import Any
 
 from loguru import logger
 from redis.asyncio.retry import Retry
@@ -66,7 +67,11 @@ class TimelineBroker:
         self._subs: dict[str, set[asyncio.Queue[SharedMessage]]] = {}
         self._dashboard_subs: dict[str, set[asyncio.Queue[SharedMessage]]] = {}
         self._dashboard_pending: dict[str, dict] = {}
-        self._dashboard_tasks: dict[str, asyncio.Task[None]] = {}
+        self._dashboard_tasks: dict[str, Any] = {}
+        # Loop that owns each user's dashboard queues. A debounce flush must
+        # run where its subscribers live: spawning it on whichever request
+        # loop happened to publish would die with that request.
+        self._dashboard_loops: dict[str, asyncio.AbstractEventLoop] = {}
         self._dashboard_debounce_seconds = dashboard_debounce_seconds
         self._lock = asyncio.Lock()
         self._pubsub = None
@@ -125,6 +130,9 @@ class TimelineBroker:
 
     async def close(self) -> None:
         self._invalidate_subscription()
+        # _dashboard_tasks may hold concurrent futures when a flush was
+        # spawned on another loop; cancel() covers both, awaiting only the
+        # ones that are asyncio tasks.
         tasks = [*self._dashboard_tasks.values(), *self._preparation_tasks]
         if self._listener_task is not None:
             self._listener_task.cancel()
@@ -132,11 +140,14 @@ class TimelineBroker:
         for task in tasks:
             task.cancel()
         for task in tasks:
+            if not isinstance(task, asyncio.Task):
+                continue
             with suppress(asyncio.CancelledError):
                 await task
         self._listener_task = None
         self._dashboard_tasks.clear()
         self._dashboard_pending.clear()
+        self._dashboard_loops.clear()
         self._preparation_tasks.clear()
         if self._pubsub is not None:
             await self._pubsub.aclose()
@@ -214,17 +225,53 @@ class TimelineBroker:
                 **payload,
                 "type": "dashboard.changed",
             }
-            if user_id not in self._dashboard_tasks:
-                self._dashboard_tasks[user_id] = asyncio.create_task(
-                    self._flush_dashboard_later(user_id)
+            scheduled = self._dashboard_tasks.get(user_id)
+            if scheduled is None or scheduled.done():
+                # A flush that already died (cancelled or failed) must never
+                # wedge the debounce for this user, or every later publish
+                # would skip scheduling and the stream would go silent.
+                self._dashboard_tasks[user_id] = self._spawn_dashboard_flush(
+                    user_id
                 )
 
+    def _spawn_dashboard_flush(self, user_id: str) -> Any:
+        """Start the debounce flush on the loop that owns the dashboard queues."""
+
+        target = self._dashboard_loops.get(user_id)
+        try:
+            current: asyncio.AbstractEventLoop | None = (
+                asyncio.get_running_loop()
+            )
+        except RuntimeError:
+            current = None
+        if target is None or target is current or target.is_closed():
+            return asyncio.create_task(self._flush_dashboard_later(user_id))
+        return asyncio.run_coroutine_threadsafe(
+            self._flush_dashboard_later(user_id), target
+        )
+
     async def _flush_dashboard_later(self, user_id: str) -> None:
-        await asyncio.sleep(self._dashboard_debounce_seconds)
-        async with self._lock:
-            payload = self._dashboard_pending.pop(user_id, None)
-            self._dashboard_tasks.pop(user_id, None)
-            queues = list(self._dashboard_subs.get(user_id, ()))
+        try:
+            await asyncio.sleep(self._dashboard_debounce_seconds)
+            async with self._lock:
+                payload = self._dashboard_pending.pop(user_id, None)
+                queues = list(self._dashboard_subs.get(user_id, ()))
+        finally:
+            # Drop our registration no matter how we end: cancellation between
+            # the sleep and the fan-out (or a failure mid-flush) would
+            # otherwise leave a dead entry that every later publish sees as
+            # scheduled. A pending payload survives so the next scheduled
+            # flush still carries the newest state.
+            entry = self._dashboard_tasks.get(user_id)
+            if (
+                entry is None
+                or not isinstance(entry, asyncio.Task)
+                or entry is asyncio.current_task()
+            ):
+                # A cross-loop flush registers a concurrent future whose
+                # identity is not the task running here; scheduling is
+                # done()-guarded, so no newer entry can appear before we end.
+                self._dashboard_tasks.pop(user_id, None)
         if payload is None:
             return
         message = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -318,6 +365,7 @@ class TimelineBroker:
         queue: asyncio.Queue[SharedMessage] = asyncio.Queue(maxsize=256)
         async with self._lock:
             self._dashboard_subs.setdefault(user_id, set()).add(queue)
+            self._dashboard_loops[user_id] = asyncio.get_running_loop()
         return queue
 
     async def unregister_dashboard(
@@ -329,3 +377,4 @@ class TimelineBroker:
                 pool.discard(queue)
                 if not pool:
                     self._dashboard_subs.pop(user_id, None)
+                    self._dashboard_loops.pop(user_id, None)

@@ -528,6 +528,22 @@ internal fun isInternalRuntimeError(message: String?): Boolean {
         Regex("[a-z0-9_.]+(?:error|exception):").containsMatchIn(normalized)
 }
 
+/**
+ * Decides whether a failed send leaves the admission outcome *unknown* (the message may still
+ * have been accepted server-side) versus *determinately rejected*.
+ *
+ * - Transport errors and timeouts surface as [ApiException] without an HTTP status: the request
+ *   may have reached the server, so the outcome is indeterminate.
+ * - 5xx responses are also indeterminate — the message may have been enqueued before the error.
+ * - Anything without a 4xx status (including non-[ApiException] throws) is treated as
+ *   indeterminate on purpose: it is cheaper to confirm the echo for a few seconds than to pin a
+ *   message that actually landed as failed.
+ */
+internal fun isIndeterminateSendFailure(error: Throwable): Boolean {
+    val statusCode = (error as? ApiException)?.statusCode
+    return statusCode == null || statusCode >= 500
+}
+
 internal fun RemoteRuntimeNoticeAction.toRuntimeNoticeAction(): RuntimeNoticeAction {
     return RuntimeNoticeAction(
         actionId = actionId,
