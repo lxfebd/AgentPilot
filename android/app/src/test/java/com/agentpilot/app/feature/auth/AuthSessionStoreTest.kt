@@ -40,16 +40,25 @@ class AuthSessionStoreTest {
             ),
         )
         val encrypted = FakeSharedPreferences()
+        val legacySnapshot = legacy.values.toMap()
         var deleted = false
 
-        val completed = migrateLegacySessionValues(legacy, encrypted) { deleted = true }
+        val completed = migrateLegacySessionValues(legacy, encrypted) {
+            deleted = true
+            legacy.values.clear() // deleteSharedPreferences removes the whole plaintext file
+        }
 
         assertTrue(completed)
         assertTrue(deleted)
-        for (key in AuthSessionStore.LEGACY_KEYS) {
-            assertEquals(legacy.getString(key, null), encrypted.getString(key, null))
+        // Round-trip: every legacy value is readable from the encrypted store...
+        for ((key, value) in legacySnapshot) {
+            assertEquals(value, encrypted.getString(key, null))
         }
         assertEquals("refresh-1", encrypted.getString("refresh_token", null))
+        // ...and the plaintext keys are gone once the legacy store is deleted.
+        for (key in AuthSessionStore.LEGACY_KEYS) {
+            assertFalse("legacy key $key must be removed", legacy.contains(key))
+        }
     }
 
     @Test

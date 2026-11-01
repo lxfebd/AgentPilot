@@ -63,4 +63,39 @@ class ApkSignatureVerifierTest {
             dir.deleteRecursively()
         }
     }
+
+    @Test
+    fun signerDigestsEqualComparesSha256CertificateSets() {
+        val certA = "cert-a".toByteArray()
+        val certB = "cert-b".toByteArray()
+
+        assertTrue(signerDigestsEqual(listOf(certA), listOf(certA)))
+        // Order is irrelevant and duplicate certs collapse to a single digest.
+        assertTrue(signerDigestsEqual(listOf(certA, certB), listOf(certB, certA)))
+        assertTrue(signerDigestsEqual(listOf(certA, certA), listOf(certA)))
+
+        assertFalse(signerDigestsEqual(listOf(certA), listOf(certB)))
+        assertFalse(signerDigestsEqual(listOf(certA), listOf(certA, certB)))
+        assertFalse(signerDigestsEqual(listOf(certA, certB), listOf(certA)))
+    }
+
+    @Test
+    fun signerDigestsEqualFailsClosedWhenEitherSideHasNoSigner() {
+        val certA = "cert-a".toByteArray()
+        assertFalse(signerDigestsEqual(emptyList(), emptyList()))
+        assertFalse(signerDigestsEqual(listOf(certA), emptyList()))
+        assertFalse(signerDigestsEqual(emptyList(), listOf(certA)))
+    }
+
+    @Test
+    fun sha256DigestHexMatchesPublishedSha256Vectors() {
+        assertEquals(
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            sha256DigestHex("abc".toByteArray()),
+        )
+        assertEquals(
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            sha256DigestHex(ByteArray(0)),
+        )
+    }
 }
