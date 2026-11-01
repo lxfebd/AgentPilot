@@ -55,6 +55,7 @@ class ApiUrlsTest {
         assertFalse(usesLocalNetworkHost("172.15.0.1"))
         assertFalse(usesLocalNetworkHost("172.32.0.1"))
         assertFalse(usesLocalNetworkHost("256.1.1.1"))
+        assertFalse(usesLocalNetworkHost("1.2.3.4"))
         assertFalse(usesLocalNetworkHost("1.2.3"))
         assertFalse(usesLocalNetworkHost(""))
     }
