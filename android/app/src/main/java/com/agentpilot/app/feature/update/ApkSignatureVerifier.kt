@@ -18,11 +18,11 @@ import java.security.MessageDigest
  * running app's signer makes such an install impossible without the release
  * key, and it is a purely local check that needs no extra server contract.
  *
- * Identity is compared through SHA-256 fingerprints of the signer public keys
- * (API 28+, via SigningInfo.publicKeys) or of the raw certificate bytes (API
- * 27-). Both paths compare like-for-like on any given device, and the helper
- * functions used to fingerprint the material are pure JVM logic covered by
- * unit tests.
+ * Identity is compared through the SET of SHA-256 digests over the signer
+ * public keys (API 35+, via SigningInfo.publicKeys) or over the raw certificate
+ * bytes (below API 35). Both paths compare like-for-like on any given device.
+ * The digest-set comparison itself is pure JVM logic in ApkSignature.kt
+ * ([signerDigestsEqual]) and is covered by unit tests.
  */
 object ApkSignatureVerifier {
 
@@ -71,8 +71,11 @@ object ApkSignatureVerifier {
             PackageManager.GET_SIGNATURES
         }
 
-    /** SHA-256 fingerprints of every signer of a parsed package, or null when absent. */
-    private fun signerFingerprints(info: PackageInfo?): Set<String>? {
+    /**
+     * Raw signer material of a parsed package — public-key encodings on API 35+,
+     * certificate bytes below — or null when the package carries no signer.
+     */
+    private fun signerCerts(info: PackageInfo?): List<ByteArray>? {
         if (info == null) return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val signingInfo = info.signingInfo ?: return null
@@ -83,29 +86,29 @@ object ApkSignatureVerifier {
             if (Build.VERSION.SDK_INT >= 35) {
                 val keys = signingInfo.publicKeys ?: return null
                 if (keys.isEmpty()) return null
-                return keys.map { sha256Hex(it.encoded) }.toSet()
+                return keys.map { it.encoded }
             }
         }
         @Suppress("DEPRECATION")
         val signatures = info.signatures ?: return null
         if (signatures.isEmpty()) return null
-        return signatures.map { sha256Hex(it.toByteArray()) }.toSet()
+        return signatures.map { it.toByteArray() }
     }
 
     /**
-     * Compares the signer fingerprint set of [apk] with the set of the currently
-     * installed app. Any parse failure, missing signature, or non-file input
-     * yields [Verdict.Unreadable], so a broken download is treated as unsafe
-     * rather than passed to the installer.
+     * Compares the signer certificate set of [apk] with the set of the currently
+     * installed app via [signerDigestsEqual]. Any parse failure, missing
+     * signature, or non-file input yields [Verdict.Unreadable], so a broken
+     * download is treated as unsafe rather than passed to the installer.
      */
     fun verifyAgainstInstalled(context: Context, apk: File): Verdict {
         if (!isPlausibleApkFile(apk)) return Verdict.Unreadable
         val pm = context.packageManager
         @Suppress("DEPRECATION")
-        val apkFingerprints = signerFingerprints(pm.getPackageArchiveInfo(apk.path, signerFlags()))
+        val apkCerts = signerCerts(pm.getPackageArchiveInfo(apk.path, signerFlags()))
             ?: return Verdict.Unreadable
-        val installedFingerprints = signerFingerprints(pm.getPackageInfo(context.packageName, signerFlags()))
+        val installedCerts = signerCerts(pm.getPackageInfo(context.packageName, signerFlags()))
             ?: return Verdict.Unreadable
-        return if (apkFingerprints == installedFingerprints) Verdict.Verified else Verdict.Mismatch
+        return if (signerDigestsEqual(installedCerts, apkCerts)) Verdict.Verified else Verdict.Mismatch
     }
 }
