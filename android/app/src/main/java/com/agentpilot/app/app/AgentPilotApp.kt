@@ -710,7 +710,9 @@ fun AgentPilotApp(
         val serverUrl = realtimeServerUrl
         val accessToken = realtimeAccessToken
         while (true) {
-            kotlinx.coroutines.delay(20_000)
+            // Foreground fallback poll: 8s — the WS carries the live stream,
+            // this only closes the gap while the dashboard socket is down.
+            kotlinx.coroutines.delay(8_000)
             if (sessionStore.readServerUrl() != serverUrl ||
                 sessionStore.readAccessToken() != accessToken
             ) return@LaunchedEffect
