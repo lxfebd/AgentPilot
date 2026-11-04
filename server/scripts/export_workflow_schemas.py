@@ -27,7 +27,7 @@ def main() -> None:
             value["x-protocol-version"] = "1.2"
         else:
             value = model.model_json_schema()
-        value.update({"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": f"urn:agents-anywhere:runtime-workflows:1.2:{name}"})
+        value.update({"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": f"urn:agent-pilot:runtime-workflows:1.2:{name}"})
         content = (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
         path = f"schemas/{name}.schema.json"
         outputs[path] = content

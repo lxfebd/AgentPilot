@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "ProtocolWsTicketScope": {
+      "properties": {
+        "connectorId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Connectorid"
+        },
+        "dashboard": {
+          "default": false,
+          "title": "Dashboard",
+          "type": "boolean"
+        },
+        "sessionId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sessionid"
+        },
+        "terminalId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terminalid"
+        }
+      },
+      "title": "ProtocolWsTicketScope",
+      "type": "object"
+    }
+  },
+  "$id": "urn:agent-pilot:protocol:1.1:ws-ticket-request",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "clientId": {
+      "title": "Clientid",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/ProtocolWsTicketScope"
+    }
+  },
+  "required": [
+    "clientId",
+    "scope"
+  ],
+  "title": "ProtocolWsTicketRequest",
+  "type": "object",
+  "x-direction": "ingress",
+  "x-protocol-version": "1.1",
+  "x-pydantic-mode": "validation"
+}

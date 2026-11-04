@@ -1,0 +1,25 @@
+{
+  "protocolVersion": "1.2",
+  "artifacts": [
+    {
+      "slug": "prepare-request",
+      "path": "schemas/prepare-request.schema.json",
+      "sha256": "2660c5cf5e4a3310c556a0fb55422dcab16edb9ae4600cf729a3861d0a077f0a"
+    },
+    {
+      "slug": "creation-request",
+      "path": "schemas/creation-request.schema.json",
+      "sha256": "f1a043889d1c44086674e0328a42055c90c485fccb060f9dc9193ea9c547e9bd"
+    },
+    {
+      "slug": "interaction-response",
+      "path": "schemas/interaction-response.schema.json",
+      "sha256": "c357b14d822d90dbe1a97eeb1a23f830befd04557186216a21bb4d525b093872"
+    },
+    {
+      "slug": "workflow-view",
+      "path": "schemas/workflow-view.schema.json",
+      "sha256": "f89702b3c33a0e9a8ce8e039bcb9de900963d7de7a3168e0a8231c5c150f03e0"
+    }
+  ]
+}
