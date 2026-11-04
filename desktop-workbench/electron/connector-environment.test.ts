@@ -23,7 +23,7 @@ if (process.argv.includes('--version')) { console.log('uv fixture 1'); process.e
 fs.appendFileSync(process.env.CALLS, JSON.stringify(process.argv.slice(2))+'\\n');
 if (process.argv.includes('prepare-pi')) {
  if (process.env.FAIL_PI) { console.error(process.env.FAIL_PI); process.exit(2); }
- const finishPi = () => { fs.mkdirSync(process.env.AA_PI_NPM_ROOT,{recursive:true}); console.log('Pi ACP adapter and dependencies ready'); };
+ const finishPi = () => { fs.mkdirSync(process.env.AGENTPILOT_PI_NPM_ROOT,{recursive:true}); console.log('Pi ACP adapter and dependencies ready'); };
  console.log('Preparing Pi ACP adapter and dependencies');
  if (process.env.WAIT_PI) { const timer=setInterval(()=>{if(fs.existsSync(process.env.WAIT_PI)){clearInterval(timer);finishPi();}},20); }
  else finishPi();
@@ -37,7 +37,7 @@ const finish = () => {
   fs.writeFileSync(path.join(env,'pyvenv.cfg'), 'home = '+path.dirname(process.execPath)+'\\n');
   const python = path.join(bin, process.platform === 'win32' ? 'python.exe' : 'python');
   if (!fs.existsSync(python)) fs.symlinkSync(process.execPath,python);
-  fs.writeFileSync(path.join(bin,process.platform === 'win32' ? 'anywhere-cli.exe':'anywhere-cli'),'installed');
+  fs.writeFileSync(path.join(bin,process.platform === 'win32' ? 'agentpilot-cli.exe':'agentpilot-cli'),'installed');
   fs.writeFileSync(path.join(process.env.PROJECT,'uv.lock'),'resolved');
   console.error('Installed 2 packages in 1s');
 };
@@ -52,7 +52,7 @@ else finish();
 `;
   fs.writeFileSync(executable, script, { mode: 0o700 });
   const context: EnvironmentContext = { project, environment, uv: executable, python: process.execPath,
-    env: { ...process.env, CALLS: path.join(root, "calls"), PROJECT: project, UV_PROJECT_ENVIRONMENT: environment, AA_PI_NPM_ROOT: path.join(root, "pi-cache"), UV_CACHE_DIR: path.join(root, "cache") } };
+    env: { ...process.env, CALLS: path.join(root, "calls"), PROJECT: project, UV_PROJECT_ENVIRONMENT: environment, AGENTPILOT_PI_NPM_ROOT: path.join(root, "pi-cache"), UV_CACHE_DIR: path.join(root, "cache") } };
   const states: ConnectorEnvironmentState[] = [];
   let clock = Date.now();
   const make = (dataPath = root) => new ConnectorEnvironment({ dataPath, resolve: () => context, onState: s => states.push(s), log: () => {}, now: () => clock, watchdogMs: 120_000 });
@@ -89,7 +89,7 @@ test("receipt survives restart, rejects legacy and partial environments, and fin
   const f = fixture(t);
   // A pre-existing entry point is insufficient without a success receipt.
   const bin = path.join(f.context.environment, "bin"); fs.mkdirSync(bin, { recursive: true });
-  fs.writeFileSync(path.join(bin, "anywhere-cli"), "old");
+  fs.writeFileSync(path.join(bin, "agentpilot-cli"), "old");
   await f.manager.prepare(); assert.equal(f.calls().length, 1);
   await f.manager.shutdown();
   const restarted = f.make(); t.after(() => restarted.shutdown());
@@ -110,7 +110,7 @@ test("receipt survives restart, rejects legacy and partial environments, and fin
   const python = path.join(f.root, "python"); fs.symlinkSync(process.execPath, python); f.context.python = python;
   await restarted.prepare(); // Alias to same interpreter deliberately reuses the real path.
   assert.equal(f.calls().length, 6);
-  fs.rmSync(path.join(bin, "anywhere-cli"));
+  fs.rmSync(path.join(bin, "agentpilot-cli"));
   await restarted.prepare(); assert.equal(f.calls().length, 7, "partial environment cannot reuse receipt");
   assert.ok(!fs.readFileSync(path.join(f.root, ".connector-environment.json"), "utf8").includes("mirror.example"));
 });
@@ -187,7 +187,7 @@ test("Pi preparation blocks readiness, reports failure with a reusable Python en
   const calls = fs.readFileSync(f.context.env.CALLS!, "utf8").trim().split("\n").map(line => JSON.parse(line) as string[]);
   const pi = calls.filter(args => args.includes("prepare-pi"));
   assert.equal(pi.length, 2);
-  assert.equal(pi[1]?.at(-1), f.context.env.AA_PI_NPM_ROOT);
+  assert.equal(pi[1]?.at(-1), f.context.env.AGENTPILOT_PI_NPM_ROOT);
 });
 
 test("cancelling Pi preparation cancels environment readiness and permits retry", async t => {
