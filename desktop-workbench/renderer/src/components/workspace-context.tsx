@@ -36,6 +36,10 @@ import {
 import { sortSessionViews } from "@/components/session/session-list-order"
 import { hasDesktopConnectorBridge } from "@/features/desktop/bridge"
 import { isApiError } from "@/lib/api/errors"
+import { useSessionCreation } from "@/components/session/use-session-creation"
+import type { SessionCreation, SessionCreationDraft } from "@/components/session/session-creation"
+import type { WorkflowView } from "@/features/dashboard/runtime-workflows"
+import type { RuntimeFailure } from "@/lib/runtime-error-text"
 import { expireSession } from "@/features/auth/session-refresh"
 import { realtimeBackoffDelay, realtimeFailureKind } from "@/lib/realtime-channel"
 
@@ -404,6 +408,20 @@ export type WorkspaceState = {
   appendPathToComposer: (path: string) => boolean
   consumeComposerInsertion: (id: number) => void
   refreshData: () => void
+  sessionCreations: Record<string, SessionCreation>
+  creationEditorDraft: SessionCreationDraft | null
+  workflowCreations: Record<string, WorkflowView>
+  workflowError: RuntimeFailure | undefined
+  workflowPending: boolean
+  respondWorkflow: ReturnType<typeof useSessionCreation>["respondWorkflow"]
+  cancelWorkflow: ReturnType<typeof useSessionCreation>["cancelWorkflow"]
+  dismissWorkflow: ReturnType<typeof useSessionCreation>["dismissWorkflow"]
+  refreshWorkflow: ReturnType<typeof useSessionCreation>["refreshWorkflow"]
+  startSessionCreation: ReturnType<typeof useSessionCreation>["startSessionCreation"]
+  retrySessionCreation: ReturnType<typeof useSessionCreation>["retrySessionCreation"]
+  editSessionCreation: ReturnType<typeof useSessionCreation>["editSessionCreation"]
+  discardCreationEditor: ReturnType<typeof useSessionCreation>["discardCreationEditor"]
+  saveCreationEditor: ReturnType<typeof useSessionCreation>["saveCreationEditor"]
 }
 
 const WorkspaceContext = React.createContext<WorkspaceState | null>(null)
@@ -1579,6 +1597,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     : null
   const settingsTab = route.page === "settings" ? route.tab : "account"
 
+  const sessionCreation = useSessionCreation({
+    storageScope: `${typeof window === "undefined" ? "" : window.location.origin}:${authSession?.userId ?? ""}`,
+    userId: authSession?.userId ?? null,
+    token: authSession?.accessToken ?? null,
+    addMessage: addOptimisticMessage,
+    bind: bindOptimisticSession,
+    markFailed: markOptimisticMessageFailed,
+    removeLocal: (id: string) => {
+      setOptimisticMessages((prev) => {
+        const next = prev.filter((message) => message.sessionId !== id)
+        optimisticMessagesRef.current = next
+        return next
+      })
+      setSessions((current) => current.filter((session) => session.id !== id))
+    },
+    open: openSession,
+    edit: (projectId: string) => replaceRoute({ page: "home", projectId }),
+  })
   const value: WorkspaceState = {
     connectors,
     sessions,
@@ -1647,6 +1683,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     appendPathToComposer,
     consumeComposerInsertion,
     refreshData: fetchData,
+    ...sessionCreation,
   }
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
