@@ -52,6 +52,8 @@ import { createTimelineScrollFollow } from "@/components/session/timeline-scroll
 import { createSessionEventBuffer } from "@/components/session/session-event-buffer"
 import { CAPABILITY, capabilityIsUsable, findCapability } from "@/components/session/capabilities"
 import { SessionComposer, type AttachedFile } from "@/components/session/session-composer"
+import { NativeSessionHandoff } from "@/components/session/native-session-handoff"
+import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
 import { commandResult, commandTransportFailure, type CommandOutcome } from "@/components/session/runtime-command-model"
 import { createRecoveredSubscriptionTracker, useRuntimeCommands } from "@/components/session/use-runtime-commands"
 import {
@@ -1763,6 +1765,13 @@ export function SessionDetail({
           onHeightChange={setBlockingInteractionStackHeight}
           onRespondInteraction={handleRespondInteraction}
         />
+        <RuntimeCreationStatus sessionId={sessionId} />
+        <NativeSessionHandoff key={sessionId} token={token} session={session} state={runtimeState}
+          capabilities={state?.effectiveCapabilities ?? null} onSettled={async () => {
+            const refreshed = await loadInitialSessionState(token, sessionId, { reason: "native-history.handoff" })
+            setState(current => current?.session.id === sessionId ? refreshed : current)
+            onSessionUpdated?.(refreshed.session)
+          }} />
         <div ref={composerContainerRef} className="pointer-events-auto relative">
           {onOpenReview && turnReviewDisplay.activeReview ? (
             <SessionReviewTag files={turnReviewDisplay.activeReview.files} onReview={() => onOpenReview()} />
