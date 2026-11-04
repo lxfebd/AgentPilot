@@ -6,7 +6,6 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agent_server.infra.repositories.active_runs_facade import ActiveRunRepositoryMixin
-from agent_server.infra.repositories.runtime_workflows import RuntimeWorkflowRepositoryMixin
 from agent_server.infra.repositories.attachments import AttachmentRepositoryMixin
 from agent_server.infra.repositories.connectors import ConnectorRepositoryMixin
 from agent_server.infra.repositories.device_runtimes import DeviceRuntimeRepositoryMixin
@@ -17,6 +16,9 @@ from agent_server.infra.repositories.oauth import OAuthRepositoryMixin
 from agent_server.infra.repositories.projects import ProjectRepositoryMixin
 from agent_server.infra.repositories.protocol_catalogs import (
     ProtocolCatalogRepositoryMixin,
+)
+from agent_server.infra.repositories.runtime_workflows import (
+    RuntimeWorkflowRepositoryMixin,
 )
 from agent_server.infra.repositories.schedules import ScheduleRepository
 from agent_server.infra.repositories.sessions import SessionRepositoryMixin
