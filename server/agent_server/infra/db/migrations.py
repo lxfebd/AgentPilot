@@ -22,8 +22,8 @@ from agent_server.infra.db.engine import POSTGRES_BACKEND, resolve_db_url
 
 LEGACY_V1_REVISION = "v1_legacy"
 BASELINE_V2_REVISION = "v2_0"
-CURRENT_SCHEMA_REVISION = "v2_43"
-CURRENT_SCHEMA_VERSION = "2.43"
+CURRENT_SCHEMA_REVISION = "v2_45"
+CURRENT_SCHEMA_VERSION = "2.45"
 POSTGRES_MIGRATION_LOCK_ID = 0x414147454E545332
 DEFAULT_MIGRATION_LOCK_TIMEOUT_SECONDS = 120.0
 
@@ -393,6 +393,46 @@ def _classify_sync(connection) -> UnversionedDatabase:
                                 revision = "v2_32"
                                 if "runtime_control_version" not in connector_columns:
                                     revision = "v2_33"
+                                    workflow_tables = {
+                                        "runtime_workflows",
+                                        "session_runtime_event_receipts",
+                                    }
+                                    if workflow_tables & tables:
+                                        workflow_columns = {
+                                            "user_id",
+                                            "kind",
+                                            "id",
+                                            "connector_id",
+                                            "runtime_id",
+                                            "runtime_type",
+                                            "project_id",
+                                            "session_id",
+                                            "input_digest",
+                                            "request_json",
+                                            "result_json",
+                                            "consumed_by",
+                                        }
+                                        receipt_columns = {
+                                            "session_id",
+                                            "source_event_id",
+                                            "event_digest",
+                                        }
+                                        if not (
+                                            workflow_tables.issubset(tables)
+                                            and workflow_columns.issubset(
+                                                _column_names(
+                                                    inspector, "runtime_workflows"
+                                                )
+                                            )
+                                            and receipt_columns.issubset(
+                                                _column_names(
+                                                    inspector,
+                                                    "session_runtime_event_receipts",
+                                                )
+                                            )
+                                        ):
+                                            return UnversionedDatabase("unknown")
+                                        revision = "v2_45"
                         else:
                             return UnversionedDatabase("unknown")
                     elif connector_kind_layout:

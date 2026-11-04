@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agent_server.infra.repositories.active_runs_facade import ActiveRunRepositoryMixin
+from agent_server.infra.repositories.runtime_workflows import RuntimeWorkflowRepositoryMixin
 from agent_server.infra.repositories.attachments import AttachmentRepositoryMixin
 from agent_server.infra.repositories.connectors import ConnectorRepositoryMixin
 from agent_server.infra.repositories.device_runtimes import DeviceRuntimeRepositoryMixin
@@ -29,6 +30,7 @@ _TRACKED_LOCK_IDLE_SECONDS = 900.0
 
 
 class Store(
+    RuntimeWorkflowRepositoryMixin,
     DeviceRuntimeRepositoryMixin,
     ProtocolCatalogRepositoryMixin,
     UserRepositoryMixin,
