@@ -37,6 +37,14 @@ struct NewSessionView: View, Equatable {
                             agentName: model.runtime?.sessionDisplayName,
                             onChooseTarget: chooseTarget)
                         statusContent
+                        if model.hasPendingWorkflow {
+                            Button(String(localized: "重试"), action: { Task { if let session = await model.resumeWorkflow() { onCreated(session) } } }).disabled(model.isResumingWorkflow)
+                        }
+                        if let workflow = model.runtimeWorkflow {
+                            RuntimeWorkflowView(operation: workflow, pending: model.workflowResponding,
+                                onRespond: { request, action, input in Task { await model.respondWorkflow(request, action: action, input: input) } },
+                                onCancel: { Task { await model.cancelWorkflow() } })
+                        }
                     }
                         .padding(24)
                         .frame(maxWidth: 760)
@@ -69,6 +77,8 @@ struct NewSessionView: View, Equatable {
                 .frame(maxWidth: ChatControlMetrics.maximumContentWidth).frame(maxWidth: .infinity)
             }
         }
+        .task { if let session = await model.resumeWorkflow() { onCreated(session) } }
+        .task(id: model.workspace) { if model.prepared == nil { await model.prepareTarget() } }
         .modifier(ChatPageToolbar(title: "", onMenu: onMenu))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

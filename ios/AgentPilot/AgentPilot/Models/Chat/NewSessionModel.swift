@@ -9,6 +9,7 @@ struct NewSessionPreference: Codable {
     var projectIDs: [String: String]? = nil
     var homePaths: [String: String]? = nil
     var selections: [String: [String: String]] = [:]
+    var pendingWorkflowIDs: [String]? = nil
 }
 
 /// Account-scoped draft and target selection. A target is committed only after
@@ -31,6 +32,13 @@ final class NewSessionModel {
     private(set) var connectorID: String
     private(set) var runtimeID: String
     private(set) var prepared: V2PreparedSession?
+    private(set) var runtimeWorkflow: V2RuntimeWorkflow?
+    private(set) var workflowResponding = false
+    private(set) var isResumingWorkflow = false
+    var agentConfigurationValues: [String: JSONValue] = [:]
+    var hasPendingWorkflow: Bool { !(preference.pendingWorkflowIDs ?? []).isEmpty }
+    @ObservationIgnored private let workflowAPI: V2RuntimeWorkflowAPI?
+    @ObservationIgnored private var preparedWorkflow: V2RuntimeWorkflow?
     private(set) var isPreparing = false
     private(set) var isCreating = false
     private(set) var isValid = true
@@ -56,8 +64,9 @@ final class NewSessionModel {
 
     init(scope: V2ClientScope, devices: V2DeviceManagementService,
          preparation: V2SessionPreparationService, creation: V2SessionCreationService, projectAPI: V2ProjectAPI,
-         defaults: UserDefaults = .standard) {
+         defaults: UserDefaults = .standard, workflowAPI: V2RuntimeWorkflowAPI? = nil) {
         self.projectAPI = projectAPI
+        self.workflowAPI = workflowAPI
         files = V2WorkspaceFilesService(connectorAPI: devices.connectorAPI, serverURL: scope.serverURL)
         self.devices = devices; self.preparation = preparation; self.creation = creation; self.defaults = defaults
         preferenceKey = "aa.native.new-session.v1." + Data((scope.serverURL.absoluteString + "\n" + scope.accountID).utf8).base64EncodedString()
@@ -185,7 +194,7 @@ final class NewSessionModel {
         saveSelections()
         connectorID = id
         runtimeID = preference.connectorID == id ? preference.runtimeID : ""
-        prepared = nil; preparationVersion += 1
+        preparedWorkflow = nil; runtimeWorkflow = nil; prepared = nil; preparationVersion += 1
         restoreProjectForDevice()
         if let workspace { _ = selectWorkspace(workspace) }
     }
@@ -194,7 +203,7 @@ final class NewSessionModel {
         guard isValid, !Task.isCancelled else { return }
         updateConnectors(connectors)
         guard connector?.status == .online, network.availability != .offline else {
-            prepared = nil; preparationVersion += 1; isPreparing = false; return
+            preparedWorkflow = nil; runtimeWorkflow = nil; prepared = nil; preparationVersion += 1; isPreparing = false; return
         }
         let device = connectorID
         async let home: Void = resolveHome()

@@ -16708,6 +16708,669 @@
           }
         }
       }
+    },
+    "进入原生规划：/plan <任务> 先出计划、确认后执行；/plan off 退出": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter native planning: /plan <task> drafts a plan to confirm before executing; /plan off exits"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "进入原生规划：/plan <任务> 先出计划、确认后执行；/plan off 退出"
+          }
+        }
+      }
+    },
+    "Runtime 返回的结果无效，请更新 Connector 后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The runtime returned an invalid result. Update the Connector and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runtime 返回的结果无效，请更新 Connector 后重试。"
+          }
+        }
+      }
+    },
+    "正文随原生计划输出更新": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content updates as the runtime writes the plan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正文随原生计划输出更新"
+          }
+        }
+      }
+    },
+    "Agent 运行环境安装失败，请检查网络后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing the agent runtime failed. Check the network and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent 运行环境安装失败，请检查网络后重试。"
+          }
+        }
+      }
+    },
+    "原生历史正在写入或存在损坏记录，请重新校准。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history is still being written or has damaged records. Recheck it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史正在写入或存在损坏记录，请重新校准。"
+          }
+        }
+      }
+    },
+    "该 Runtime 不支持工作区准备。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This runtime does not support workspace preparation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该 Runtime 不支持工作区准备。"
+          }
+        }
+      }
+    },
+    "原生状态待核对，请刷新后再确认。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh the runtime state before confirming."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生状态待核对，请刷新后再确认。"
+          }
+        }
+      }
+    },
+    "Pi 执行环境准备失败，请检查安装与网络。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing the Pi environment failed. Check the installation and network."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi 执行环境准备失败，请检查安装与网络。"
+          }
+        }
+      }
+    },
+    "扫描原生历史失败。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanning the native history failed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫描原生历史失败。"
+          }
+        }
+      }
+    },
+    "执行请求已接受，等待原生开始": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Execution request accepted; waiting for the runtime to start"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行请求已接受，等待原生开始"
+          }
+        }
+      }
+    },
+    "原生 Pi 的模型或认证不可用，请先在本机 pi 中完成配置和登录。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native Pi model or authentication is unavailable. Configure and sign in with the local pi first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生 Pi 的模型或认证不可用，请先在本机 pi 中完成配置和登录。"
+          }
+        }
+      }
+    },
+    "文件没有有效的 Pi 原生会话头。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file has no valid Pi session header."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件没有有效的 Pi 原生会话头。"
+          }
+        }
+      }
+    },
+    "该创建已明确拒绝，没有待回答请求。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This creation was rejected and has no pending request."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该创建已明确拒绝，没有待回答请求。"
+          }
+        }
+      }
+    },
+    "Node 下载校验失败，请重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Node download failed verification. Try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Node 下载校验失败，请重试。"
+          }
+        }
+      }
+    },
+    "原生历史写入校验尚未就绪。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native history write verification is not ready yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史写入校验尚未就绪。"
+          }
+        }
+      }
+    },
+    "原生历史已变化，请查看最新内容后重新继续。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history has changed. Review the latest content and continue again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史已变化，请查看最新内容后重新继续。"
+          }
+        }
+      }
+    },
+    "工作区准备已失效，请重新准备。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace preparation is no longer valid. Prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区准备已失效，请重新准备。"
+          }
+        }
+      }
+    },
+    "原生历史": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native history"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史"
+          }
+        }
+      }
+    },
+    "原生历史文件无法读取。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history file cannot be read."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史文件无法读取。"
+          }
+        }
+      }
+    },
+    "将保留原生会话身份并写回后续历史。请先退出 CLI 中对应会话，继续期间不要在 CLI 同时打开它。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AA will preserve this native session and save subsequent history. Exit this session in the CLI and keep it closed there while AA is using it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将保留原生会话身份并写回后续历史。请先退出 CLI 中对应会话，继续期间不要在 CLI 同时打开它。"
+          }
+        }
+      }
+    },
+    "原生历史来源暂时不可用，已保留浏览内容。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history source is temporarily unavailable. The browsed content is kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史来源暂时不可用，已保留浏览内容。"
+          }
+        }
+      }
+    },
+    "工作区准备尚未为当前创建操作预留。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace preparation has not been reserved for this creation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区准备尚未为当前创建操作预留。"
+          }
+        }
+      }
+    },
+    "原生会话身份不一致，已停止操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native session identity does not match. The operation was stopped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生会话身份不一致，已停止操作。"
+          }
+        }
+      }
+    },
+    "工作区准备已绑定其他创建操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace preparation is already bound to another creation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区准备已绑定其他创建操作。"
+          }
+        }
+      }
+    },
+    "原会话模型不可用，请先恢复对应原生模型配置。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original session's model is unavailable. Restore its native model configuration first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原会话模型不可用，请先恢复对应原生模型配置。"
+          }
+        }
+      }
+    },
+    "此设备平台暂不支持自动准备 Node。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic Node setup is not supported on this device platform."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此设备平台暂不支持自动准备 Node。"
+          }
+        }
+      }
+    },
+    "原生历史来源当前无法读取，已保留浏览内容。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history source cannot be read right now. The browsed content is kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史来源当前无法读取，已保留浏览内容。"
+          }
+        }
+      }
+    },
+    "该运行时需要先准备工作区，新会话暂不支持计划模式；请创建后再输入 /plan。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This runtime requires workspace preparation. Create the session first, then enter /plan."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该运行时需要先准备工作区，新会话暂不支持计划模式；请创建后再输入 /plan。"
+          }
+        }
+      }
+    },
+    "重试启动": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry start"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试启动"
+          }
+        }
+      }
+    },
+    "恢复失败，请查看原生历史后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery failed. Review the native history and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复失败，请查看原生历史后重试。"
+          }
+        }
+      }
+    },
+    "恢复返回的原生历史位置不匹配，已停止执行。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recovered native history location does not match. Execution was stopped."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复返回的原生历史位置不匹配，已停止执行。"
+          }
+        }
+      }
+    },
+    "原生历史身份或位置已变化，旧历史仍保留，但不能继续原绑定。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history identity or location changed. The old history is kept but cannot continue its binding."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史身份或位置已变化，旧历史仍保留，但不能继续原绑定。"
+          }
+        }
+      }
+    },
+    "原操作尚未确认原生会话身份。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original operation has not confirmed the native session yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原操作尚未确认原生会话身份。"
+          }
+        }
+      }
+    },
+    "Pi 恢复失败，请检查原生模型、认证与扩展兼容性。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resuming Pi failed. Check the native model, authentication and extension compatibility."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pi 恢复失败，请检查原生模型、认证与扩展兼容性。"
+          }
+        }
+      }
+    },
+    "初始化执行者已退出，首条消息尚未提交，请重新准备。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The initializing agent exited before the first message was submitted. Prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "初始化执行者已退出，首条消息尚未提交，请重新准备。"
+          }
+        }
+      }
+    },
+    "无法获取模型列表，请在自定义模型中填写模型 ID 后重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not load the model list. Enter a model ID under custom models and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法获取模型列表，请在自定义模型中填写模型 ID 后重试。"
+          }
+        }
+      }
+    },
+    "另一 AgentPilot 执行实例正在使用此原生会话。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another AA instance is using this native session."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "另一 AgentPilot 执行实例正在使用此原生会话。"
+          }
+        }
+      }
+    },
+    "原生历史已被外部修改，已停止 AgentPilot 执行；请退出并发 CLI 后重新校准。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The native history was modified elsewhere, so AA stopped. Exit the concurrent CLI and recheck."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原生历史已被外部修改，已停止 AgentPilot 执行；请退出并发 CLI 后重新校准。"
+          }
+        }
+      }
+    },
+    "这是本机原生会话，退出 CLI 后点击「继续任务」即可在 AgentPilot 中继续。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a local native session. Exit the CLI, then choose Continue to resume it in AgentPilot."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这是本机原生会话，退出 CLI 后点击「继续任务」即可在 AgentPilot 中继续。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
