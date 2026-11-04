@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -129,10 +130,50 @@ def export_contract(output_dir: Path, version: str = "1.0") -> None:
     (output_dir / "manifest.json").write_bytes(_json_bytes(manifest))
 
 
+
+def check_contract(output_dir: Path, version: str) -> int:
+    if not output_dir.is_dir():
+        print(f"missing contract directory: {output_dir}")
+        return 1
+    with tempfile.TemporaryDirectory() as tmp:
+        generated_dir = Path(tmp)
+        export_contract(generated_dir, version)
+        expected = {
+            path.relative_to(generated_dir).as_posix()
+            for path in generated_dir.rglob("*")
+            if path.is_file()
+        }
+        problems = []
+        for rel in sorted(expected):
+            committed_path = output_dir / rel
+            if not committed_path.is_file():
+                problems.append(f"missing: {committed_path}")
+                continue
+            fresh = (generated_dir / rel).read_bytes()
+            on_disk = committed_path.read_bytes().replace(bytes([13, 10]), bytes([10]))
+            if fresh != on_disk:
+                problems.append(f"stale: {committed_path}")
+        if problems:
+            for line in problems:
+                print(line)
+            hint = "uv run python -m scripts.export_protocol_schemas"
+            if version != "1.0":
+                hint += f" --version {version}"
+            print(f"Protocol contract {version} is out of date; run `{hint}`.")
+            return 1
+    print(f"Protocol contract {version} is up to date ({len(expected)} files).")
+    return 0
+
+
 def main() -> None:
     repository_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(
-        description="Export the canonical Agents Anywhere protocol JSON Schemas."
+        description="Export the canonical AgentPilot protocol JSON Schemas."
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Verify the committed contract matches the server models instead of writing it.",
     )
     parser.add_argument("--version", choices=["1.0", "1.1"], default="1.0")
     parser.add_argument(
@@ -141,7 +182,10 @@ def main() -> None:
         default=None,
     )
     args = parser.parse_args()
-    export_contract((args.output or repository_root / "contracts" / "protocol" / args.version).resolve(), args.version)
+    target = (args.output or repository_root / "contracts" / "protocol" / args.version).resolve()
+    if args.check:
+        raise SystemExit(check_contract(target, args.version))
+    export_contract(target, args.version)
 
 
 if __name__ == "__main__":
