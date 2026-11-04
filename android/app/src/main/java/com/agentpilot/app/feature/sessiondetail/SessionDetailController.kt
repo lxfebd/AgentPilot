@@ -900,3 +900,6 @@ data class SendMessageResult(
     val attachments: List<TimelineAttachment>,
 )
 
+
+/** The server refused a native-history operation; the UI shows the translated [code]. */
+class NativeHistoryRejected(val code: String?, message: String) : IllegalStateException(message)

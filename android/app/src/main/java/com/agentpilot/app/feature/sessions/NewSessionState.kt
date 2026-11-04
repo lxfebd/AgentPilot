@@ -40,6 +40,7 @@ data class NewSessionCreateDraft(
     val runtimeId: String = runtime,
     val runtimeType: String = runtime,
     val projectId: String = "",
+    val preparedWorkspace: com.agentpilot.app.feature.sessions.PreparedRuntimeWorkspace? = null,
 )
 
 sealed interface NewSessionCreateOutcome {
