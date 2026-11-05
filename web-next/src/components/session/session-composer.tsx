@@ -49,7 +49,7 @@ import {
   selectionIdForPermissionCatalog,
 } from "@/components/session/catalog-selection"
 import { SelectionSettingsDrawer } from "@/components/session/selection-settings-drawer"
-import { CAPABILITY, capabilityIsUsable, findCapability, attachmentMimeTypes } from "@/components/session/capabilities"
+import { CAPABILITY, attachmentImagesAllowed, capabilityIsUsable, findCapability, attachmentMimeTypes } from "@/components/session/capabilities"
 import { useElementWidth } from "@/hooks/use-element-width"
 import { sessionRuntimeId, sessionRuntimeType } from "@/features/dashboard/runtime-instances"
 
@@ -178,6 +178,7 @@ export function SessionComposer({
     !isStopping &&
     !isWaitingApproval &&
     !isBlocked
+  const imagesAllowed = attachmentImagesAllowed(effectiveCapabilities, runtimeScope)
   const canUseSendMessage = capabilityIsUsable(effectiveCapabilities, CAPABILITY.sendMessage, runtimeScope)
   const canUseCommands = capabilityIsUsable(effectiveCapabilities, CAPABILITY.commands, runtimeScope)
   const canUseInterrupt = capabilityIsUsable(effectiveCapabilities, CAPABILITY.interrupt, runtimeScope)
@@ -206,7 +207,7 @@ export function SessionComposer({
     onDragLeave,
     onDragOver,
     onDrop,
-  } = useAttachments({ sessionId: creatingSession ? undefined : session.id, token, enabled: canUseAttachments, allowedMimeTypes })
+  } = useAttachments({ sessionId: creatingSession ? undefined : session.id, token, enabled: canUseAttachments, allowedMimeTypes, imagesAllowed })
   const canSend =
     canUseSendMessage &&
     !creatingSession &&
