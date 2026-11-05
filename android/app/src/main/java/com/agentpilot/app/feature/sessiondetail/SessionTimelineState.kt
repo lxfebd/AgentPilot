@@ -60,6 +60,8 @@ data class TimelineMessage(
     val orderSeq: Int = 0,
     val revision: Int = 1,
     val updatedSeq: Int = 0,
+    val createdAt: String = "",
+    val sourceRole: String? = null,
     val clientMessageId: String? = null,
     val contentHash: String = "",
     val sourceRuntime: String? = null,
