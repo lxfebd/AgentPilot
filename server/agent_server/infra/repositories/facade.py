@@ -13,6 +13,7 @@ from agent_server.infra.repositories.instance_settings_facade import (
     InstanceSettingsRepositoryMixin,
 )
 from agent_server.infra.repositories.oauth import OAuthRepositoryMixin
+from agent_server.infra.repositories.planning import PlanningRepositoryMixin
 from agent_server.infra.repositories.projects import ProjectRepositoryMixin
 from agent_server.infra.repositories.protocol_catalogs import (
     ProtocolCatalogRepositoryMixin,
@@ -20,7 +21,6 @@ from agent_server.infra.repositories.protocol_catalogs import (
 from agent_server.infra.repositories.runtime_workflows import (
     RuntimeWorkflowRepositoryMixin,
 )
-from agent_server.infra.repositories.planning import PlanningRepositoryMixin
 from agent_server.infra.repositories.schedules import ScheduleRepository
 from agent_server.infra.repositories.sessions import SessionRepositoryMixin
 from agent_server.infra.repositories.shares import SessionShareRepositoryMixin

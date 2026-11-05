@@ -10,10 +10,12 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from agent_server.core.protocol import (
+from agent_server.core.planning.models import (
     PlanningRequest,
-    PlanningState,
     PlanningResponse,
+    PlanningState,
+)
+from agent_server.core.protocol import (
     ProtocolCapabilitiesResponse,
     ProtocolCapabilitySet,
     ProtocolEventEnvelope,
