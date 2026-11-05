@@ -1,6 +1,30 @@
 {
   "artifacts": [
     {
+      "direction": "bidirectional",
+      "model": "PlanningRequest",
+      "path": "schemas/planning-request.schema.json",
+      "pydanticMode": "validation",
+      "sha256": "134418f33db2571129d1c3cd1a4ad80766d5df92a01cf4840f5378a39df7242f",
+      "slug": "planning-request"
+    },
+    {
+      "direction": "egress",
+      "model": "PlanningState",
+      "path": "schemas/planning-state.schema.json",
+      "pydanticMode": "serialization",
+      "sha256": "c160c5954a6c0191c8319df3f96e261613f2f002f5db66307407a9ea845e9749",
+      "slug": "planning-state"
+    },
+    {
+      "direction": "egress",
+      "model": "PlanningResponse",
+      "path": "schemas/planning-response.schema.json",
+      "pydanticMode": "serialization",
+      "sha256": "083e125a3fa4256cddb87779ca4fec307db5b896e1f646e602f5e70bec41bfe7",
+      "slug": "planning-response"
+    },
+    {
       "direction": "ingress",
       "model": "ProtocolHandshakeRequest",
       "path": "schemas/handshake-request.schema.json",

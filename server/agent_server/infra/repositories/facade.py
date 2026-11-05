@@ -20,6 +20,7 @@ from agent_server.infra.repositories.protocol_catalogs import (
 from agent_server.infra.repositories.runtime_workflows import (
     RuntimeWorkflowRepositoryMixin,
 )
+from agent_server.infra.repositories.planning import PlanningRepositoryMixin
 from agent_server.infra.repositories.schedules import ScheduleRepository
 from agent_server.infra.repositories.sessions import SessionRepositoryMixin
 from agent_server.infra.repositories.shares import SessionShareRepositoryMixin
@@ -32,6 +33,7 @@ _TRACKED_LOCK_IDLE_SECONDS = 900.0
 
 
 class Store(
+    PlanningRepositoryMixin,
     RuntimeWorkflowRepositoryMixin,
     DeviceRuntimeRepositoryMixin,
     ProtocolCatalogRepositoryMixin,

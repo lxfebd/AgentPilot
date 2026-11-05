@@ -22,8 +22,8 @@ from agent_server.infra.db.engine import POSTGRES_BACKEND, resolve_db_url
 
 LEGACY_V1_REVISION = "v1_legacy"
 BASELINE_V2_REVISION = "v2_0"
-CURRENT_SCHEMA_REVISION = "v2_45"
-CURRENT_SCHEMA_VERSION = "2.45"
+CURRENT_SCHEMA_REVISION = "v2_46"
+CURRENT_SCHEMA_VERSION = "2.46"
 POSTGRES_MIGRATION_LOCK_ID = 0x414147454E545332
 DEFAULT_MIGRATION_LOCK_TIMEOUT_SECONDS = 120.0
 
@@ -397,6 +397,12 @@ def _classify_sync(connection) -> UnversionedDatabase:
                                         "runtime_workflows",
                                         "session_runtime_event_receipts",
                                     }
+                                    planning_tables = {
+                                        "planning_creations",
+                                        "session_planning",
+                                        "plan_documents",
+                                        "planning_operations",
+                                    }
                                     if workflow_tables & tables:
                                         workflow_columns = {
                                             "user_id",
@@ -433,6 +439,12 @@ def _classify_sync(connection) -> UnversionedDatabase:
                                         ):
                                             return UnversionedDatabase("unknown")
                                         revision = "v2_45"
+                                        if planning_tables and not planning_tables.issubset(
+                                            tables
+                                        ):
+                                            return UnversionedDatabase("unknown")
+                                        if planning_tables:
+                                            revision = "v2_46"
                         else:
                             return UnversionedDatabase("unknown")
                     elif connector_kind_layout:

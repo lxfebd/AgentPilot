@@ -35,6 +35,7 @@ from agent_server.api import (
     pairing,
     projects,
     runtime_workflows,
+    session_planning,
     schedules,
     service,
     sessions,
@@ -368,6 +369,7 @@ def create_app(
     app.include_router(connector_device.router, prefix=API_V2_PREFIX)
     app.include_router(connector_runtimes.router, prefix=API_V2_PREFIX)
     app.include_router(runtime_workflows.router, prefix=API_V2_PREFIX)
+    app.include_router(session_planning.router, prefix=API_V2_PREFIX)
     app.include_router(connector_shell.router, prefix=API_V2_PREFIX)
     app.include_router(connector_terminal.router, prefix=API_V2_PREFIX)
     app.include_router(client_ws.router, prefix=API_V2_PREFIX)
