@@ -10,6 +10,8 @@ const webRoot = path.resolve(scriptDir, "..")
 const repositoryRoot = path.resolve(webRoot, "..")
 const checkOnly = process.argv.includes("--check")
 const contracts = [
+  { contractDir: path.join(repositoryRoot, "contracts", "protocol", "1.0"),
+    generatedDir: path.join(repositoryRoot, "packages", "ui-core", "src", "generated", "protocol", "v1") },
   { contractDir: path.join(repositoryRoot, "contracts", "protocol", "1.1"),
     generatedDir: path.join(webRoot, "src", "generated", "protocol", "v1_1") },
   { contractDir: path.join(repositoryRoot, "contracts", "runtime-workflows", "1.2"),

@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from agent_server.core.planning.models import (
+    PlanDocument,
     PlanningRequest,
     PlanningResponse,
     PlanningState,
@@ -48,6 +49,7 @@ class ProtocolSchema:
 
 SCHEMAS = (
 
+    ProtocolSchema("plan-document", PlanDocument, "egress", "serialization"),
     ProtocolSchema("planning-request", PlanningRequest, "bidirectional", "validation"),
     ProtocolSchema("planning-state", PlanningState, "egress", "serialization"),
     ProtocolSchema("planning-response", PlanningResponse, "egress", "serialization"),    ProtocolSchema("handshake-request", ProtocolHandshakeRequest, "ingress", "validation"),

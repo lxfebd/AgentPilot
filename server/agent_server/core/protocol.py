@@ -18,13 +18,14 @@ from agent_server.core.models import (
 
 # Public wire exports; definitions remain in their bounded planning context.
 from agent_server.core.planning.models import (
+    PlanDocument,
     PlanningRequest,
     PlanningResponse,
     PlanningState,
 )
 
 # Re-exported wire models; the list keeps them public.
-__all__ = ["PlanningRequest", "PlanningResponse", "PlanningState"]
+__all__ = ["PlanDocument", "PlanningRequest", "PlanningResponse", "PlanningState"]
 
 PROTOCOL_VERSION_1 = "1.0"
 SUPPORTED_PROTOCOL_VERSIONS = ["1.1", PROTOCOL_VERSION_1]

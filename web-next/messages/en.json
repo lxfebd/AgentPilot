@@ -246,7 +246,17 @@
     "mobileStatus": {
       "approved": "Approved",
       "waiting": "Waiting for scan"
-    }
+    },
+    "common.actions": {},
+    "common.empty": {},
+    "common.errors": {},
+    "common.fields": {},
+    "common.nav": {},
+    "common.oauth": {},
+    "common.sections": {},
+    "common.signOut": {},
+    "common.status": {},
+    "common.mobileStatus": {}
   },
   "dashboard": {
     "actions": {
@@ -1224,7 +1234,80 @@
       "description": "AgentPilot needs a paired online device before you can choose a project or start sessions.",
       "later": "Maybe later",
       "addDevice": "Add device"
-    }
+    },
+    "dashboard.actions": {},
+    "dashboard.account": {},
+    "dashboard.empty": {},
+    "dashboard.errors": {},
+    "dashboard.filters": {},
+    "dashboard.nav": {},
+    "dashboard.new": {
+      "dashboard.new.permissionModes": {
+        "dashboard.new.permissionModes.dsh": {
+          "dashboard.new.permissionModes.dsh.readOnly": {},
+          "dashboard.new.permissionModes.dsh.workspaceWrite": {},
+          "dashboard.new.permissionModes.dsh.fullAccess": {},
+          "dashboard.new.permissionModes.dsh.auto": {}
+        },
+        "dashboard.new.permissionModes.requestApproval": {},
+        "dashboard.new.permissionModes.autoReview": {},
+        "dashboard.new.permissionModes.fullAccess": {},
+        "dashboard.new.permissionModes.claude": {
+          "dashboard.new.permissionModes.claude.default": {},
+          "dashboard.new.permissionModes.claude.acceptEdits": {},
+          "dashboard.new.permissionModes.claude.plan": {},
+          "dashboard.new.permissionModes.claude.auto": {},
+          "dashboard.new.permissionModes.claude.dontAsk": {},
+          "dashboard.new.permissionModes.claude.bypassPermissions": {}
+        }
+      },
+      "dashboard.new.imagePreview": {},
+      "dashboard.new.typewriter": {}
+    },
+    "dashboard.workspacePicker": {
+      "dashboard.workspacePicker.errors": {}
+    },
+    "dashboard.projects": {},
+    "dashboard.mobileConnections": {},
+    "dashboard.device": {
+      "dashboard.device.runtimeStatus": {},
+      "dashboard.device.runtimeConfigValidation": {},
+      "dashboard.device.runtimeConfigFields": {
+        "dashboard.device.runtimeConfigFields.claudeExecutablePath": {},
+        "dashboard.device.runtimeConfigFields.codexExecutablePath": {},
+        "dashboard.device.runtimeConfigFields.codexHome": {},
+        "dashboard.device.runtimeConfigFields.useSystemCodex": {},
+        "dashboard.device.runtimeConfigFields.ipcEnabled": {},
+        "dashboard.device.runtimeConfigFields.ipcDeeplinkHandoff": {},
+        "dashboard.device.runtimeConfigFields.modelGatewayBaseUrl": {},
+        "dashboard.device.runtimeConfigFields.modelGatewayApiKey": {}
+      },
+      "dashboard.device.runtimeConfigComponents": {
+        "dashboard.device.runtimeConfigComponents.keyValue": {},
+        "dashboard.device.runtimeConfigComponents.customModels": {},
+        "dashboard.device.runtimeConfigComponents.modelGateway": {}
+      }
+    },
+    "dashboard.panels": {
+      "dashboard.panels.files": {},
+      "dashboard.panels.terminal": {}
+    },
+    "dashboard.pair": {},
+    "dashboard.placeholder": {},
+    "dashboard.roles": {},
+    "dashboard.sections": {},
+    "dashboard.session": {
+      "dashboard.session.tools": {},
+      "dashboard.session.nativeHistory": {}
+    },
+    "dashboard.sessionStatus": {},
+    "dashboard.signOut": {},
+    "dashboard.status": {},
+    "dashboard.theme": {},
+    "dashboard.pairDevice": {
+      "dashboard.pairDevice.errors": {}
+    },
+    "dashboard.firstDevice": {}
   },
   "privacy": {
     "title": "Privacy policy",
@@ -1260,6 +1343,15 @@
         "title": "Contact and updates",
         "body": "For questions about the client's handling of information, use the project's support channels. For access to, correction or deletion of information held by a server or model service, contact its operator. Policy updates will be reflected in the date above."
       }
+    },
+    "privacy.sections": {
+      "privacy.sections.local": {},
+      "privacy.sections.server": {},
+      "privacy.sections.agents": {},
+      "privacy.sections.external": {},
+      "privacy.sections.permissions": {},
+      "privacy.sections.retention": {},
+      "privacy.sections.contact": {}
     }
   },
   "auth": {
@@ -1415,7 +1507,22 @@
       "submit": "Reset password",
       "submitting": "Resetting...",
       "failed": "Could not reset the password."
-    }
+    },
+    "auth.actions": {},
+    "auth.errors": {},
+    "auth.bootstrap": {},
+    "auth.fields": {},
+    "auth.login": {},
+    "auth.signedOut": {},
+    "auth.mobileOAuth": {},
+    "auth.desktopOAuth": {},
+    "auth.passwordStrength": {},
+    "auth.oauth": {},
+    "auth.register": {},
+    "auth.theme": {},
+    "auth.status": {},
+    "auth.emailCode": {},
+    "auth.forgotPassword": {}
   },
   "pages": {
     "settings": {
@@ -1853,6 +1960,35 @@
       "passwordReset": "Password reset",
       "passwordResetDescription": "Let users reset a forgotten password with an email verification code.",
       "passwordResetNeedsEmail": "Turn on email first. Password reset sends a verification code by email."
+    },
+    "pages.settings": {
+      "pages.settings.mobileStatus": {},
+      "pages.settings.profile": {}
+    },
+    "pages.team": {},
+    "pages.opsDashboard": {
+      "pages.opsDashboard.range": {},
+      "pages.opsDashboard.live": {},
+      "pages.opsDashboard.tabs": {},
+      "pages.opsDashboard.metrics": {},
+      "pages.opsDashboard.charts": {},
+      "pages.opsDashboard.series": {},
+      "pages.opsDashboard.segments": {},
+      "pages.opsDashboard.retention": {},
+      "pages.opsDashboard.runtimes": {},
+      "pages.opsDashboard.devices": {},
+      "pages.opsDashboard.quality": {
+        "pages.opsDashboard.quality.outcomeLabels": {}
+      }
+    },
+    "pages.service": {
+      "pages.service.email": {},
+      "pages.service.sections": {
+        "pages.service.sections.general": {},
+        "pages.service.sections.auth": {},
+        "pages.service.sections.email": {},
+        "pages.service.sections.info": {}
+      }
     }
   },
   "preview": {
@@ -1906,7 +2042,8 @@
       "retry": "Reload",
       "publishedAt": "Last published: {time}",
       "notPublished": "Not published yet"
-    }
+    },
+    "announcement.admin": {}
   },
   "runtimeErrors": {
     "agent_capability_unsupported": "The agent does not provide this capability.",
@@ -2020,5 +2157,66 @@
     "unsupported_operation": "The agent does not provide this operation yet.",
     "worker_capacity": "Too many agent processes are running.",
     "workflow_unsupported": "This runtime does not support workspace preparation."
-  }
+  },
+  "admin": {
+    "admin.groups": {},
+    "admin.announcements": {}
+  },
+  "planning": {
+    "planning.title": "Plan",
+    "planning.modePending": "Waiting for the runtime to confirm the mode change",
+    "planning.mode": "Plan mode",
+    "planning.stateUncertain": "Planning state needs verification",
+    "planning.executionStarted": "Plan execution started",
+    "planning.executionAccepted": "Execution request accepted; waiting for the runtime to start",
+    "planning.executionRejected": "Plan approved; execution has not started",
+    "planning.executionUncertain": "Execution outcome needs verification",
+    "planning.progress": "Execution progress",
+    "planning.retryStart": "Retry start",
+    "planning.submitFeedback": "Submit feedback",
+    "planning.cancel": "Cancel",
+    "planning.approve": "Approve and execute",
+    "planning.revise": "Revise plan",
+    "planning.dismiss": "Not now",
+    "planning.reviewTitle": "Execute this plan?",
+    "planning.version": "Version {revision}",
+    "planning.documentVersion": "Plan · Version {revision}",
+    "planning.refreshBeforeReview": "Refresh the runtime state before confirming.",
+    "planning.feedbackLabel": "Revision feedback",
+    "planning.feedbackPlaceholder": "Describe how the plan should change",
+    "planning.closeReader": "Close plan",
+    "planning.bodyLabel": "Plan content",
+    "planning.copy": "Copy",
+    "planning.download": "Download Markdown",
+    "planning.refreshLabel": "Refresh planning state",
+    "planning.refresh": "Refresh",
+    "planning.writing": "Writing plan",
+    "planning.interrupted": "Plan draft interrupted",
+    "planning.streaming": "Content updates as the runtime writes the plan",
+    "planning.open": "Open plan",
+    "planning.collapse": "Collapse",
+    "planning.expand": "Expand full text",
+    "planning.operationFailed": "Planning action did not complete. Refresh the runtime state.",
+    "planning.operationUnknown": "The planning action outcome is uncertain. Refresh the state.",
+    "planning.commandAttachments": "This planning command does not accept attachments. Enter a planning task.",
+    "planning.attachmentTask": "Enter a planning task for the attachments.",
+    "planning.workspaceUnsupported": "This runtime requires workspace preparation. Create the session first, then enter /plan.",
+    "planning.creationIntent": "The new session will use plan mode",
+    "planning.stepPending": "Pending",
+    "planning.stepInProgress": "In progress",
+    "planning.stepCompleted": "Completed",
+    "planning.statusOpen": "Awaiting confirmation",
+    "planning.statusResponding": "Confirming",
+    "planning.statusApproved": "Approved",
+    "planning.statusExecuted": "Executed",
+    "planning.statusExecutionPending": "Approved; execution not started",
+    "planning.statusRevisionRequested": "Revision requested",
+    "planning.statusDismissed": "Not executed",
+    "planning.statusWithdrawn": "Withdrawn",
+    "planning.statusUnknown": "Needs verification",
+    "planning.superseded": "Revised as version {revision}",
+    "planning.commandDescription": "Enter native planning: /plan '<task>' drafts a plan to confirm before executing; /plan off exits",
+    "planning.commandHint": "[task | off]"
+  },
+  "agentReminder": {}
 }

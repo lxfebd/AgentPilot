@@ -1,6 +1,14 @@
 {
   "artifacts": [
     {
+      "direction": "egress",
+      "model": "PlanDocument",
+      "path": "schemas/plan-document.schema.json",
+      "pydanticMode": "serialization",
+      "sha256": "eba6802bbd90987a789c435427c47f6606463be7e9df9ea4e48ec29a2afc1543",
+      "slug": "plan-document"
+    },
+    {
       "direction": "bidirectional",
       "model": "PlanningRequest",
       "path": "schemas/planning-request.schema.json",
