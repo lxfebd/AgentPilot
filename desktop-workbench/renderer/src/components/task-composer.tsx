@@ -25,6 +25,7 @@ import { AgentSelectionDrawer } from "@/components/session/agent-selection-drawe
 import { useWorkspacePreparation } from "@/components/session/use-workspace-preparation"
 import { RuntimeWorkflowPanel } from "@/components/session/runtime-workflow-panel"
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
+import { parsePlanningCommand } from "@/features/planning/commands"
 import { useRuntimeErrorText } from "@/lib/runtime-error-text"
 import { SelectionSettingsDrawer } from "@/components/session/selection-settings-drawer"
 import {
@@ -178,6 +179,7 @@ export function TaskComposer() {
     updateProject,
   } = useWorkspace()
   const t = useTranslations("dashboard.new")
+  const tPlanning = useTranslations("planning")
   const tCommon = useTranslations("common")
   const errorText = useRuntimeErrorText()
   const typewriterTitles = React.useMemo(
@@ -703,6 +705,7 @@ export function TaskComposer() {
     })
   }, [modelCatalog, models, persistTargetPreference, selectedAgent, selectedConnectorId])
 
+  const [planningCreation, setPlanningCreation] = React.useState(false)
   const needsPreparation = Boolean(findCapability(runtimeCapabilities, CAPABILITY.workspacePrepare, selectedRuntimeScope)?.supported)
   const prepareRequest = React.useCallback(async () => {
     if (!workspace?.path) throw new Error(t("directoryRequired"))
@@ -734,6 +737,14 @@ export function TaskComposer() {
   const compactSelectors = composerWidth > 0 && composerWidth < 640
 
   const handleCreate = async () => {
+    const planIntent = parsePlanningCommand(prompt)
+    if (planIntent && planIntent.command !== "submit_task") {
+      if (attachments.length) { toast.error(tPlanning("attachmentTask")); return }
+      setPlanningCreation(planIntent.command === "enter_plan")
+      setPrompt("")
+      return
+    }
+    const usePlanning = planningCreation || planIntent?.command === "submit_task"
     if (!authSession?.accessToken || !selectedConnector || !selectedRuntime || !workspace?.path || creatingRef.current) return
     if (workspace.connectorId !== selectedConnector.id) return
     if (!prompt.trim() && attachments.length === 0) return
@@ -830,6 +841,7 @@ export function TaskComposer() {
         ...(selectedPermissionSelection ? { permission: selectedPermissionSelection } : {}),
       }
       const createBody = {
+        ...(usePlanning ? { planningIntent: { mode: "plan" as const, operationId: clientMessageId } } : {}),
         connectorId: selectedConnector.id,
         projectId: project.id,
         ...sessionRuntimeRequestIdentity(
@@ -856,7 +868,7 @@ export function TaskComposer() {
       persistPreference(nextPreference)
       const created = await dashboardApi.createAndStartSession(authSession.accessToken, {
         ...createBody,
-        content: messageText,
+        content: planIntent ? planIntent.content ?? "" : usePlanning ? prompt : messageText,
         selections,
         attachments: selectedAttachments.length > 0
           ? await inlineAttachmentsFromFiles(selectedAttachments)

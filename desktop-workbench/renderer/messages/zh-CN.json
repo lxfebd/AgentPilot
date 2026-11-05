@@ -7,7 +7,9 @@
     "preparing": "正在准备本机 Connector 运行环境，正在下载依赖，可能需要几分钟…",
     "quit": "退出桌面端",
     "recheck": "重新检查",
-    "checking": "正在检查…"
+    "checking": "正在检查…",
+    "localOwnership.environmentPhase": {},
+    "localOwnership.environmentError": {}
   },
   "app": {
     "name": "AgentPilot"
@@ -258,7 +260,17 @@
       "approved": "已批准",
       "waiting": "等待扫码"
     },
-    "copyFailed": "复制失败，请选中文本后手动复制。"
+    "copyFailed": "复制失败，请选中文本后手动复制。",
+    "common.actions": {},
+    "common.empty": {},
+    "common.errors": {},
+    "common.fields": {},
+    "common.nav": {},
+    "common.oauth": {},
+    "common.sections": {},
+    "common.signOut": {},
+    "common.status": {},
+    "common.mobileStatus": {}
   },
   "dashboard": {
     "actions": {
@@ -360,9 +372,15 @@
       "permissionMode": "权限模式",
       "permissionModes": {
         "dsh": {
-          "readOnly": { "label": "仅可查看" },
-          "workspaceWrite": { "label": "工作区内修改" },
-          "fullAccess": { "label": "完全权限" },
+          "readOnly": {
+            "label": "仅可查看"
+          },
+          "workspaceWrite": {
+            "label": "工作区内修改"
+          },
+          "fullAccess": {
+            "label": "完全权限"
+          },
           "auto": {
             "label": "Auto review"
           }
@@ -1319,7 +1337,80 @@
       "description": "AgentPilot 需要一台已配对且在线的设备，才能选择项目或开始会话。",
       "later": "稍后再说",
       "addDevice": "添加设备"
-    }
+    },
+    "dashboard.actions": {},
+    "dashboard.account": {},
+    "dashboard.empty": {},
+    "dashboard.errors": {},
+    "dashboard.nav": {},
+    "dashboard.filters": {},
+    "dashboard.new": {
+      "dashboard.new.permissionModes": {
+        "dashboard.new.permissionModes.dsh": {
+          "dashboard.new.permissionModes.dsh.readOnly": {},
+          "dashboard.new.permissionModes.dsh.workspaceWrite": {},
+          "dashboard.new.permissionModes.dsh.fullAccess": {},
+          "dashboard.new.permissionModes.dsh.auto": {}
+        },
+        "dashboard.new.permissionModes.requestApproval": {},
+        "dashboard.new.permissionModes.autoReview": {},
+        "dashboard.new.permissionModes.fullAccess": {},
+        "dashboard.new.permissionModes.claude": {
+          "dashboard.new.permissionModes.claude.default": {},
+          "dashboard.new.permissionModes.claude.acceptEdits": {},
+          "dashboard.new.permissionModes.claude.plan": {},
+          "dashboard.new.permissionModes.claude.auto": {},
+          "dashboard.new.permissionModes.claude.dontAsk": {},
+          "dashboard.new.permissionModes.claude.bypassPermissions": {}
+        }
+      },
+      "dashboard.new.imagePreview": {},
+      "dashboard.new.typewriter": {}
+    },
+    "dashboard.workspacePicker": {
+      "dashboard.workspacePicker.errors": {}
+    },
+    "dashboard.device": {
+      "dashboard.device.runtimeStatus": {},
+      "dashboard.device.runtimeConfigValidation": {},
+      "dashboard.device.runtimeConfigFields": {
+        "dashboard.device.runtimeConfigFields.claudeExecutablePath": {},
+        "dashboard.device.runtimeConfigFields.codexExecutablePath": {},
+        "dashboard.device.runtimeConfigFields.codexHome": {},
+        "dashboard.device.runtimeConfigFields.useSystemCodex": {},
+        "dashboard.device.runtimeConfigFields.ipcEnabled": {},
+        "dashboard.device.runtimeConfigFields.ipcDeeplinkHandoff": {},
+        "dashboard.device.runtimeConfigFields.modelGatewayBaseUrl": {},
+        "dashboard.device.runtimeConfigFields.modelGatewayApiKey": {}
+      },
+      "dashboard.device.runtimeConfigComponents": {
+        "dashboard.device.runtimeConfigComponents.keyValue": {},
+        "dashboard.device.runtimeConfigComponents.customModels": {},
+        "dashboard.device.runtimeConfigComponents.modelGateway": {}
+      }
+    },
+    "dashboard.panels": {
+      "dashboard.panels.files": {},
+      "dashboard.panels.terminal": {}
+    },
+    "dashboard.pair": {},
+    "dashboard.placeholder": {},
+    "dashboard.roles": {},
+    "dashboard.sections": {},
+    "dashboard.projects": {},
+    "dashboard.mobileConnections": {},
+    "dashboard.session": {
+      "dashboard.session.tools": {},
+      "dashboard.session.nativeHistory": {}
+    },
+    "dashboard.sessionStatus": {},
+    "dashboard.signOut": {},
+    "dashboard.status": {},
+    "dashboard.theme": {},
+    "dashboard.pairDevice": {
+      "dashboard.pairDevice.errors": {}
+    },
+    "dashboard.firstDevice": {}
   },
   "desktopConnector": {
     "provisionFailed": "无法让这台设备上线。",
@@ -1500,7 +1591,20 @@
       "retry": "{seconds} 秒后重发",
       "sent": "验证码已发送，请查看邮箱。",
       "failed": "验证码发送失败。"
-    }
+    },
+    "auth.actions": {},
+    "auth.errors": {},
+    "auth.bootstrap": {},
+    "auth.fields": {},
+    "auth.login": {},
+    "auth.signedOut": {},
+    "auth.mobileOAuth": {},
+    "auth.passwordStrength": {},
+    "auth.oauth": {},
+    "auth.register": {},
+    "auth.theme": {},
+    "auth.status": {},
+    "auth.emailCode": {}
   },
   "pages": {
     "settings": {
@@ -1959,6 +2063,35 @@
       "passwordReset": "找回密码",
       "passwordResetDescription": "允许用户通过邮箱验证码重置忘记的密码。",
       "passwordResetNeedsEmail": "需要先开启邮件服务，找回密码会通过邮件发送验证码。"
+    },
+    "pages.settings": {
+      "pages.settings.mobileStatus": {},
+      "pages.settings.profile": {}
+    },
+    "pages.team": {},
+    "pages.opsDashboard": {
+      "pages.opsDashboard.range": {},
+      "pages.opsDashboard.live": {},
+      "pages.opsDashboard.tabs": {},
+      "pages.opsDashboard.metrics": {},
+      "pages.opsDashboard.charts": {},
+      "pages.opsDashboard.series": {},
+      "pages.opsDashboard.segments": {},
+      "pages.opsDashboard.retention": {},
+      "pages.opsDashboard.runtimes": {},
+      "pages.opsDashboard.devices": {},
+      "pages.opsDashboard.quality": {
+        "pages.opsDashboard.quality.outcomeLabels": {}
+      }
+    },
+    "pages.service": {
+      "pages.service.email": {},
+      "pages.service.sections": {
+        "pages.service.sections.general": {},
+        "pages.service.sections.auth": {},
+        "pages.service.sections.email": {},
+        "pages.service.sections.info": {}
+      }
     }
   },
   "preview": {
@@ -2009,7 +2142,8 @@
       "openFailed": "无法打开安装包，请点击“立即更新”重试。",
       "ignoreFailed": "无法保存忽略记录，请重试。",
       "actionFailed": "操作失败，请重试。"
-    }
+    },
+    "desktopUpdates.errors": {}
   },
   "announcement": {
     "title": "公告",
@@ -2033,6 +2167,69 @@
       "retry": "重新加载",
       "publishedAt": "上次发布：{time}",
       "notPublished": "尚未发布"
-    }
-  }
+    },
+    "announcement.admin": {}
+  },
+  "admin": {
+    "admin.groups": {},
+    "admin.announcements": {}
+  },
+  "planning": {
+    "planning.title": "计划",
+    "planning.modePending": "模式切换待原生确认",
+    "planning.mode": "规划模式",
+    "planning.stateUncertain": "规划状态待核对",
+    "planning.executionStarted": "计划执行已开始",
+    "planning.executionAccepted": "执行请求已接受，等待原生开始",
+    "planning.executionRejected": "计划已同意，执行尚未启动",
+    "planning.executionUncertain": "执行结果待核对",
+    "planning.progress": "执行步骤进度",
+    "planning.retryStart": "重试启动",
+    "planning.submitFeedback": "提交修改意见",
+    "planning.cancel": "取消",
+    "planning.approve": "同意并执行",
+    "planning.revise": "修改计划",
+    "planning.dismiss": "暂不执行",
+    "planning.reviewTitle": "是否执行这个计划？",
+    "planning.version": "版本 {revision}",
+    "planning.documentVersion": "计划 · 版本 {revision}",
+    "planning.refreshBeforeReview": "原生状态待核对，请刷新后再确认。",
+    "planning.feedbackLabel": "修改意见",
+    "planning.feedbackPlaceholder": "说明需要如何调整计划",
+    "planning.closeReader": "关闭计划",
+    "planning.bodyLabel": "计划正文",
+    "planning.copy": "复制",
+    "planning.download": "下载 Markdown",
+    "planning.refreshLabel": "刷新规划状态",
+    "planning.refresh": "刷新",
+    "planning.writing": "正在撰写计划",
+    "planning.interrupted": "计划草稿已中断",
+    "planning.streaming": "正文随原生计划输出更新",
+    "planning.open": "打开计划",
+    "planning.collapse": "收起",
+    "planning.expand": "展开全文",
+    "planning.operationFailed": "规划操作未完成，请刷新原生状态。",
+    "planning.operationUnknown": "规划操作结果尚不确定，请刷新状态。",
+    "planning.commandAttachments": "此规划命令不接受附件，请填写规划任务。",
+    "planning.attachmentTask": "请填写附件对应的规划任务。",
+    "planning.workspaceUnsupported": "该运行时需要先准备工作区，新会话暂不支持计划模式；请创建后再输入 /plan。",
+    "planning.creationIntent": "新会话将使用计划模式",
+    "planning.stepPending": "待执行",
+    "planning.stepInProgress": "进行中",
+    "planning.stepCompleted": "已完成",
+    "planning.statusOpen": "待确认",
+    "planning.statusResponding": "正在确认",
+    "planning.statusApproved": "已同意",
+    "planning.statusExecuted": "已执行",
+    "planning.statusExecutionPending": "已同意，执行未启动",
+    "planning.statusRevisionRequested": "已请求修改",
+    "planning.statusDismissed": "未执行",
+    "planning.statusWithdrawn": "已撤回",
+    "planning.statusUnknown": "结果待核对",
+    "planning.superseded": "已修改为版本 {revision}",
+    "planning.commandDescription": "进入原生规划：/plan '<任务>' 先出计划、确认后执行；/plan off 退出",
+    "planning.commandHint": "[任务 | off]"
+  },
+  "runtimeErrors": {},
+  "agentReminder": {}
 }
