@@ -23,6 +23,7 @@ import { CascadingSelector } from "@/components/cascading-selector"
 import { useSessionToolSidebarStore } from "@/components/session-tool-sidebar-state"
 import { AgentSelectionDrawer } from "@/components/session/agent-selection-drawer"
 import { useWorkspacePreparation } from "@/components/session/use-workspace-preparation"
+import { creationConfigurationDefaults } from "@/features/dashboard/runtime-forms"
 import { RuntimeWorkflowPanel } from "@/components/session/runtime-workflow-panel"
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
 import { parsePlanningCommand } from "@/features/planning/commands"
@@ -32,7 +33,6 @@ import {
   AttachmentButton,
   AttachmentPreviewList,
   DragOverlay,
-  type AttachedFile,
   useAttachments,
 } from "@/components/attachment-input"
 import { buildOptimisticUserMessage } from "@/components/session/optimistic-timeline"
@@ -51,7 +51,6 @@ import { cn } from "@/lib/utils"
 import { useElementWidth } from "@/hooks/use-element-width"
 import type {
   DeviceRuntimeView,
-  InlineAttachmentRef,
   ProjectCreateRequest,
   ProtocolCapabilitySet,
   ProtocolModelCatalog,
@@ -122,41 +121,8 @@ const MOBILE_NEW_SESSION_TITLE_KEYS = [
   "typewriter.changingToday",
 ] as const
 
-async function inlineAttachmentsFromFiles(files: AttachedFile[]): Promise<InlineAttachmentRef[]> {
-  const inlineAttachments: InlineAttachmentRef[] = []
-  for (const attachment of files) {
-    const content = await attachment.file.arrayBuffer()
-    const contentBase64 = arrayBufferToBase64(content)
-    const sha256 = await sha256Hex(content)
-    inlineAttachments.push({
-      fileId: attachment.id.slice(0, 64),
-      name: attachment.name,
-      mediaType: attachment.file.type || "application/octet-stream",
-      size: attachment.size,
-      sha256,
-      contentBase64,
-    })
-  }
-  return inlineAttachments
-}
 
-function arrayBufferToBase64(value: ArrayBuffer): string {
-  const bytes = new Uint8Array(value)
-  const chunkSize = 0x8000
-  let binary = ""
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.subarray(index, index + chunkSize)
-    binary += String.fromCharCode(...chunk)
-  }
-  return btoa(binary)
-}
 
-async function sha256Hex(value: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", value)
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("")
-}
 
 type NewSessionTitleKey = (typeof NEW_SESSION_TITLE_KEYS)[number]
 type MobileNewSessionTitleKey = (typeof MOBILE_NEW_SESSION_TITLE_KEYS)[number]
@@ -166,8 +132,7 @@ export function TaskComposer() {
   const { session: authSession } = useAuth()
   const { isMobile, state: sidebarState } = useSidebar()
   const {
-    addOptimisticMessage,
-    bindOptimisticSession,
+    startSessionCreation,
     connectors,
     createProject,
     goHome,
@@ -717,6 +682,9 @@ export function TaskComposer() {
     JSON.stringify([selectedConnectorId, selectedAgent, workspace?.path ?? ""]),
     needsPreparation && !catalogsLoading && workspace?.path && workspace.connectorId === selectedConnectorId ? prepareRequest : undefined,
   )
+  const preparedConfiguration = preparation.operation?.state.configuration
+    ? creationConfigurationDefaults(preparation.operation.state.configuration) as Record<string, string | boolean>
+    : {}
   const requiresModelSelection = canUseModelCatalog && models.length > 0
   const requiresPermissionSelection = canUsePermissionCatalog && permissionOptions.length > 0
   const hasSelectionSettings = models.length > 0 || permissionOptions.length > 0
@@ -818,7 +786,7 @@ export function TaskComposer() {
       createdAt: now,
       updatedAt: now,
     }
-    addOptimisticMessage({
+    const optimisticMessage = {
       clientMessageId,
       sessionId: localSessionId,
       localSessionId,
@@ -832,7 +800,7 @@ export function TaskComposer() {
         items: [],
         nextSeq: 0,
       }),
-    })
+    }
     clear()
     setPrompt("")
     openSession(localSessionId)
@@ -867,17 +835,26 @@ export function TaskComposer() {
         },
       )
       persistPreference(nextPreference)
-      const created = await dashboardApi.createAndStartSession(authSession.accessToken, {
-        ...createBody,
-        content: planIntent ? planIntent.content ?? "" : usePlanning ? prompt : messageText,
-        selections,
-        attachments: selectedAttachments.length > 0
-          ? await inlineAttachmentsFromFiles(selectedAttachments)
-          : undefined,
-        clientMessageId,
-      })
-      toolSidebarStore.migrateSession(localSessionId, created.session.id)
-      bindOptimisticSession(localSessionId, created.session, created.attachments)
+      clear({ revokePreviews: false })
+      setPrompt("")
+      setPlanningCreation(false)
+      startSessionCreation({
+        localSessionId, clientMessageId, prompt,
+        attachments: selectedAttachments,
+        workspace: { ...workspace, projectId: project.id },
+        modelId: selectedModel, reasoningId: selectedReasoning, permissionMode: selectedPermissionMode,
+        request: {
+          ...createBody,
+          content: planIntent ? planIntent.content ?? "" : usePlanning ? prompt : messageText,
+          selections, clientMessageId,
+        },
+        ...(needsPreparation && preparation.operation ? { preparedWorkspace: {
+          preparationId: preparation.operation.id,
+          expectedRevision: preparation.operation.state.revision,
+          catalogRevision: preparation.operation.state.catalogRevision!,
+          ...(preparation.operation.state.configuration ? { configuration: preparedConfiguration } : {}),
+        } } : {}),
+      }, optimisticMessage, (id: string) => toolSidebarStore.migrateSession(localSessionId, id))
     } catch (err) {
       const message = err instanceof Error ? err.message : t("createFailed")
       markOptimisticMessageFailed(clientMessageId, message)
