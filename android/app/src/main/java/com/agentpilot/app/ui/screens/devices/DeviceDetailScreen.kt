@@ -1049,7 +1049,7 @@ private fun SessionDivider() {
 }
 
 @Composable
-private fun SectionBlock(
+internal fun SectionBlock(
     title: String,
     action: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -1084,7 +1084,7 @@ private fun SectionTitle(title: String) {
 }
 
 @Composable
-private fun EmptyText(text: String) {
+internal fun EmptyText(text: String) {
     Text(
         text = text,
         modifier = Modifier
@@ -1098,7 +1098,7 @@ private fun EmptyText(text: String) {
 }
 
 @Composable
-private fun DetailDivider() {
+internal fun DetailDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1221,7 +1221,7 @@ private fun DeviceSessionsFilter.archiveScopeLabelRes(): Int {
 }
 
 @Composable
-private fun SmallActionButton(
+internal fun SmallActionButton(
     icon: ImageVector,
     label: String,
     danger: Boolean,

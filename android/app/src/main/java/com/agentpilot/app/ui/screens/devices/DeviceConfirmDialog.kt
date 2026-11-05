@@ -47,11 +47,31 @@ internal fun DeviceConfirmDialog(
     errorMessage: String?,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    /** Explicit copy for callers that own their strings (agent setup reminder). */
+    titleOverride: String? = null,
+    bodyOverride: String? = null,
+    confirmLabelOverride: String? = null,
+    dismissLabelOverride: String? = null,
 ) {
     val title: String
     val body: String
     val confirmLabel: String
     val danger: Boolean
+
+    if (titleOverride != null && bodyOverride != null && confirmLabelOverride != null && dismissLabelOverride != null) {
+        DeviceConfirmDialog(
+            title = titleOverride,
+            body = bodyOverride,
+            confirmLabel = confirmLabelOverride,
+            dismissLabel = dismissLabelOverride,
+            danger = false,
+            busy = busy,
+            errorMessage = errorMessage,
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+        )
+        return
+    }
 
     when (action) {
         DeviceConfirmAction.DeleteDevice -> {
@@ -130,7 +150,10 @@ internal fun DeviceConfirmDialog(
     errorMessage: String? = null,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    /** Tap-outside / back gesture; null falls back to [onDismiss]. */
+    onDismissRequest: (() -> Unit)? = null,
 ) {
+    val gestureDismiss = onDismissRequest ?: onDismiss
     val colors = LocalAAColors.current
     val darkMode = colors.isDark
     val shape = AAShapes.extraLargeShape

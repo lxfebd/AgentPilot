@@ -187,7 +187,6 @@
     <string name="runtime_config_environment_name">VARIABLE_NAME</string>
     <string name="runtime_config_environment_value">Value</string>
     <string name="runtime_config_environment_unset">Remove inherited value</string>
-    <string name="runtime_config_add_variable">Add environment variable</string>
     <string name="runtime_config_environment_blank_name">Environment variable names cannot be empty.</string>
     <string name="runtime_config_environment_invalid_name">Environment variable names cannot contain “=” or null characters.</string>
     <string name="runtime_config_environment_duplicate_name">Environment variable names must be unique.</string>
@@ -827,4 +826,8 @@
     <string name="native_history_release_hint">End the current execution, then start a new one here.</string>
     <string name="native_history_browse_hint">Continue in the AgentPilot execution shell.</string>
     <string name="native_history_confirm_hint">Confirm to end the current execution.</string>
+    <string name="agent_reminder_add">Add Agent</string>
+    <string name="agent_reminder_description">You have not added any Agents yet. Add an Agent before starting a session. You can also configure one later on the device page.</string>
+    <string name="agent_reminder_skip">Continue without setup</string>
+    <string name="agent_reminder_title">Add an Agent to get started</string>
 </resources>

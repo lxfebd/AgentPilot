@@ -88,10 +88,12 @@ fun AABottomSheet(
     modifier: Modifier = Modifier,
     dismissEnabled: Boolean = true,
     onBack: (() -> Unit)? = null,
+    /** Without it, only the close button leaves, so its caller can ask first. */
+    dismissOnGesture: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = AABottomSheetDefaults.colors()
-    val canDismiss by rememberUpdatedState(dismissEnabled)
+    val canDismiss by rememberUpdatedState(dismissEnabled && dismissOnGesture)
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
         confirmValueChange = { it != SheetValue.Hidden || canDismiss },

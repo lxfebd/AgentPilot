@@ -186,7 +186,6 @@
     <string name="runtime_config_environment_name">变量名称</string>
     <string name="runtime_config_environment_value">变量值</string>
     <string name="runtime_config_environment_unset">移除继承值</string>
-    <string name="runtime_config_add_variable">添加环境变量</string>
     <string name="runtime_config_environment_blank_name">环境变量名称不能为空。</string>
     <string name="runtime_config_environment_invalid_name">环境变量名称不能包含“=”或空字符。</string>
     <string name="runtime_config_environment_duplicate_name">环境变量名称不能重复。</string>
@@ -825,4 +824,8 @@
     <string name="native_history_release_hint">结束当前执行后，可在此继续新任务。</string>
     <string name="native_history_browse_hint">在 AgentPilot 执行 Shell 中继续。</string>
     <string name="native_history_confirm_hint">确认结束当前执行。</string>
+    <string name="agent_reminder_add">添加 Agent</string>
+    <string name="agent_reminder_description">你还没有添加任何 Agent，添加后才能开始会话。也可以稍后在设备页面配置。</string>
+    <string name="agent_reminder_skip">暂不配置，继续</string>
+    <string name="agent_reminder_title">添加 Agent 后开始使用</string>
 </resources>
