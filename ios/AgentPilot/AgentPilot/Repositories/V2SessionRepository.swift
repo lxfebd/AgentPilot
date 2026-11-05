@@ -13,6 +13,7 @@ final class V2SessionRepository {
     let scope: V2ClientScope
     private let detail: V2SessionDetailService
     private let interactions: V2RuntimeInteractionService
+    private let planningAPI: V2PlanningAPI?
     private let localStore: V2LocalStore?
     private var persistenceTask: Task<Void, Never>?
     private let policy: V2SessionCachePolicy
@@ -27,6 +28,7 @@ final class V2SessionRepository {
         scope: V2ClientScope,
         detail: V2SessionDetailService,
         interactions: V2RuntimeInteractionService,
+        planningAPI: V2PlanningAPI? = nil,
         policy: V2SessionCachePolicy = V2SessionCachePolicy(),
         localStore: V2LocalStore? = nil,
         now: @escaping () -> Date = Date.init,
@@ -35,10 +37,27 @@ final class V2SessionRepository {
         self.scope = scope
         self.detail = detail
         self.interactions = interactions
+        self.planningAPI = planningAPI
         self.policy = policy
         self.localStore = localStore
         self.now = now
         self.sleep = sleep
+    }
+
+    func refreshPlanning(sessionId: V2SessionID) async {
+        guard let planningAPI else { return }
+        if let state = try? await planningAPI.state(sessionId: sessionId) { entries[sessionId]?.model.observePlanning(state) }
+    }
+
+    func executePlanning(sessionId: V2SessionID, request: V2PlanningRequest) async throws -> Bool {
+        guard let planningAPI else { throw HTTPError.invalidResponse }
+        let result = try await planningAPI.execute(sessionId: sessionId, request: request)
+        if let state = result.state { entries[sessionId]?.model.observePlanning(state) }
+        await refreshPlanning(sessionId: sessionId)
+        guard result.ok else {
+            throw NSError(domain: "Planning", code: 1, userInfo: [NSLocalizedDescriptionKey: result.message ?? String(localized: "规划操作结果尚未确认，请刷新状态。")])
+        }
+        return true
     }
 
     var cachedSessionIDs: Set<V2SessionID> { Set(entries.keys) }
@@ -499,6 +518,10 @@ final class V2SessionRepository {
 
     private func receive(_ event: V2SessionEvent, entry: Entry) async throws {
         guard event.sessionId == entry.id else { return }
+        if event.type == "planning.state.updated", let raw = event.payload["state"] {
+            entry.model.observePlanning(try JSONDecoder().decode(V2PlanningState.self, from: JSONEncoder().encode(raw)))
+            return
+        }
         if let pending = entry.loadTask { _ = try await pending.value }
         if let pending = entry.recoveryTask { try await pending.value }
         if event.type == "session.refetch_required" || event.sequence > (entry.projection?.sequence ?? 0) + 1 {
