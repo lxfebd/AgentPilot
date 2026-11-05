@@ -457,7 +457,8 @@
       "modelCatalogLoading": "Loading models…",
       "modelCatalogLoadFailed": "Could not load models",
       "modelCatalogEmpty": "No models available",
-      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model."
+      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model.",
+      "directoryRequired": "Choose a working directory before creating the session."
     },
     "workspacePicker": {
       "choosePath": "Choose path",

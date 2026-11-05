@@ -462,7 +462,8 @@
         "chooseTarget": "Choose a target and run.",
         "changingToday": "What are we changing today?"
       },
-      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model."
+      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model.",
+      "directoryRequired": "Choose a working directory before creating the session."
     },
     "workspacePicker": {
       "choosePath": "Choose path",

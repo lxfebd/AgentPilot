@@ -462,7 +462,8 @@
         "chooseTarget": "选择目标并运行。",
         "changingToday": "今天要改什么？"
       },
-      "imageInputUnsupported": "当前模型声明不支持图片输入，请移除图片或切换模型。"
+      "imageInputUnsupported": "当前模型声明不支持图片输入，请移除图片或切换模型。",
+      "directoryRequired": "创建会话前请先选择工作目录。"
     },
     "workspacePicker": {
       "choosePath": "选择路径",
