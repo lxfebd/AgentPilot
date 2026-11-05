@@ -11,6 +11,9 @@ export const CAPABILITY = {
   modelCatalog: "catalog.model",
   permissionCatalog: "catalog.permission",
   effortCatalog: "catalog.effort",
+  planning: "session.planning",
+  planDocument: "session.plan_document",
+  planReview: "session.plan_review",
   workspacePrepare: "runtime.workspace.prepare",
 } as const
 

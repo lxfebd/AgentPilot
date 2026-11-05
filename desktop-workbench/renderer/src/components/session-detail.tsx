@@ -53,6 +53,10 @@ import { CAPABILITY, capabilityIsUsable, findCapability } from "@/components/ses
 import { SessionComposer, type AttachedFile } from "@/components/session/session-composer"
 import { NativeSessionHandoff } from "@/components/session/native-session-handoff"
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
+import { PlanningPanel, PlanningReader, usePlanReader } from "@/components/session/planning-panel"
+import { useSessionPlanning } from "@/features/planning/use-session-planning"
+import { latestPlanRevisions, planEchoFilter } from "@/features/planning/timeline"
+import { PlanTimelineEntry } from "@/components/session/planning-panel"
 import { commandResult, commandTransportFailure, type CommandOutcome } from "@/components/session/runtime-command-model"
 import { createRecoveredSubscriptionTracker, useRuntimeCommands } from "@/components/session/use-runtime-commands"
 import {
@@ -419,6 +423,10 @@ export function SessionDetail({
     ? { runtimeId: sessionRuntimeId(session), runtimeType: sessionRuntimeType(session) }
     : undefined
   const effectiveCapabilities = state?.effectiveCapabilities ?? null
+  const planning = useSessionPlanning(token, session?.id ?? "")
+  const planReader = usePlanReader(session?.id ?? "")
+  const planEcho = React.useMemo(() => planEchoFilter(planning.state, planning.documents), [planning.state, planning.documents])
+  const latestPlanRevision = React.useMemo(() => latestPlanRevisions(planning.documents), [planning.documents])
   const canUseModelCatalog = Boolean(
     sessionRuntime &&
       effectiveCapabilities &&
@@ -1591,7 +1599,7 @@ export function SessionDetail({
     return () => resizeObserver.disconnect()
   }, [session?.id])
   const timelineGroups = React.useMemo(
-    () => groupTimelineItems((state?.items ?? []).filter(isVisibleTimelineItem), interactionTargetIds),
+    () => groupTimelineItems((state?.items ?? []).filter(item => isVisibleTimelineItem(item) && planEcho(item, messageText(item))), interactionTargetIds),
     [interactionTargetIds, state?.items],
   )
   const turnReviewDisplay = React.useMemo(() => {
@@ -1682,6 +1690,10 @@ export function SessionDetail({
             blockingInteractionList.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-foreground">{tSession("noActivity")}</p>
             ) : null}
+            {planning.documents.map(document => (
+              <PlanTimelineEntry key={`plan:${document.planId}:${document.revision}`} planning={planning} document={document}
+                latestRevision={latestPlanRevision.get(document.planId) ?? document.revision} onRead={planReader.open} />
+            ))}
             {timelineGroups.map((group) => {
               const groupKey = timelineGroupKey(group)
               const turnAction = turnActionsByGroupKey.get(groupKey)
@@ -1773,6 +1785,8 @@ export function SessionDetail({
           onRespondInteraction={handleRespondInteraction}
         />
         <RuntimeCreationStatus sessionId={sessionId} />
+        <PlanningPanel key={session.id} planning={planning}
+          canReview={capabilityIsUsable(effectiveCapabilities, CAPABILITY.planReview, sessionRuntimeScope)} />
         <NativeSessionHandoff key={sessionId} token={token} session={session} state={runtimeState}
           capabilities={state?.effectiveCapabilities ?? null} onSettled={async () => {
             const refreshed = await loadInitialSessionState(token, sessionId, { reason: "native-history.handoff" })
@@ -1867,6 +1881,7 @@ export function SessionDetail({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    <PlanningReader reader={planReader} className="pt-14" />
     </div>
   )
 }
