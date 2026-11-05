@@ -11,6 +11,9 @@ class SessionsApi(
     fun planning(serverUrl: String, token: String, sessionId: String): RemotePlanningState =
         client.getJson(serverUrl = serverUrl, path = "/sessions/${sessionId.urlEncode()}/planning", authorizationToken = token).toRemotePlanningState()
 
+    fun getWorkflowSession(serverUrl: String, token: String, sessionId: String): RemoteSession =
+        client.getJson(serverUrl = serverUrl, path = "/sessions/${sessionId.urlEncode()}", authorizationToken = token).toRemoteSession()
+
     fun executePlanning(serverUrl: String, token: String, sessionId: String, request: JSONObject): JSONObject =
         client.postJson(serverUrl = serverUrl, path = "/sessions/${sessionId.urlEncode()}/planning", body = request, authorizationToken = token)
 

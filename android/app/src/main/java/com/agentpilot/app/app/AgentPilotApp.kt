@@ -45,6 +45,7 @@ import com.agentpilot.app.feature.notify.SessionNotifier
 import com.agentpilot.app.feature.update.AppUpdateViewModel
 import com.agentpilot.app.feature.devices.DeviceAgentOperations
 import com.agentpilot.app.feature.devices.DevicesController
+import com.agentpilot.app.ui.screens.home.RuntimeWorkflowDialog
 import com.agentpilot.app.feature.devices.DevicePairingMonitor
 import com.agentpilot.app.feature.files.FilesController
 import com.agentpilot.app.feature.realtime.DashboardRealtimeController
@@ -1165,6 +1166,15 @@ fun AgentPilotApp(
         },
         )
     }
+    RuntimeWorkflowDialog(sessionsController.workflows) {
+        sessionsController.openAcceptedWorkflow(sessionsState.devices).onSuccess { session ->
+            sessionsState = sessionsState.withPatchedSession(session)
+            preparedSessionDraft = null
+            selectedSessionId = session.id
+            destinationName = AppDestination.SessionDetail.name
+        }
+    }
+
     AnnouncementGate(
         api = announcementsApi,
         serverUrl = updateServerUrl.ifBlank { AppConfig.OFFICIAL_SERVER_URL },

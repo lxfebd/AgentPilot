@@ -40,6 +40,53 @@ class SessionDetailController(
     private val optimisticStore = SessionOptimisticMessageStore()
     private val attachmentTransfer = SessionAttachmentTransfer(sessionsApi)
 
+    suspend fun nativeHistoryAction(sessionId: String, body: org.json.JSONObject, close: Boolean): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                val workflow = com.agentpilot.app.api.RuntimeWorkflowApi()
+                if (close) {
+                    val result = workflow.closeSession(auth.serverUrl, auth.accessToken, sessionId, body)
+                    if (!result.optBoolean("closed")) {
+                        throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                            "native_history_release_unconfirmed", "Execution release is unconfirmed.",
+                        )
+                    }
+                } else {
+                    sessionsApi.enableTakeover(auth.serverUrl, auth.accessToken, sessionId)
+                    var completed = false
+                    repeat(360) {
+                        if (!completed) {
+                            val result = workflow.recover(auth.serverUrl, auth.accessToken, sessionId, body)
+                            when (result.optString("phase")) {
+                                "completed" -> completed = true
+                                "running" -> kotlinx.coroutines.delay(1000)
+                                "rejected", "failed" -> {
+                                    val failure = result.optJSONObject("failure")
+                                    throw NativeHistoryRejected(
+                                        failure?.optString("code")?.takeIf(String::isNotBlank)
+                                            ?: "native_history_recovery_failed",
+                                        failure?.optString("message")?.takeIf(String::isNotBlank) ?: "Recovery failed.",
+                                    )
+                                }
+                                else -> throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                                    "native_history_recovery_unconfirmed",
+                                    "Recovery is unconfirmed. Check the existing operation.",
+                                )
+                            }
+                        }
+                    }
+                    if (!completed) {
+                        throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                            "native_history_recovery_unconfirmed",
+                            "Recovery is unconfirmed. Check the existing operation.",
+                        )
+                    }
+                }
+                Unit
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+        }
+
     suspend fun loadPlanning(sessionId: String): Result<com.agentpilot.app.api.RemotePlanningState?> =
         withContext(Dispatchers.IO) {
             runCatching {

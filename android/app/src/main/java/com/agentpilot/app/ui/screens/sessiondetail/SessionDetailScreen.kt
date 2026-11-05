@@ -89,6 +89,8 @@ import com.agentpilot.app.feature.sessiondetail.DownloadedAttachment
 import com.agentpilot.app.feature.sessiondetail.SessionDetailController
 import com.agentpilot.app.feature.sessiondetail.SessionMeta
 import com.agentpilot.app.feature.sessiondetail.SessionDetailState
+import com.agentpilot.app.ui.designsystem.runtimeErrorText
+import com.agentpilot.app.ui.screens.sessiondetail.NativeHistoryControls
 import com.agentpilot.app.ui.screens.sessiondetail.SessionPlanningPanel
 import com.agentpilot.app.feature.sessiondetail.SessionRuntimeStatus
 import com.agentpilot.app.feature.sessiondetail.SessionTimelineState
@@ -2004,6 +2006,18 @@ fun SessionDetailScreen(
                                         onRetry = if (canUseCommands) ({ loadCommands(force = true) }) else null,
                                         blockReason = ::commandBlockMessage,
                                         onSelect = ::chooseCommand,
+                                    )
+                                }
+                                if (state.runtime.metadata["nativeHistory"] == true && sessionId != null) {
+                                    NativeHistoryControls(
+                                        sessionId = sessionId,
+                                        generation = state.runtime.metadata["ownerGeneration"] as? String ?: "",
+                                        revision = state.runtime.metadata["sourceRevision"] as? String ?: "",
+                                        canContinue = connectorOnline && state.capabilities.find("session.recover", state.runtime.runtimeId, state.runtime.runtimeType)?.let { it.supported && it.available && (it.allowed || it.unavailableReason == "session_not_taken_over") } == true,
+                                        canRelease = connectorOnline && state.capabilities.find("session.close", state.runtime.runtimeId, state.runtime.runtimeType)?.let { it.available && it.allowed } == true,
+                                        reason = runtimeErrorText(context, state.runtime.error?.get("code") as? String, state.runtime.error?.get("message") as? String),
+                                        onAction = { body, close -> controller.nativeHistoryAction(sessionId, body, close) },
+                                        onSettled = { loadInitialSnapshot() },
                                     )
                                 }
                                 MessageComposer(
