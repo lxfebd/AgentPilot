@@ -40,6 +40,49 @@ class SessionDetailController(
     private val optimisticStore = SessionOptimisticMessageStore()
     private val attachmentTransfer = SessionAttachmentTransfer(sessionsApi)
 
+    suspend fun loadPlanning(sessionId: String): Result<com.agentpilot.app.api.RemotePlanningState?> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                sessionsApi.planning(auth.serverUrl, auth.accessToken, sessionId)
+            }
+        }
+
+    suspend fun submitPlanning(sessionId: String, command: PlanningCommand, attachments: List<TimelineAttachment>) {
+        withContext(Dispatchers.IO) {
+            val auth = authSession()
+            sessionsApi.executePlanning(
+                auth.serverUrl, auth.accessToken, sessionId,
+                JSONObject()
+                    .put("command", command.command)
+                    .put("content", command.content)
+                    .put("operationId", java.util.UUID.randomUUID().toString())
+                    .put("attachments", org.json.JSONArray(attachments.map { JSONObject().put("fileId", it.fileId) })),
+            )
+        }
+    }
+
+    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String) {
+        withContext(Dispatchers.IO) {
+            val auth = authSession()
+            sessionsApi.executePlanning(
+                auth.serverUrl, auth.accessToken, sessionId,
+                JSONObject()
+                    .put("command", action)
+                    .put("operationId", java.util.UUID.randomUUID().toString())
+                    .put("reviewId", target.review?.reviewId)
+                    .put("planId", target.review?.planId)
+                    .put("planRevision", target.review?.planRevision)
+                    .put("contentHash", target.review?.contentHash)
+                    .put("epoch", target.epoch)
+                    .put("feedback", feedback),
+            )
+        }
+    }
+
+    fun clearPlanningEntry(sessionId: String) { optimisticStore.clear(sessionId) }
+
+
     suspend fun load(
         sessionId: String,
         devices: List<AgentDevice>,

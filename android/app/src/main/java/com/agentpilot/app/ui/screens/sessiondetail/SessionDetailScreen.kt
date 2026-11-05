@@ -89,6 +89,7 @@ import com.agentpilot.app.feature.sessiondetail.DownloadedAttachment
 import com.agentpilot.app.feature.sessiondetail.SessionDetailController
 import com.agentpilot.app.feature.sessiondetail.SessionMeta
 import com.agentpilot.app.feature.sessiondetail.SessionDetailState
+import com.agentpilot.app.ui.screens.sessiondetail.SessionPlanningPanel
 import com.agentpilot.app.feature.sessiondetail.SessionRuntimeStatus
 import com.agentpilot.app.feature.sessiondetail.SessionTimelineState
 import com.agentpilot.app.feature.sessiondetail.TimelineAttachment
@@ -743,6 +744,11 @@ fun SessionDetailScreen(
                         state = controller.mergeSnapshotWithLiveState(id, loaded, state)
                             .completeSnapshotLoad()
                         state.session?.let(onSessionChanged)
+                        scope.launch {
+                            controller.loadPlanning(id).onSuccess { planning ->
+                                state = state.copy(planning = planning)
+                            }
+                        }
                     }
                 },
                 onFailure = {
@@ -1928,6 +1934,9 @@ fun SessionDetailScreen(
                             .fillMaxHeight()
                             .background(colors.canvas),
                     ) {
+                        if (state.planning != null) {
+                            SessionPlanningPanel(state.planning, colors.isDark)
+                        }
                         when {
                             sessionId == null && !isPreparedSession -> EmptyDetailMessage(stringResource(R.string.session_open_from_list))
                             state.timeline.isLoading && state.messages.isEmpty() -> {
