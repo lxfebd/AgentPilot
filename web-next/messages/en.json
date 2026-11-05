@@ -466,7 +466,8 @@
       "modelCatalogStarting": "Starting {agent}…",
       "modelCatalogLoading": "Loading models…",
       "modelCatalogLoadFailed": "Could not load models",
-      "modelCatalogEmpty": "No models available"
+      "modelCatalogEmpty": "No models available",
+      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model."
     },
     "workspacePicker": {
       "choosePath": "Choose path",

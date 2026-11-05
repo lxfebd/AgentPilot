@@ -466,7 +466,8 @@
       "modelCatalogStarting": "正在启动 {agent}…",
       "modelCatalogLoading": "正在加载模型…",
       "modelCatalogLoadFailed": "模型加载失败",
-      "modelCatalogEmpty": "暂无可用模型"
+      "modelCatalogEmpty": "暂无可用模型",
+      "imageInputUnsupported": "当前模型声明不支持图片输入，请移除图片或切换模型。"
     },
     "workspacePicker": {
       "choosePath": "选择路径",

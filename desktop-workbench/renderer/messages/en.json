@@ -360,9 +360,15 @@
       "permissionMode": "Permission mode",
       "permissionModes": {
         "dsh": {
-          "readOnly": { "label": "Read Only" },
-          "workspaceWrite": { "label": "Workspace Write" },
-          "fullAccess": { "label": "Full access" },
+          "readOnly": {
+            "label": "Read Only"
+          },
+          "workspaceWrite": {
+            "label": "Workspace Write"
+          },
+          "fullAccess": {
+            "label": "Full access"
+          },
           "auto": {
             "label": "Auto review"
           }
@@ -455,7 +461,8 @@
         "ideaToSession": "Turn an idea into a session.",
         "chooseTarget": "Choose a target and run.",
         "changingToday": "What are we changing today?"
-      }
+      },
+      "imageInputUnsupported": "The selected model does not declare image input support. Remove the image or choose another model."
     },
     "workspacePicker": {
       "choosePath": "Choose path",

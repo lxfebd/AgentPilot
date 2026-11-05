@@ -360,9 +360,15 @@
       "permissionMode": "权限模式",
       "permissionModes": {
         "dsh": {
-          "readOnly": { "label": "仅可查看" },
-          "workspaceWrite": { "label": "工作区内修改" },
-          "fullAccess": { "label": "完全权限" },
+          "readOnly": {
+            "label": "仅可查看"
+          },
+          "workspaceWrite": {
+            "label": "工作区内修改"
+          },
+          "fullAccess": {
+            "label": "完全权限"
+          },
           "auto": {
             "label": "Auto review"
           }
@@ -455,7 +461,8 @@
         "ideaToSession": "把想法变成会话。",
         "chooseTarget": "选择目标并运行。",
         "changingToday": "今天要改什么？"
-      }
+      },
+      "imageInputUnsupported": "当前模型声明不支持图片输入，请移除图片或切换模型。"
     },
     "workspacePicker": {
       "choosePath": "选择路径",
