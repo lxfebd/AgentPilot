@@ -11,6 +11,7 @@ upstream Agents Anywhere closed.
 import asyncio
 from types import SimpleNamespace
 
+from connector.runtime_protocol.protocol import AgentRuntime
 from connector.runtime_protocol.workflows import (
     RuntimeWorkflowRequest,
     RuntimeWorkflowResult,
@@ -86,3 +87,34 @@ def test_planning_rpc_degrades_when_the_runtime_has_no_plan_mode() -> None:
     )
     assert result["capabilities"]["supported"] is False
     assert result["freshness"] == "unknown"
+
+
+class BareRuntime(AgentRuntime):
+    """A real AgentRuntime that declares no plan-mode port, like the shipped runtimes."""
+
+    @property
+    def identity(self):
+        return SimpleNamespace(runtime_id="rti_pi-main", runtime="pi", runtime_type="pi")
+
+    async def execute_workflow(self, request):
+        raise AssertionError("planning methods must not reach execute_workflow")
+
+
+def test_planning_rpc_answers_a_real_runtime_without_the_attribute() -> None:
+    """Regression: AgentRuntime must answer `planning` for every runtime.
+
+    The dispatch reads runtime.planning before it can degrade. Without the
+    base-class property a shipped runtime (Pi, Codex, Claude) raises
+    AttributeError - which the planning service's except clause does not
+    catch - instead of returning the unsupported snapshot it expects.
+    """
+    runtime = BareRuntime()
+    assert runtime.planning is None, "a runtime without plan mode must answer None"
+
+    supervisor = StubSupervisor()
+    supervisor._runtime = runtime
+    handler = RuntimeRpcHandler(supervisor, None)
+    for method in ("session.planning.get", "session.planning.execute", "session.planning.operation"):
+        result = asyncio.run(handler.dispatch(method, {"sessionId": "s1", "runtime": "pi"}))
+        assert result["capabilities"]["supported"] is False, method
+        assert result["freshness"] == "unknown", method
