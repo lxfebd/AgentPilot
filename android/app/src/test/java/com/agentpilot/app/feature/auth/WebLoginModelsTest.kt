@@ -7,9 +7,9 @@ import org.junit.Test
 
 class WebLoginModelsTest {
     private val session = WebLoginSession(
-        serverUrl = "https://smartcare.aifacex.top",
-        oauthWebOrigin = "https://smartcare.aifacex.top",
-        authorizeUrl = "https://smartcare.aifacex.top/#/mobile-oauth",
+        serverUrl = "https://server.example.com",
+        oauthWebOrigin = "https://server.example.com",
+        authorizeUrl = "https://server.example.com/#/mobile-oauth",
         state = "test-state-1234",
         codeVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
     )
@@ -86,13 +86,13 @@ class WebLoginModelsTest {
     @Test fun createSessionBuildsPkceAuthorizeUrl() {
         val created = createWebLoginSession(
             server = LoginServerConnection(
-                serverUrl = "https://smartcare.aifacex.top",
-                oauthWebOrigin = "https://smartcare.aifacex.top",
+                serverUrl = "https://server.example.com",
+                oauthWebOrigin = "https://server.example.com",
             ),
             codeVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
             state = "st-1234567890",
         )
-        assertTrue(created.authorizeUrl.startsWith("https://smartcare.aifacex.top/#/mobile-oauth?"))
+        assertTrue(created.authorizeUrl.startsWith("https://server.example.com/#/mobile-oauth?"))
         assertTrue(created.authorizeUrl.contains("code_challenge_method=S256"))
         assertTrue(created.authorizeUrl.contains("code_challenge="))
         assertTrue(created.authorizeUrl.contains("state=st-1234567890"))

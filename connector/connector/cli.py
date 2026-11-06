@@ -144,7 +144,7 @@ def _add_pair_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "server",
         nargs="?",
-        help="backend server URL, for example anywhere.com or https://api.anywhere.com",
+        help="backend server URL, for example https://server.example.com",
     )
     parser.add_argument(
         "--poll-interval", type=float, default=2, help="seconds between pairing polls"
