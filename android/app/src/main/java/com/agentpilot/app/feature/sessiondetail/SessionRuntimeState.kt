@@ -17,6 +17,7 @@ const val SESSION_COMMAND_EXECUTE_CAPABILITY = "session.command.execute"
 const val SESSION_MODEL_CATALOG_CAPABILITY = "catalog.model"
 const val SESSION_PERMISSION_CATALOG_CAPABILITY = "catalog.permission"
 const val SESSION_ATTACHMENT_CAPABILITY = "runtime.attachment"
+const val SESSION_PLAN_REVIEW_CAPABILITY = "session.plan_review"
 
 data class SessionRuntimeState(
     val sessionId: String? = null,

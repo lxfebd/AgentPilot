@@ -90,6 +90,7 @@ import com.agentpilot.app.feature.sessiondetail.SessionDetailController
 import com.agentpilot.app.feature.sessiondetail.SessionMeta
 import com.agentpilot.app.feature.sessiondetail.SessionDetailState
 import com.agentpilot.app.ui.designsystem.runtimeErrorText
+import com.agentpilot.app.ui.designsystem.runtimeOperationErrorMessage
 import com.agentpilot.app.ui.screens.sessiondetail.NativeHistoryControls
 import com.agentpilot.app.ui.screens.sessiondetail.SessionPlanningPanel
 import com.agentpilot.app.feature.sessiondetail.SessionRuntimeStatus
@@ -120,6 +121,7 @@ import com.agentpilot.app.feature.sessiondetail.request
 import com.agentpilot.app.feature.sessiondetail.ui
 import com.agentpilot.app.feature.sessiondetail.RuntimeNoticeResponseException
 import com.agentpilot.app.feature.sessiondetail.SESSION_ATTACHMENT_CAPABILITY
+import com.agentpilot.app.feature.sessiondetail.SESSION_PLAN_REVIEW_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_COMMANDS_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_COMMAND_EXECUTE_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_INTERRUPT_CAPABILITY
@@ -238,6 +240,7 @@ fun SessionDetailScreen(
     var pendingOpenFilePath by remember(sessionId) { mutableStateOf<String?>(null) }
     var terminalVerticalDragActive by remember(sessionId) { mutableStateOf(false) }
     var composerHeightPx by remember { mutableStateOf(0) }
+    var planningBusy by remember(sessionId) { mutableStateOf(false) }
     var readOnlyComposerTapCount by remember(sessionId) { mutableStateOf(0) }
     var modelCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
     var permissionCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -278,17 +281,34 @@ fun SessionDetailScreen(
         )
     }
 
-    fun showError(message: String) {
-        scope.launch {
-            snackbarHostState.showSnackbar(
-                AAToastVisuals(
-                    message = message,
-                    isError = true,
-                    duration = SnackbarDuration.Long,
-                ),
-            )
+    val planTarget = remember(state.planning) {
+        state.planning?.takeIf { current ->
+            val review = current.review
+            val document = current.proposal
+            val canReview = state.capabilities.find(SESSION_PLAN_REVIEW_CAPABILITY, state.runtime.runtimeId, state.runtime.runtimeType)
+                ?.let { it.supported && it.available && it.allowed } == true
+            canReview && review != null && document != null &&
+                current.actions?.any { it in setOf("approve_and_execute", "request_revision", "dismiss_review") } == true &&
+                (review.status == "open" || (review.status == "approved" && current.executionStatus == "rejected" && current.executionRetryable)) &&
+                review.planId == document.planId && review.planRevision == document.revision && review.contentHash == document.contentHash
         }
     }
+
+    fun showError(message: String) {
+        scope.launch { snackbarHostState.showSnackbar(message) }
+    }
+
+    fun respondPlan(target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String) {
+        val id = sessionId
+        if (id != null && !planningBusy) scope.launch {
+            planningBusy = true
+            controller.respondPlanning(id, target, action, feedback)
+                .onSuccess { if (sessionId == id) controller.loadPlanning(id).onSuccess { state = state.copy(planning = it) } }
+                .onFailure { showError(runtimeOperationErrorMessage(context, it)) }
+            planningBusy = false
+        }
+    }
+
 
     fun showToast(message: String) {
         scope.launch {
@@ -2019,6 +2039,11 @@ fun SessionDetailScreen(
                                         onAction = { body, close -> controller.nativeHistoryAction(sessionId, body, close) },
                                         onSettled = { loadInitialSnapshot() },
                                     )
+                                }
+                                planTarget?.let { target ->
+                                    PlanningReviewPanel(target, planningBusy, onRespond = { action, feedback ->
+                                        respondPlan(target, action, feedback)
+                                    })
                                 }
                                 MessageComposer(
                                     darkMode = darkMode,

@@ -109,23 +109,25 @@ class SessionDetailController(
         }
     }
 
-    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String) {
+    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String): Result<Unit> =
         withContext(Dispatchers.IO) {
-            val auth = authSession()
-            sessionsApi.executePlanning(
-                auth.serverUrl, auth.accessToken, sessionId,
-                JSONObject()
-                    .put("command", action)
-                    .put("operationId", java.util.UUID.randomUUID().toString())
-                    .put("reviewId", target.review?.reviewId)
-                    .put("planId", target.review?.planId)
-                    .put("planRevision", target.review?.planRevision)
-                    .put("contentHash", target.review?.contentHash)
-                    .put("epoch", target.epoch)
-                    .put("feedback", feedback),
-            )
+            runCatching {
+                val auth = authSession()
+                sessionsApi.executePlanning(
+                    auth.serverUrl, auth.accessToken, sessionId,
+                    JSONObject()
+                        .put("command", action)
+                        .put("operationId", java.util.UUID.randomUUID().toString())
+                        .put("reviewId", target.review?.reviewId)
+                        .put("planId", target.review?.planId)
+                        .put("planRevision", target.review?.planRevision)
+                        .put("contentHash", target.review?.contentHash)
+                        .put("epoch", target.epoch)
+                        .put("feedback", feedback),
+                )
+                Unit
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
         }
-    }
 
     fun clearPlanningEntry(sessionId: String) { optimisticStore.clear(sessionId) }
 
