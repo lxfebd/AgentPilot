@@ -1,5 +1,4 @@
 from __future__ import annotations
-from connector.runtime_protocol.host import runtime_kv_store
 
 import sys
 from collections.abc import Callable, Mapping
@@ -20,7 +19,7 @@ from connector.runtime_protocol import (
     RuntimeUnavailableError,
 )
 from connector.runtime_protocol.filesystem import filesystem_resource_key
-from connector.runtime_protocol.host import RuntimeHostClient
+from connector.runtime_protocol.host import RuntimeHostClient, runtime_kv_store
 from connector.runtimes.codex import provider_config
 from connector.runtimes.codex.runtime import CodexRuntime
 from connector.runtimes.codex.sdk.binary import (
@@ -234,12 +233,16 @@ class CodexProvider(RuntimeProvider):
             raise RuntimeUnavailableError("Codex SDK is not available")
         provider_config.ensure_codex_home(str(config.values["codexHome"]))
         client = self._sdk_client_factory(config)
-        return CodexRuntime(
+        from connector.planning.infrastructure.binding import bind_planning
+        from connector.runtimes.codex.planning import CodexPlanningPort
+
+        runtime = CodexRuntime(
             config=config,
             host=host,
             client=client,
             client_message_kv=runtime_kv_store(host),
         )
+        return bind_planning(runtime, host, CodexPlanningPort(runtime))
 
     def resource_claims(
         self,

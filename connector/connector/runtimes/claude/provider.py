@@ -184,9 +184,13 @@ class ClaudeProvider(RuntimeProvider):
         sdk = config.metadata.get("sdk") if isinstance(config.metadata, dict) else None
         if isinstance(sdk, dict) and not sdk.get("available", True):
             raise RuntimeInvalidRequestError("Claude Agent SDK is not available")
-        return ClaudeRuntime(
+        from connector.planning.infrastructure.binding import bind_planning
+        from connector.runtimes.claude.planning import ClaudePlanningPort
+
+        runtime = ClaudeRuntime(
             config=config,
             host=host,
             sdk_loader=self._sdk_loader,
             client_message_kv=runtime_kv_store(host),
         )
+        return bind_planning(runtime, host, ClaudePlanningPort(runtime))
