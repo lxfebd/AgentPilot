@@ -352,13 +352,16 @@ export class DashboardApi {
     options: SessionSnapshotRequestOptions = {},
   ): Promise<SessionSnapshotResponse> {
     const reason = options.reason ?? "unspecified";
-    console.info("[AgentPilot] session snapshot request", {
-      sessionId,
-      limit,
-      reason,
-      requestedAt: new Date().toISOString(),
-      stack: new Error().stack,
-    });
+    if (process.env.NODE_ENV !== "production") {
+      // Building the stack is the expensive part, so it stays behind the guard.
+      console.info("[AgentPilot] session snapshot request", {
+        sessionId,
+        limit,
+        reason,
+        requestedAt: new Date().toISOString(),
+        stack: new Error().stack,
+      })
+    }
     return this.client.get<SessionSnapshotResponse>(
       `/sessions/${encodeURIComponent(sessionId)}/snapshot`,
       { token, query: { limit } },
