@@ -5,6 +5,20 @@ import os
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+
+
+def application_version() -> str:
+    """The Server version as published, read from pyproject.toml.
+
+    Hard-coding it here is how the health endpoint ends up reporting a version
+    the release no longer carries - tests/test_infrastructure_health.py asserts
+    the two agree.
+    """
+    import tomllib
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    return tomllib.loads(pyproject.read_text())["project"]["version"]
+
 from pathlib import Path
 
 import uvicorn
@@ -189,7 +203,9 @@ def create_app(
                                 finally:
                                     await app.state.store.close()
 
-    app = FastAPI(title="Agent Server", version="2.4.1", lifespan=lifespan)
+    # The health endpoints report this version, and the version bump lands in
+    # pyproject.toml; reading it from there keeps the two from drifting apart.
+    app = FastAPI(title="Agent Server", version=application_version(), lifespan=lifespan)
     app.add_exception_handler(
         ConnectorServiceError,
         error_handlers.connector_service_error_handler,
