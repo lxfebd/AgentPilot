@@ -14,7 +14,30 @@ final class SessionChatModel {
         set { session.isPerformingAction = newValue }
     }
     private(set) var isLoadingSettings = false
+
+    /// The plan under review, when the runtime allows a review and the review is actionable.
+    var planReviewTarget: V2PlanningReviewTarget? {
+        guard session.runtime.allows("session.plan_review"), let state = session.planning,
+              let review = state.review, let plan = state.proposal,
+              state.capabilities?.actions.contains(where: { ["approve_and_execute", "request_revision", "dismiss_review"].contains($0) }) == true,
+              review.status == "open" || (review.status == "approved" && state.execution?.status == "rejected" && state.execution?.retryable == true),
+              review.planId == plan.planId, review.planRevision == plan.revision, review.contentHash == plan.contentHash else { return nil }
+        return .init(state: state)
+    }
     var error: String?
+
+    /// Approve, request a revision of, or dismiss the plan under review.
+    func respondPlan(_ target: V2PlanningState, action: String, feedback: String) async {
+        guard !isWorking, let review = target.review else { return }
+        isWorking = true; error = nil
+        defer { isWorking = false }
+        do {
+            let request = V2PlanningRequest(command: action, feedback: feedback, reviewId: review.reviewId,
+                planId: review.planId, planRevision: review.planRevision, contentHash: review.contentHash,
+                epoch: target.epoch)
+            _ = try await repository.executePlanning(sessionId: session.id, request: request)
+        } catch { self.error = error.localizedDescription }
+    }
     var settingsError: String?
     private(set) var isOpeningPrepared = false
     var isOpeningReady: Bool { isOpeningPrepared && timeline.hasPresentedSnapshot }
