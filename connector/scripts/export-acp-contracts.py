@@ -11,8 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def write(path: Path, value: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
+    # newline="\n": Python's text mode would otherwise emit CRLF on Windows,
+    # which rewrites the committed contracts and changes their recorded sha.
     path.write_text(
-        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        newline="\n",
     )
 
 
