@@ -19,7 +19,7 @@ def write(path: Path, value: dict):
 def main():
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "urn:agents-anywhere:acp-runtime:1.0",
+        "$id": "urn:agent-pilot:acp-runtime:1.0",
         "$defs": {
             "configuration": {
                 "type": "object",

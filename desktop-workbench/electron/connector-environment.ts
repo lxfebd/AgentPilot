@@ -95,7 +95,7 @@ export class ConnectorEnvironment {
         }
         // Check the npm cache even when the Python receipt is still current.
         // Both the preflight and all Pi instances use this same Desktop cache.
-        const npmRoot = context.env.AGENTPILOT_PI_NPM_ROOT ?? context.env.AGENTPILOT_PI_NPM_ROOT ?? path.join(this.options.dataPath, "pi-npm-runtimes");
+        const npmRoot = context.env.AGENTPILOT_PI_NPM_ROOT ?? context.env.AA_PI_NPM_ROOT ?? path.join(this.options.dataPath, "pi-npm-runtimes");
         this.publish({ status: "preparing", phase: "pi", event: "environment.pi",
           message: "Preparing Pi ACP adapter and dependencies.", progress: undefined, stderr: undefined, exitCode: undefined });
         await this.sync(context, signal, ["run", "--no-sync", "--project", context.project,
