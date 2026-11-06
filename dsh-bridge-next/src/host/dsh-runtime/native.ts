@@ -161,6 +161,12 @@ export class NativeRuntime {
       { model, effort, approval: this.approvals.available, attachments: Boolean(this.ctx.get('attachments')), files: Boolean(this.ctx.get('fileUploads')),
         permission: this.configuration.canSelectPermission && (!id || !this.ctx.get('agents')?.get(id) || Boolean(this.ctx.get('commands')!.find(this.ctx.get('agents')!.get(id)!, 'permission'))),
         commands: await this.commands.capability(id) })
+    // The Bridge reports native facts; only a Connector with the unified
+    // Planning application may advertise the end-to-end capability.
+    const planning = Boolean(this.planning.service())
+    Object.assign(result.capabilities.find(item => item.capabilityId === 'session.planning')!, { capabilityId: 'session.planning', scope: platformId ? 'session' : 'runtime',
+      ...(platformId ? { sessionId: platformId } : {}), runtime: 'dsh', version: '1', supported: false,
+      available: false, allowed: true, metadata: { nativePlanningAvailable: planning, contentStreaming: 'native_delta' } })
     return { ...result, metadata: { ...result.metadata,
       ...(catalog ? { modelCatalogFailures: catalog.metadata.failures } : {}) } }
   }
