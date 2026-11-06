@@ -42,7 +42,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 scenario = args.scenario
-root = Path(tempfile.mkdtemp(prefix="aa-pi-npm-qa-"))
+root = Path(tempfile.mkdtemp(prefix="agentpilot-pi-npm-"))
 requests = []
 attachment = b"AA_PI_ATTACHMENT_PRIVATE_PROOF_7e39f1"
 

@@ -39,25 +39,25 @@ compiler = [
 ]
 libs = [stdlib, coroutines, annotations, jar("org.json", "json", "20240303")]
 SOURCES = {
-    "Api.kt": '''package com.agentsanywhere.app.api
+    "Api.kt": '''package com.agentpilot.app.api
 import org.json.JSONObject
 class RuntimeWorkflowApi { var reads=0
 fun post(server:String,token:String,path:String,body:JSONObject)=JSONObject("""{"id":"create","kind":"creation","sessionId":"session","state":{"phase":"accepted","messageAccepted":true}}""")
 fun get(server:String,token:String,kind:String,id:String):JSONObject {reads++;return post(server,token,kind,JSONObject())}
 }''',
-    "Auth.kt": """package com.agentsanywhere.app.feature.auth
+    "Auth.kt": """package com.agentpilot.app.feature.auth
 interface AuthSessionReader {fun readServerUrl():String;fun readUserId():String;fun readAccessToken():String}""",
-    "Storage.kt": """package com.agentsanywhere.app.feature.sessions
+    "Storage.kt": """package com.agentpilot.app.feature.sessions
 class RuntimeWorkflowReferenceStore {
 private val ids=mutableMapOf<String,MutableSet<String>>()
 fun read(server:String,user:String)=ids[user]?.toSet().orEmpty()
 fun remember(server:String,user:String,id:String,remove:Boolean=false){val values=ids.getOrPut(user){mutableSetOf()};if(remove)values.remove(id)else values.add(id)}
 }
 class NewSessionModelCatalog""",
-    "Main.kt": """import com.agentsanywhere.app.api.RuntimeWorkflowApi
-import com.agentsanywhere.app.feature.auth.AuthSessionReader
-import com.agentsanywhere.app.feature.sessions.*
-import com.agentsanywhere.app.model.AgentSession
+    "Main.kt": """import com.agentpilot.app.api.RuntimeWorkflowApi
+import com.agentpilot.app.feature.auth.AuthSessionReader
+import com.agentpilot.app.feature.sessions.*
+import com.agentpilot.app.model.AgentSession
 import kotlinx.coroutines.*
 import org.json.JSONObject
 fun main()=runBlocking {
@@ -93,11 +93,11 @@ fun main()=runBlocking {
     check(coordinator.operation.value?.getString("id")=="create")
     println("Actual Android Coordinator: metadata failure/restore/identity mismatch retain references; successful binding clears them; old-account completion is fenced: passed")
 }""",
-    "Session.kt": """package com.agentsanywhere.app.model
+    "Session.kt": """package com.agentpilot.app.model
 data class AgentSession(val id:String)""",
 }
 
-with tempfile.TemporaryDirectory(prefix="aa-pi-android-binding-") as directory:
+with tempfile.TemporaryDirectory(prefix="agentpilot-android-binding-") as directory:
     root = Path(directory)
     files = []
     for name, source in SOURCES.items():
@@ -106,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix="aa-pi-android-binding-") as directory:
         files.append(str(path))
     production = (
         repository
-        / "android/app/src/main/java/com/agentsanywhere/app/feature/sessions/RuntimeWorkflowCoordinator.kt"
+        / "android/app/src/main/java/com/agentpilot/app/feature/sessions/RuntimeWorkflowCoordinator.kt"
     )
     output = root / "probe.jar"
     compiled = subprocess.run(
