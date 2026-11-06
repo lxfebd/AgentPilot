@@ -63,8 +63,8 @@ android {
         applicationId = "com.agentpilot.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 28
-        versionName = "2.4.1"
+        versionCode = 33
+        versionName = "2.4.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
