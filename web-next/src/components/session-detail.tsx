@@ -54,7 +54,7 @@ import { CAPABILITY, capabilityIsUsable, findCapability } from "@/components/ses
 import { SessionComposer, type AttachedFile } from "@/components/session/session-composer"
 import { NativeSessionHandoff } from "@/components/session/native-session-handoff"
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
-import { PlanningPanel, PlanningReader, usePlanReader } from "@/components/session/planning-panel"
+import { PlanningReviewPanel, getPlanReviewTarget, PlanningPanel, PlanningReader, usePlanReader } from "@/components/session/planning-panel"
 import { useSessionPlanning } from "@/features/planning/use-session-planning"
 import { parsePlanningCommand } from "@/features/planning/commands"
 import { latestPlanRevisions, planEchoFilter } from "@/features/planning/timeline"
@@ -419,6 +419,7 @@ export function SessionDetail({
     : undefined
   const effectiveCapabilities = state?.effectiveCapabilities ?? null
   const planning = useSessionPlanning(token, session?.id ?? "")
+  const planReview = getPlanReviewTarget(planning.state, capabilityIsUsable(effectiveCapabilities, CAPABILITY.planReview, sessionRuntimeScope))
   const planReader = usePlanReader(session?.id ?? "")
   const canUseModelCatalog = Boolean(
     sessionRuntime &&
@@ -915,6 +916,10 @@ export function SessionDetail({
     const applyEvent = (event: ProtocolEventEnvelope) => {
       if (cancelled || event.sessionId !== sessionId) return
       if (event.type === "keepalive") return
+      if (event.type === "planning.state.updated") {
+        planning.ingest(event.payload.state as import("@/generated/protocol/v1/planning-state").PlanningState)
+        return
+      }
       const usesDurableEventIdDedup = sessionEventUsesDurableEventIdDedup(event)
       if (!eventSequenceCursor.accepts(sessionId, event.sequence)) return
       if (!acceptSessionEventId(event, processedEventIds)) return
@@ -1799,6 +1804,7 @@ export function SessionDetail({
           onRespondInteraction={handleRespondInteraction}
         />
         <RuntimeCreationStatus sessionId={sessionId} />
+
         <PlanningPanel key={session.id} planning={planning}
           canReview={capabilityIsUsable(effectiveCapabilities, CAPABILITY.planReview, sessionRuntimeScope)} />
         <NativeSessionHandoff key={sessionId} token={token} session={session} state={runtimeState}
@@ -1811,6 +1817,8 @@ export function SessionDetail({
           {onOpenReview && turnReviewDisplay.activeReview ? (
             <SessionReviewTag files={turnReviewDisplay.activeReview.files} onReview={() => onOpenReview()} />
           ) : null}
+          {planReview && <PlanningReviewPanel planning={planning} target={planReview} />}
+          <div hidden={planReview !== null}>
           <SessionComposer
             token={token}
             session={session}
@@ -1835,6 +1843,7 @@ export function SessionDetail({
             onCommand={handleSessionCommand}
             onToggleTakeover={() => setPendingTakeover(!session.takeover)}
           />
+          </div>
         </div>
       </div>
       <Dialog
