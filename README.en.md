@@ -55,7 +55,9 @@ Each client and service releases PATCH versions independently, and database sche
 | **Manage projects and sessions** | Switch between devices, projects and sessions, and follow progress through the timeline. |
 | **Approve actions and answer requests** | Respond to tool approvals and input requests; interrupt or continue tasks by Runtime capability. |
 | **View files and use terminals** | Browse and preview files, upload and download attachments, open remote shells and interactive terminals. |
-| **Configure agents** | Configure Codex, Claude Code and DSH; pick models, permissions and actions according to each Runtime's capabilities. |
+| **Configure agents** | Configure Codex, Claude Code, DSH and Pi (ACP); pick models, permissions and actions according to each Runtime's capabilities. |
+| **Plan mode and plan review** | Use `/plan` to ask the Agent for a reviewable plan first, then approve before it executes; plan revisions and execution state appear in the session timeline. |
+| **Attachments and streaming** | Send images and attachments, download large files as they arrive; rejected attachments explain why instead of failing silently. |
 
 A Runtime is the component that runs and connects an Agent on the work machine. Model accounts and usage costs follow the rules of the Agent you use. Runtime capabilities differ; follow what the client shows. [DSH integration →](dsh-bridge-next/README.md)
 
