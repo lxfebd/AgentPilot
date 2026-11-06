@@ -57,6 +57,25 @@ def _capability_for_instance(
     )
 
 
+async def with_planning_capabilities(capabilities: RuntimeCapabilitySet, port, external_session_id: str | None = None) -> RuntimeCapabilitySet:
+    if port is None:
+        return capabilities
+    from connector.runtime_protocol.models import RuntimeCapability
+    existing = next((item for item in capabilities.capabilities if item.capability_id == "session.planning"), None)
+    reported = (existing.metadata or {}) if existing else {}
+    native_available = reported.get("nativePlanningAvailable")
+    supported = native_available if isinstance(native_available, bool) else await port.available(capabilities.session_id or "", external_session_id)
+    names = ("session.planning", "session.plan_document", "session.plan_review")
+    items = [item for item in capabilities.capabilities if item.capability_id not in names]
+    for name in names:
+        items.append(RuntimeCapability(
+            capability_id=name, scope="session" if capabilities.session_id else "runtime",
+            runtime=capabilities.runtime, session_id=capabilities.session_id, supported=supported,
+            available=supported,
+            metadata={"contentStreaming": port.content_streaming}))
+    return replace(capabilities, capabilities=tuple(items))
+
+
 def runtime_capabilities_for_instance(
     value: RuntimeCapabilitySet,
     instance: RuntimeInstanceSpec,
@@ -460,6 +479,9 @@ class RuntimeInstance(AgentRuntime):
         await self.native_runtime.start()
 
     async def stop(self) -> None:
+        planning = getattr(self.native_runtime, "_planning", None)
+        if planning is not None:
+            await planning.close()
         await self.native_runtime.stop()
 
     async def get_config(self) -> RuntimeConfig:
@@ -469,10 +491,11 @@ class RuntimeInstance(AgentRuntime):
         )
 
     async def get_runtime_capabilities(self) -> RuntimeCapabilitySet:
-        return runtime_capabilities_for_instance(
-            await self.native_runtime.get_runtime_capabilities(),
-            self.instance,
-        )
+        capabilities = await self.native_runtime.get_runtime_capabilities()
+        planning = getattr(self.native_runtime, "_planning", None)
+        if planning is not None:
+            capabilities = await with_planning_capabilities(capabilities, planning.port)
+        return runtime_capabilities_for_instance(capabilities, self.instance)
 
     async def list_model_catalog(
         self,
@@ -609,6 +632,9 @@ class RuntimeInstance(AgentRuntime):
             session_id,
             external_session_id,
         )
+        planning = getattr(self.native_runtime, "_planning", None)
+        if planning is not None:
+            capabilities = await with_planning_capabilities(capabilities, planning.port, external_session_id)
         return runtime_capabilities_for_instance(capabilities, self.instance)
 
     async def create_and_start_session(

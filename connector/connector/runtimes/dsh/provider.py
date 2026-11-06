@@ -215,7 +215,11 @@ class DshProvider(RuntimeProvider):
         config: RuntimeConfig,
         host: RuntimeHostClient,
     ) -> AgentRuntime:
-        return DshRuntime(config=config, host=host)
+        from connector.planning.infrastructure.binding import bind_planning
+        from connector.runtimes.dsh.planning import DshPlanningPort
+
+        runtime = DshRuntime(config=config, host=host)
+        return bind_planning(runtime, host, DshPlanningPort(runtime))
 
     def resource_claims(
         self,
