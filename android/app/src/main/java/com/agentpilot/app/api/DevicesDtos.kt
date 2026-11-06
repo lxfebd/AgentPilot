@@ -63,3 +63,27 @@ enum class RemoteDeviceRuntimeStatus(val wireValue: String) {
         }
     }
 }
+
+data class RemoteRuntimeTypeList(
+    val connectorId: String,
+    val runtimeTypes: List<RemoteRuntimeType>,
+)
+
+/** A runtime type a Connector supports; instances of it are [RemoteDeviceRuntime]s. */
+data class RemoteRuntimeType(
+    val connectorId: String,
+    val runtimeType: String,
+    val displayName: String,
+    val description: String?,
+    val present: Boolean,
+    val available: Boolean,
+    val reason: String?,
+    val recommended: Boolean,
+    val recommendationRank: Int?,
+    val schema: Map<String, Any?>?,
+    val uiSchema: Map<String, Any?>,
+    val defaults: Map<String, Any?>,
+    /** "single" or "multiple". */
+    val instancePolicy: String,
+    val maxInstances: Int?,
+)

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-probe_dir="$(mktemp -d "${TMPDIR:-/tmp}/aa-pi-ios-workflow.XXXXXX")"
+probe_dir="$(mktemp -d "${TMPDIR:-/tmp}/agentpilot-ios-workflow.XXXXXX")"
 trap 'rm -rf "$probe_dir"' EXIT
 
 python3 - "$repo_dir" "$probe_dir/clientcore.rsp" <<'PY'

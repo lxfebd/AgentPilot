@@ -81,6 +81,9 @@ import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Trash2
 import kotlinx.coroutines.launch
 
+import com.agentpilot.app.feature.devices.DeviceAgentOperations
+import com.agentpilot.app.ui.screens.devices.DeviceAgentsPanel
+import com.agentpilot.app.ui.screens.devices.rememberDeviceAgentsController
 import com.agentpilot.app.ui.designsystem.AAShapes
 private enum class DeviceSessionsFilter { Active, Archived, All }
 
@@ -89,6 +92,7 @@ fun DeviceDetailScreen(
     navigate: (AppDestination) -> Unit,
     state: SessionsState,
     selectedDeviceId: String?,
+    agentOperations: DeviceAgentOperations,
     backDestination: AppDestination = AppDestination.Devices,
     onOpenSession: (AgentSession) -> Unit,
     onRenameDevice: suspend (String, String) -> Result<AgentDevice>,
@@ -190,9 +194,9 @@ fun DeviceDetailScreen(
         }
     }
 
-    fun showToast(message: String) {
+    fun showToast(message: String, isError: Boolean = false) {
         scope.launch {
-            snackbarHostState.showSnackbar(AAToastVisuals(message = message))
+            snackbarHostState.showSnackbar(AAToastVisuals(message = message, isError = isError))
         }
     }
 
@@ -281,6 +285,9 @@ fun DeviceDetailScreen(
                 .fillMaxWidth()
                 .weight(1f),
         ) {
+            val agentsController = detail.device?.let { device ->
+                rememberDeviceAgentsController(device.id, device.online, agentOperations)
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -293,6 +300,16 @@ fun DeviceDetailScreen(
                         MissingDevice()
                     }
                 } else {
+                    agentsController?.let { controller ->
+                        item("agents") {
+                            DeviceAgentsPanel(
+                                controller = controller,
+                                online = detail.device.online,
+                                onMessage = { message, isError -> scope.launch { showToast(message, isError) } },
+                                scope = scope,
+                            )
+                        }
+                    }
                     if (actionError != null && confirmAction == null) {
                         item("action-error") {
                             Text(
@@ -1049,7 +1066,7 @@ private fun SessionDivider() {
 }
 
 @Composable
-private fun SectionBlock(
+internal fun SectionBlock(
     title: String,
     action: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -1084,7 +1101,7 @@ private fun SectionTitle(title: String) {
 }
 
 @Composable
-private fun EmptyText(text: String) {
+internal fun EmptyText(text: String) {
     Text(
         text = text,
         modifier = Modifier
@@ -1098,7 +1115,7 @@ private fun EmptyText(text: String) {
 }
 
 @Composable
-private fun DetailDivider() {
+internal fun DetailDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1221,7 +1238,7 @@ private fun DeviceSessionsFilter.archiveScopeLabelRes(): Int {
 }
 
 @Composable
-private fun SmallActionButton(
+internal fun SmallActionButton(
     icon: ImageVector,
     label: String,
     danger: Boolean,

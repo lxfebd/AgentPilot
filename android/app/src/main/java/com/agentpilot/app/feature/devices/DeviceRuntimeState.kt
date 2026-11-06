@@ -23,6 +23,10 @@ data class DeviceRuntime(
     val status: DeviceRuntimeStatus,
     val discovery: Map<String, Any?>,
     val metadata: Map<String, Any?> = emptyMap(),
+    val typeDisplayName: String? = null,
+    val defaults: Map<String, Any?> = emptyMap(),
+    /** Step inside a non-error status, e.g. syncing sessions while starting. */
+    val phase: Map<String, Any?>? = null,
     val schema: Map<String, Any?>?,
     val uiSchema: Map<String, Any?>,
     val config: Map<String, Any?>?,
@@ -46,6 +50,19 @@ data class DeviceRuntime(
 
     val discoveryAvailable: Boolean
         get() = discovery["available"] != false
+
+    val errorCode: String?
+        get() = error.stringValue("code")
+
+    val errorMessage: String?
+        get() = error.stringValue("message")
+
+    val phaseMessage: String?
+        get() = phase.stringValue("message")
+
+    /** The default instance of a single-instance type uses the type as its ID. */
+    val isDefaultInstance: Boolean
+        get() = id == type
 }
 
 enum class DeviceRuntimeStatus {
@@ -213,6 +230,15 @@ fun DeviceRuntime.toConfigDraft(): DeviceRuntimeConfigDraft {
     )
 }
 
+/** Replace the deleted runtime, keeping any successor that reused the ID. */
+internal fun List<DeviceRuntime>.afterRuntimeDeletion(deletedId: String, response: DeviceRuntime): List<DeviceRuntime> {
+    val remaining = filterNot { it.id == deletedId || it.id == response.id }
+    return if (response.id == deletedId) remaining else remaining + response
+}
+
+internal fun List<DeviceRuntime>.withRuntime(runtime: DeviceRuntime): List<DeviceRuntime> =
+    if (any { it.id == runtime.id }) map { if (it.id == runtime.id) runtime else it } else this + runtime
+
 internal fun RemoteDeviceRuntimeList.toDeviceRuntimeList(): DeviceRuntimeList {
     return DeviceRuntimeList(
         connectorId = connectorId,
@@ -242,7 +268,7 @@ internal fun RemoteDeviceRuntime.toDeviceRuntime(): DeviceRuntime {
     )
 }
 
-private val deviceRuntimeComparator = compareBy<DeviceRuntime> {
+internal val deviceRuntimeComparator = compareBy<DeviceRuntime> {
     when (it.type) {
         "codex" -> 0
         "claude" -> 1

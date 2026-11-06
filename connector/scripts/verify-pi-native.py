@@ -25,10 +25,10 @@ from connector.runtimes.acp.profiles.pi.provider import PiProvider
 async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--cache-root", type=Path, default=Path("/tmp/aa-pi-native-qa-cache/state")
+        "--cache-root", type=Path, default=Path("/tmp/agentpilot-pi-native-cache/state")
     )
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix="aa-pi-native-qa-"))
+    root = Path(tempfile.mkdtemp(prefix="agentpilot-pi-native-"))
     workspace = root / "workspace"
     agent = root / "agent"
     extra = root / "extra-history"

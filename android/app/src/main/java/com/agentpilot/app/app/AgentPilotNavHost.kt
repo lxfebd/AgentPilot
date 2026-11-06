@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.agentpilot.app.feature.auth.WebLoginViewModel
 import com.agentpilot.app.feature.devices.DeviceRuntime
+import com.agentpilot.app.feature.devices.DeviceAgentOperations
 import com.agentpilot.app.feature.devices.DevicePairingStatus
 import com.agentpilot.app.feature.devices.DeviceRuntimeList
 import com.agentpilot.app.feature.devices.DeviceSetupCredential
@@ -93,6 +94,7 @@ internal fun AgentPilotNavHost(
     projectSessionErrors: Map<ProjectSessionLoadKey, String>,
     initialNewSessionProjectId: String?,
     sessionDetailController: SessionDetailController,
+    agentOperations: DeviceAgentOperations,
     sessionRealtimeController: SessionRealtimeController,
     filesController: FilesController,
     remoteTerminalPool: RemoteTerminalPool,
@@ -335,6 +337,7 @@ internal fun AgentPilotNavHost(
                 )
                 AppDestination.DeviceDetail -> DeviceDetailScreen(
                     navigate = navigate,
+                    agentOperations = agentOperations,
                     state = sessionsState,
                     selectedDeviceId = selectedDeviceId,
                     backDestination = deviceDetailReturnDestination,

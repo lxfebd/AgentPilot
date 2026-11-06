@@ -27,7 +27,7 @@ import Foundation
     @MainActor static func main() async throws {
         let transport = WorkflowProbeTransport()
         let url = URL(string: "https://workflow-probe.invalid")!
-        let suite = "aa-pi-workflow-probe-\(UUID().uuidString)", account = "probe"
+        let suite = "agentpilot-workflow-probe-\(UUID().uuidString)", account = "probe"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let key = "aa.native.new-session.v1." + Data((url.absoluteString + "\n" + account).utf8).base64EncodedString()

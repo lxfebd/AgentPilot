@@ -7,6 +7,7 @@ struct ChatTimelineView: View {
     let model: SessionChatModel
     let onAttachment: (V2AttachmentContent) -> Void
     let onFile: (String) -> Void
+    @State private var planReader: V2PlanDocument?
     @State private var historyLayout: TimelineHistoryLayout?
     @State private var historyPosition: TimelineHistoryPosition?
     @State private var hasRequestedOlder = false
@@ -341,8 +342,14 @@ private struct ChatTimelineContent: View, Equatable {
             && lhs.keepsOlderPrompt == rhs.keepsOlderPrompt && lhs.historyAnchor == rhs.historyAnchor
     }
     var body: some View {
-        let groups = TimelineGrouping.groups(model.timeline.rows, interactionTargets: Set(model.session.notices.notices
+        let planning = model.session.planning
+        let plans = planning?.proposals ?? [planning?.proposal].compactMap { $0 }
+        let rows = plans.isEmpty && planning?.draft == nil ? model.timeline.rows
+            : model.timeline.rows.filter { !PlanTimeline.isEcho($0, state: planning, documents: plans) }
+        let groups = TimelineGrouping.groups(rows, interactionTargets: Set(model.session.notices.notices
             .filter(\.isVisible).compactMap(\.timelineTargetID)))
+        let planPlacement = PlanTimeline.placement(plans, groups: groups)
+        let latestPlans = PlanTimeline.latestRevisions(plans)
         let actions = TimelineTurnActions.build(groups: groups, suppressLatest: model.isRunning || model.session.hasNewerItems,
             hasPendingUserMessage: !model.session.hasNewerItems && (!model.timeline.pendingMessages.isEmpty || !model.session.pendingMessages.isEmpty))
         // Prefer a message whose start cannot move into a prefixed tool group.
@@ -390,6 +397,8 @@ private struct ChatTimelineContent: View, Equatable {
                         }
                     }
             }
+            ForEach(planPlacement.end) { plan in planEntry(plan, latest: latestPlans) }
+            SessionPlanningPanel(chat: model)
             ForEach(model.session.notices.notices.filter { notice in
                 notice.isVisible && !notice.blocks(model.session.id)
                     && !model.timeline.rows.contains(where: { $0.id == notice.timelineTargetID })
@@ -435,9 +444,14 @@ private struct ChatTimelineContent: View, Equatable {
         }
         .modifier(ChatPageContentColumn(horizontalInset: nil))
         .coordinateSpace(name: "chat.timeline.content")
+        .modifier(PlanReaderPresentation(reader: $planReader))
         .traceChatLayout("timeline-content", state: "groups=\(groups.count), footers=\(actions.count), running=\(model.isRunning)")
     }
 
+    private func planEntry(_ plan: V2PlanDocument, latest: [String: Int]) -> some View {
+        SessionPlanTimelineEntry(plan: plan, latestRevision: latest[plan.planId] ?? plan.revision,
+            status: PlanTimeline.status(model.session.planning, plan), onRead: { planReader = $0 })
+    }
 }
 
 private extension TimelineViewport {

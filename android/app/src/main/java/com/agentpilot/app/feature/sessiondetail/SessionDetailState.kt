@@ -3,6 +3,7 @@ package com.agentpilot.app.feature.sessiondetail
 import com.agentpilot.app.model.AgentSession
 
 data class SessionDetailState(
+    val planning: com.agentpilot.app.api.RemotePlanningState? = null,
     val meta: SessionMeta = SessionMeta(),
     val timeline: SessionTimelineState = SessionTimelineState(),
     val runtime: SessionRuntimeState = SessionRuntimeState(),

@@ -18,7 +18,9 @@ DEPENDENCIES = {
 
 
 def npm_root(fallback: Path) -> Path:
-    configured = os.environ.get("AA_PI_NPM_ROOT")
+    # AgentPilot sets the new name; the old Agents Anywhere name is still read
+    # so an environment that was configured before the rename keeps working.
+    configured = os.environ.get("AGENTPILOT_PI_NPM_ROOT") or os.environ.get("AA_PI_NPM_ROOT")
     return Path(configured) if configured else fallback
 
 

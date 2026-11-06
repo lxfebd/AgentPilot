@@ -89,6 +89,10 @@ import com.agentpilot.app.feature.sessiondetail.DownloadedAttachment
 import com.agentpilot.app.feature.sessiondetail.SessionDetailController
 import com.agentpilot.app.feature.sessiondetail.SessionMeta
 import com.agentpilot.app.feature.sessiondetail.SessionDetailState
+import com.agentpilot.app.ui.designsystem.runtimeErrorText
+import com.agentpilot.app.ui.designsystem.runtimeOperationErrorMessage
+import com.agentpilot.app.ui.screens.sessiondetail.NativeHistoryControls
+import com.agentpilot.app.ui.screens.sessiondetail.SessionPlanningPanel
 import com.agentpilot.app.feature.sessiondetail.SessionRuntimeStatus
 import com.agentpilot.app.feature.sessiondetail.SessionTimelineState
 import com.agentpilot.app.feature.sessiondetail.TimelineAttachment
@@ -117,6 +121,7 @@ import com.agentpilot.app.feature.sessiondetail.request
 import com.agentpilot.app.feature.sessiondetail.ui
 import com.agentpilot.app.feature.sessiondetail.RuntimeNoticeResponseException
 import com.agentpilot.app.feature.sessiondetail.SESSION_ATTACHMENT_CAPABILITY
+import com.agentpilot.app.feature.sessiondetail.SESSION_PLAN_REVIEW_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_COMMANDS_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_COMMAND_EXECUTE_CAPABILITY
 import com.agentpilot.app.feature.sessiondetail.SESSION_INTERRUPT_CAPABILITY
@@ -235,6 +240,8 @@ fun SessionDetailScreen(
     var pendingOpenFilePath by remember(sessionId) { mutableStateOf<String?>(null) }
     var terminalVerticalDragActive by remember(sessionId) { mutableStateOf(false) }
     var composerHeightPx by remember { mutableStateOf(0) }
+    var planningBusy by remember(sessionId) { mutableStateOf(false) }
+    var planningCreation by remember(sessionId, preparedSession?.localSessionId) { mutableStateOf(false) }
     var readOnlyComposerTapCount by remember(sessionId) { mutableStateOf(0) }
     var modelCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
     var permissionCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -275,17 +282,34 @@ fun SessionDetailScreen(
         )
     }
 
-    fun showError(message: String) {
-        scope.launch {
-            snackbarHostState.showSnackbar(
-                AAToastVisuals(
-                    message = message,
-                    isError = true,
-                    duration = SnackbarDuration.Long,
-                ),
-            )
+    val planTarget = remember(state.planning) {
+        state.planning?.takeIf { current ->
+            val review = current.review
+            val document = current.proposal
+            val canReview = state.capabilities.find(SESSION_PLAN_REVIEW_CAPABILITY, state.runtime.runtimeId, state.runtime.runtimeType)
+                ?.let { it.supported && it.available && it.allowed } == true
+            canReview && review != null && document != null &&
+                current.actions?.any { it in setOf("approve_and_execute", "request_revision", "dismiss_review") } == true &&
+                (review.status == "open" || (review.status == "approved" && current.executionStatus == "rejected" && current.executionRetryable)) &&
+                review.planId == document.planId && review.planRevision == document.revision && review.contentHash == document.contentHash
         }
     }
+
+    fun showError(message: String) {
+        scope.launch { snackbarHostState.showSnackbar(message) }
+    }
+
+    fun respondPlan(target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String) {
+        val id = sessionId
+        if (id != null && !planningBusy) scope.launch {
+            planningBusy = true
+            controller.respondPlanning(id, target, action, feedback)
+                .onSuccess { if (sessionId == id) controller.loadPlanning(id).onSuccess { state = state.copy(planning = it) } }
+                .onFailure { showError(runtimeOperationErrorMessage(context, it)) }
+            planningBusy = false
+        }
+    }
+
 
     fun showToast(message: String) {
         scope.launch {
@@ -743,6 +767,11 @@ fun SessionDetailScreen(
                         state = controller.mergeSnapshotWithLiveState(id, loaded, state)
                             .completeSnapshotLoad()
                         state.session?.let(onSessionChanged)
+                        scope.launch {
+                            controller.loadPlanning(id).onSuccess { planning ->
+                                state = state.copy(planning = planning)
+                            }
+                        }
                     }
                 },
                 onFailure = {
@@ -1709,6 +1738,28 @@ fun SessionDetailScreen(
         val text = raw.trim()
         if (text.isEmpty() && attachments.isEmpty()) return
         val id = sessionId
+        val planning = if (isPreparedSession) null else com.agentpilot.app.feature.sessiondetail.PlanningCommand.parse(raw)
+        if (planning != null && planning.command != "submit_task") {
+            if (attachments.isNotEmpty()) { showError(context.getString(R.string.planning_attachment_task)); return }
+            planningCreation = planning.command == "enter_plan"
+            clearComposerDraft()
+            return
+        }
+        if (planning != null && id != null) {
+            if (planningBusy) return
+            if (attachments.any { it.remote == null || it.uploadState != AttachmentUploadState.Uploaded }) {
+                showError(context.getString(R.string.planning_upload_pending)); return
+            }
+            val uploaded = attachments.mapNotNull { it.remote }
+            scope.launch {
+                planningBusy = true
+                controller.submitPlanning(id, planning, uploaded)
+                    .onSuccess { if (sessionId == id) { state = state.copy(planning = it); if (draft == raw) clearComposerDraft() } }
+                    .onFailure { showError(runtimeOperationErrorMessage(context, it)) }
+                planningBusy = false
+            }
+            return
+        }
         val intent = if (isPreparedSession) null else SlashIntent.parse(raw)
             ?.takeIf { it.isCommandLike && it.command.isNotEmpty() }
         if (id == null || intent == null || !canUseCommands) {
@@ -1928,6 +1979,9 @@ fun SessionDetailScreen(
                             .fillMaxHeight()
                             .background(colors.canvas),
                     ) {
+                        if (state.planning != null) {
+                            SessionPlanningPanel(state.planning, colors.isDark)
+                        }
                         when {
                             sessionId == null && !isPreparedSession -> EmptyDetailMessage(stringResource(R.string.session_open_from_list))
                             state.timeline.isLoading && state.messages.isEmpty() -> {
@@ -1996,6 +2050,23 @@ fun SessionDetailScreen(
                                         blockReason = ::commandBlockMessage,
                                         onSelect = ::chooseCommand,
                                     )
+                                }
+                                if (state.runtime.metadata["nativeHistory"] == true && sessionId != null) {
+                                    NativeHistoryControls(
+                                        sessionId = sessionId,
+                                        generation = state.runtime.metadata["ownerGeneration"] as? String ?: "",
+                                        revision = state.runtime.metadata["sourceRevision"] as? String ?: "",
+                                        canContinue = connectorOnline && state.capabilities.find("session.recover", state.runtime.runtimeId, state.runtime.runtimeType)?.let { it.supported && it.available && (it.allowed || it.unavailableReason == "session_not_taken_over") } == true,
+                                        canRelease = connectorOnline && state.capabilities.find("session.close", state.runtime.runtimeId, state.runtime.runtimeType)?.let { it.available && it.allowed } == true,
+                                        reason = runtimeErrorText(context, state.runtime.error?.get("code") as? String, state.runtime.error?.get("message") as? String),
+                                        onAction = { body, close -> controller.nativeHistoryAction(sessionId, body, close) },
+                                        onSettled = { loadInitialSnapshot() },
+                                    )
+                                }
+                                planTarget?.let { target ->
+                                    PlanningReviewPanel(target, planningBusy, onRespond = { action, feedback ->
+                                        respondPlan(target, action, feedback)
+                                    })
                                 }
                                 MessageComposer(
                                     darkMode = darkMode,

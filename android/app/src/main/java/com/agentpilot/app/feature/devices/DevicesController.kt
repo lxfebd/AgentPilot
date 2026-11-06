@@ -183,6 +183,78 @@ class DevicesController(
         }
     }
 
+    suspend fun listDeviceRuntimeTypes(
+        connectorId: String,
+    ): Result<List<DeviceRuntimeType>> {
+        val auth = authSession()
+            ?: return Result.failure(IllegalStateException("Sign in again to load Agent types."))
+
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                devicesApi.listDeviceRuntimeTypes(
+                    serverUrl = auth.serverUrl,
+                    authorizationToken = auth.accessToken,
+                    deviceId = connectorId,
+                ).toDeviceRuntimeTypes()
+            }.recoverCatching { error ->
+                if (error is ApiException) throw error
+                throw IllegalStateException(error.message ?: "Could not load Agent types.", error)
+            }
+        }
+    }
+
+    suspend fun createDeviceRuntime(
+        connectorId: String,
+        runtimeType: String,
+        name: String,
+        config: Map<String, Any?>,
+        active: Boolean,
+    ): Result<DeviceRuntime> {
+        val auth = authSession()
+            ?: return Result.failure(IllegalStateException("Sign in again to add an Agent."))
+
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                devicesApi.createDeviceRuntime(
+                    serverUrl = auth.serverUrl,
+                    authorizationToken = auth.accessToken,
+                    deviceId = connectorId,
+                    runtimeType = runtimeType,
+                    name = name,
+                    config = config,
+                    active = active,
+                ).toDeviceRuntime()
+            }.recoverCatching { error ->
+                if (error is ApiException) throw error
+                throw IllegalStateException(error.message ?: "Could not add the Agent.", error)
+            }
+        }
+    }
+
+    suspend fun renameDeviceRuntime(
+        connectorId: String,
+        runtimeId: String,
+        name: String,
+    ): Result<DeviceRuntime> {
+        val auth = authSession()
+            ?: return Result.failure(IllegalStateException("Sign in again to rename an Agent."))
+
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                devicesApi.renameDeviceRuntime(
+                    serverUrl = auth.serverUrl,
+                    authorizationToken = auth.accessToken,
+                    deviceId = connectorId,
+                    runtimeId = runtimeId,
+                    name = name,
+                ).toDeviceRuntime()
+            }.recoverCatching { error ->
+                if (error is ApiException) throw error
+                throw IllegalStateException(error.message ?: "Could not rename the Agent.", error)
+            }
+        }
+    }
+
     suspend fun saveDeviceRuntimeConfig(
         connectorId: String,
         runtimeId: String,

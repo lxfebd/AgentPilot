@@ -54,6 +54,11 @@ import { CAPABILITY, capabilityIsUsable, findCapability } from "@/components/ses
 import { SessionComposer, type AttachedFile } from "@/components/session/session-composer"
 import { NativeSessionHandoff } from "@/components/session/native-session-handoff"
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
+import { PlanningReviewPanel, getPlanReviewTarget, PlanningPanel, PlanningReader, usePlanReader } from "@/components/session/planning-panel"
+import { useSessionPlanning } from "@/features/planning/use-session-planning"
+import { parsePlanningCommand } from "@/features/planning/commands"
+import { latestPlanRevisions, planEchoFilter } from "@/features/planning/timeline"
+import { PlanTimelineEntry } from "@/components/session/planning-panel"
 import { commandResult, commandTransportFailure, type CommandOutcome } from "@/components/session/runtime-command-model"
 import { createRecoveredSubscriptionTracker, useRuntimeCommands } from "@/components/session/use-runtime-commands"
 import {
@@ -323,6 +328,7 @@ export function SessionDetail({
   const tSession = useTranslations("dashboard.session")
   const tNew = useTranslations("dashboard.new")
   const tCommon = useTranslations("common")
+  const tPlanning = useTranslations("planning")
   const {
     addOptimisticMessage,
     clearResolvedOptimisticMessages,
@@ -412,6 +418,9 @@ export function SessionDetail({
     ? { runtimeId: sessionRuntimeId(session), runtimeType: sessionRuntimeType(session) }
     : undefined
   const effectiveCapabilities = state?.effectiveCapabilities ?? null
+  const planning = useSessionPlanning(token, session?.id ?? "")
+  const planReview = getPlanReviewTarget(planning.state, capabilityIsUsable(effectiveCapabilities, CAPABILITY.planReview, sessionRuntimeScope))
+  const planReader = usePlanReader(session?.id ?? "")
   const canUseModelCatalog = Boolean(
     sessionRuntime &&
       effectiveCapabilities &&
@@ -907,6 +916,10 @@ export function SessionDetail({
     const applyEvent = (event: ProtocolEventEnvelope) => {
       if (cancelled || event.sessionId !== sessionId) return
       if (event.type === "keepalive") return
+      if (event.type === "planning.state.updated") {
+        planning.ingest(event.payload.state as import("@/generated/protocol/v1/planning-state").PlanningState)
+        return
+      }
       const usesDurableEventIdDedup = sessionEventUsesDurableEventIdDedup(event)
       if (!eventSequenceCursor.accepts(sessionId, event.sequence)) return
       if (!acceptSessionEventId(event, processedEventIds)) return
@@ -1172,6 +1185,25 @@ export function SessionDetail({
     selections: { model?: string; permission?: string },
   ): Promise<boolean> => {
     if (!session || (!content.trim() && attachments.length === 0)) return false
+    // /plan is parsed by the client, not sent to the runtime as a message.
+    const planIntent = parsePlanningCommand(content)
+    if (planIntent) {
+      const uploaded = attachments.flatMap((file) => (file.uploaded ? [file.uploaded] : []))
+      if (uploaded.length !== attachments.length) return false
+      if (planIntent.command !== "submit_task" && attachments.length) {
+        toast.error(tPlanning("commandAttachments"))
+        return false
+      }
+      try {
+        // Selections are written when changed; only wait for a pending write.
+        await selectionWritesRef.current.get(session.id)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : tSession("updateSelectionsFailed"))
+        return false
+      }
+      if (planIntent.command === "submit_task") timelineFollowRef.current?.resume()
+      return planning.execute({ ...planIntent, attachments: uploaded })
+    }
     const uploadedAttachments = attachments.flatMap((attachment) =>
       attachment.uploaded ? [attachment.uploaded] : [],
     )
@@ -1583,8 +1615,10 @@ export function SessionDetail({
     resizeObserver.observe(node)
     return () => resizeObserver.disconnect()
   }, [session?.id])
+  const planEcho = React.useMemo(() => planEchoFilter(planning.state, planning.documents), [planning.state, planning.documents])
+  const latestPlanRevision = React.useMemo(() => latestPlanRevisions(planning.documents), [planning.documents])
   const timelineGroups = React.useMemo(
-    () => groupTimelineItems((state?.items ?? []).filter(isVisibleTimelineItem), interactionTargetIds),
+    () => groupTimelineItems((state?.items ?? []).filter(item => isVisibleTimelineItem(item) && planEcho(item, messageText(item))), interactionTargetIds),
     [interactionTargetIds, state?.items],
   )
   const turnReviewDisplay = React.useMemo(() => {
@@ -1675,6 +1709,10 @@ export function SessionDetail({
             blockingInteractionList.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-foreground">{tSession("noActivity")}</p>
             ) : null}
+            {planning.documents.map(document => (
+              <PlanTimelineEntry key={`plan:${document.planId}:${document.revision}`} planning={planning} document={document}
+                latestRevision={latestPlanRevision.get(document.planId) ?? document.revision} onRead={planReader.open} />
+            ))}
             {timelineGroups.map((group) => {
               const groupKey = timelineGroupKey(group)
               const turnAction = turnActionsByGroupKey.get(groupKey)
@@ -1766,6 +1804,9 @@ export function SessionDetail({
           onRespondInteraction={handleRespondInteraction}
         />
         <RuntimeCreationStatus sessionId={sessionId} />
+
+        <PlanningPanel key={session.id} planning={planning}
+          canReview={capabilityIsUsable(effectiveCapabilities, CAPABILITY.planReview, sessionRuntimeScope)} />
         <NativeSessionHandoff key={sessionId} token={token} session={session} state={runtimeState}
           capabilities={state?.effectiveCapabilities ?? null} onSettled={async () => {
             const refreshed = await loadInitialSessionState(token, sessionId, { reason: "native-history.handoff" })
@@ -1776,6 +1817,8 @@ export function SessionDetail({
           {onOpenReview && turnReviewDisplay.activeReview ? (
             <SessionReviewTag files={turnReviewDisplay.activeReview.files} onReview={() => onOpenReview()} />
           ) : null}
+          {planReview && <PlanningReviewPanel planning={planning} target={planReview} />}
+          <div hidden={planReview !== null}>
           <SessionComposer
             token={token}
             session={session}
@@ -1800,6 +1843,7 @@ export function SessionDetail({
             onCommand={handleSessionCommand}
             onToggleTakeover={() => setPendingTakeover(!session.takeover)}
           />
+          </div>
         </div>
       </div>
       <Dialog
@@ -1860,6 +1904,7 @@ export function SessionDetail({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    <PlanningReader reader={planReader} className="pt-14" />
     </div>
   )
 }

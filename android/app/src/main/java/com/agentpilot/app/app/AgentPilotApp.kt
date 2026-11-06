@@ -43,7 +43,9 @@ import com.agentpilot.app.feature.auth.WebLoginViewModel
 import com.agentpilot.app.feature.notify.NotifyPreferences
 import com.agentpilot.app.feature.notify.SessionNotifier
 import com.agentpilot.app.feature.update.AppUpdateViewModel
+import com.agentpilot.app.feature.devices.DeviceAgentOperations
 import com.agentpilot.app.feature.devices.DevicesController
+import com.agentpilot.app.ui.screens.home.RuntimeWorkflowDialog
 import com.agentpilot.app.feature.devices.DevicePairingMonitor
 import com.agentpilot.app.feature.files.FilesController
 import com.agentpilot.app.feature.realtime.DashboardRealtimeController
@@ -184,6 +186,23 @@ fun AgentPilotApp(
             devicesApi = DevicesApi(apiClient),
             sessionStore = sessionStore,
         )
+    }
+    val deviceAgentOperations = remember(devicesController) {
+        object : DeviceAgentOperations {
+            override suspend fun listDeviceRuntimes(connectorId: String) = devicesController.listDeviceRuntimes(connectorId)
+            override suspend fun listDeviceRuntimeTypes(connectorId: String, discover: Boolean) =
+                devicesController.listDeviceRuntimeTypes(connectorId)
+            override suspend fun createDeviceRuntime(connectorId: String, runtimeType: String, name: String, config: Map<String, Any?>, active: Boolean) =
+                devicesController.createDeviceRuntime(connectorId, runtimeType, name, config, active)
+            override suspend fun renameDeviceRuntime(connectorId: String, runtimeId: String, name: String) =
+                devicesController.renameDeviceRuntime(connectorId, runtimeId, name)
+            override suspend fun saveDeviceRuntimeConfig(connectorId: String, runtimeId: String, config: Map<String, Any?>) =
+                devicesController.saveDeviceRuntimeConfig(connectorId, runtimeId, config)
+            override suspend fun setDeviceRuntimeActive(connectorId: String, runtimeId: String, active: Boolean) =
+                devicesController.setDeviceRuntimeActive(connectorId, runtimeId, active)
+            override suspend fun deleteDeviceRuntimeConfig(connectorId: String, runtimeId: String) =
+                devicesController.deleteDeviceRuntimeConfig(connectorId, runtimeId)
+        }
     }
     val sessionDetailController = remember(context, sessionStore, apiClient) {
         SessionDetailController(
@@ -761,6 +780,7 @@ fun AgentPilotApp(
         initialNewSessionProjectId = initialNewSessionProjectId,
         sessionDetailController = sessionDetailController,
         sessionRealtimeController = sessionRealtimeController,
+        agentOperations = deviceAgentOperations,
         filesController = filesController,
         remoteTerminalPool = remoteTerminalPool,
         pendingMobileLoginQr = pendingMobileLoginQr,
@@ -1146,6 +1166,15 @@ fun AgentPilotApp(
         },
         )
     }
+    RuntimeWorkflowDialog(sessionsController.workflows) {
+        sessionsController.openAcceptedWorkflow(sessionsState.devices).onSuccess { session ->
+            sessionsState = sessionsState.withPatchedSession(session)
+            preparedSessionDraft = null
+            selectedSessionId = session.id
+            destinationName = AppDestination.SessionDetail.name
+        }
+    }
+
     AnnouncementGate(
         api = announcementsApi,
         serverUrl = updateServerUrl.ifBlank { AppConfig.OFFICIAL_SERVER_URL },

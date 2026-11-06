@@ -33,7 +33,10 @@ class SessionsController(
     private val devicesApi: DevicesApi,
     private val filesApi: FilesApi,
     private val sessionStore: AuthSessionReader,
+    workflowApi: com.agentpilot.app.api.RuntimeWorkflowApi = com.agentpilot.app.api.RuntimeWorkflowApi(),
+    workflowReferences: RuntimeWorkflowReferenceStore? = null,
 ) {
+    val workflows = RuntimeWorkflowCoordinator(workflowApi, sessionStore, workflowReferences)
     fun dashboardSnapshotState(snapshot: RemoteDashboardSnapshot): SessionsState {
         return toState(
             remoteSessions = snapshot.sessions,
@@ -188,6 +191,20 @@ class SessionsController(
         )
     }
 
+    private suspend fun bindAcceptedWorkflowSession(devices: List<AgentDevice>): AgentSession =
+        workflows.bindAcceptedCreation { server, token, id ->
+            sessionsApi.getWorkflowSession(server, token, id).toAgentSession(devices.associateBy { it.id })
+        }
+
+    /** Recover a session the server accepted while the client was away. */
+    suspend fun openAcceptedWorkflow(devices: List<AgentDevice>): Result<AgentSession> = try {
+        Result.success(bindAcceptedWorkflowSession(devices))
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
     suspend fun createAndStartSession(
         draft: NewSessionCreateDraft,
         devices: List<AgentDevice>,
@@ -221,6 +238,36 @@ class SessionsController(
                 return@withContext NewSessionCreateOutcome.Failed(error)
             }
             try {
+                val prepared = draft.preparedWorkspace
+                if (prepared != null) {
+                    val value = workflows.run("creations", org.json.JSONObject()
+                        .put("preparationId", prepared.preparationId)
+                        .put("createOperationId", draft.clientMessageId)
+                        .put("clientMessageId", draft.clientMessageId)
+                        .put("expectedRevision", prepared.expectedRevision)
+                        .put("catalogRevision", prepared.catalogRevision)
+                        .put("selections", org.json.JSONObject(draft.selections.toMap()))
+                        .put("content", draft.content)
+                        .apply {
+                            if (draft.attachments.isNotEmpty()) {
+                                put("attachments", org.json.JSONArray(draft.attachments.map { part ->
+                                    val item = part.toInlineAttachmentRef()
+                                    org.json.JSONObject()
+                                        .put("fileId", item.fileId)
+                                        .put("name", item.name)
+                                        .put("mediaType", item.mediaType)
+                                        .put("size", item.size)
+                                        .put("sha256", item.sha256)
+                                        .put("contentBase64", item.contentBase64)
+                                }))
+                            }
+                            if (prepared.configurationSchema != null) {
+                                put("configuration", org.json.JSONObject(prepared.configurationValues))
+                            }
+                        }) { it.optBoolean("messageAccepted") }
+                    val session = bindAcceptedWorkflowSession(devices)
+                    return@withContext NewSessionCreateOutcome.Created(session)
+                }
                 val response = sessionsApi.createAndStartSession(
                     serverUrl = serverUrl,
                     authorizationToken = accessToken,

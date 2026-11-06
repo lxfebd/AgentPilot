@@ -31,6 +31,17 @@ class AgentRuntime(ABC):
         """Event runtimes own their acknowledged synchronization lifecycle."""
         return "polling"
 
+    @property
+    def planning(self):
+        """Plan-mode port of a runtime, or None when it has none.
+
+        The workflow RPC dispatch reads this for session.planning.* and
+        degrades to an unsupported capability snapshot when it is None, so
+        every runtime must answer the attribute: a runtime without plan mode
+        (Pi, Codex, Claude today) must not turn it into AttributeError.
+        """
+        return getattr(self, "_planning", None)
+
     async def resynchronize(self, session_id: str | None = None, external_session_id: str | None = None) -> None:
         """Request event-stream calibration on reconnect or an explicit refresh."""
         raise RuntimeUnsupportedError("resynchronize")

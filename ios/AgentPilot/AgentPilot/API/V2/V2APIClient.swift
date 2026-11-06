@@ -3,6 +3,7 @@ import Foundation
 struct V2APIClient {
     let serverURL: URL
     let account: V2AccountAPI
+    let planning: V2PlanningAPI
     let connectors: V2ConnectorAPI
     let projects: V2ProjectAPI
     let sessions: V2SessionAPI
@@ -28,6 +29,7 @@ struct V2APIClient {
         connectors = V2ConnectorAPI(transport: transport)
         projects = V2ProjectAPI(transport: transport)
         sessions = V2SessionAPI(transport: transport)
+        planning = V2PlanningAPI(transport: transport)
         runtime = V2RuntimeAPI(transport: transport)
         attachments = V2AttachmentAPI(transport: transport)
         realtime = V2RealtimeAPI(

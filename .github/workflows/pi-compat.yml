@@ -52,4 +52,4 @@ jobs:
         run: uv sync --project connector
       - name: Verify native Pi handoff with a local model
         working-directory: connector
-        run: uv run python scripts/verify-pi-native.py --cache-root "$RUNNER_TEMP/aa-pi-native"
+        run: uv run python scripts/verify-pi-native.py --cache-root "$RUNNER_TEMP/agentpilot-pi-native"

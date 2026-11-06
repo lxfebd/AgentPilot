@@ -17038,7 +17038,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "AA will preserve this native session and save subsequent history. Exit this session in the CLI and keep it closed there while AA is using it."
+            "value": "AgentPilot will preserve this native session and save subsequent history. Exit this session in the CLI and keep it closed there while AgentPilot is using it."
           }
         },
         "zh-Hans": {
@@ -17327,7 +17327,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Another AA instance is using this native session."
+            "value": "Another AgentPilot instance is using this native session."
           }
         },
         "zh-Hans": {
@@ -17344,7 +17344,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The native history was modified elsewhere, so AA stopped. Exit the concurrent CLI and recheck."
+            "value": "The native history was modified elsewhere, so AgentPilot stopped. Exit the concurrent CLI and recheck."
           }
         },
         "zh-Hans": {
@@ -17371,7 +17371,2375 @@
           }
         }
       }
+    },
+    "Off: new text fades in without the blur and rise.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Off: new text fades in without the blur and rise.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "关闭后新文字只做透明度渐变，不再模糊上浮。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Reveal animation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Reveal animation",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "文字浮现动画",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "dashboard.device.runtimeConfigFields.ipcDeeplinkHandoff.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "When a thread is locked by the running Codex desktop app but no window shows it, open it in the app (codex://threads/…) so the app becomes the owner the connector follows. Only used while IPC is on.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "当线程被正在运行的 Codex 桌面 App 锁定、但没有窗口显示它时，通过 codex://threads/… 让 App 打开该线程，使其成为 Connector 跟随的持有者。仅在 IPC 开启时生效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "dashboard.device.runtimeConfigFields.ipcDeeplinkHandoff.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Hand locked threads to the Codex App",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "把被锁定的线程交给 Codex App",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "dashboard.device.runtimeConfigFields.ipcEnabled.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Join the Codex desktop app / IDE extension IPC router so threads open in a Codex window are followed and operated through that window. Turn this off to always run threads in the connector's own Codex app-server.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "接入 Codex 桌面 App / IDE 插件的 IPC 路由：在 Codex 窗口里打开的线程会被跟随，并通过该窗口代为操作。关闭后所有线程始终在 Connector 自己的 Codex app-server 中运行。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "dashboard.device.runtimeConfigFields.ipcEnabled.label": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Follow Codex App / IDE sessions (IPC)",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "跟随 Codex App / IDE 会话（IPC）",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Runtime 默认值": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Runtime default",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Runtime 默认值",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "下一轮生效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Applies next turn",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "下一轮生效",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "权限未同步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Permission not synced",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "权限未同步",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "模型未同步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Model not synced",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "模型未同步",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "继续任务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Continue task",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "继续任务",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "结束 AgentPilot 执行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "End AgentPilot execution",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "结束 AgentPilot 执行",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已退出 CLI，继续任务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "I have exited the CLI — continue task",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已退出 CLI，继续任务",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "查询恢复状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Check recovery status",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "查询恢复状态",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "恢复失败，历史仍可查看。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Recovery failed. History remains available.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "恢复失败，历史仍可查看。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "恢复结果尚未确认，请查询原操作状态。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Recovery is unconfirmed. Check the existing operation.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "恢复结果尚未确认，请查询原操作状态。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "尚未确认执行实例已释放，请刷新状态。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Execution release is unconfirmed. Refresh the session state.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "尚未确认执行实例已释放，请刷新状态。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "退出 CLI 中对应会话后可在 AgentPilot 继续；结束 AgentPilot 执行并等待释放后，可切回 CLI。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Exit this session in the CLI before continuing it in AgentPilot. End AgentPilot execution and wait for release before returning to the CLI.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "退出 CLI 中对应会话后可在 AgentPilot 继续；结束 AgentPilot 执行并等待释放后，可切回 CLI。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请填写附件对应的规划任务。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Enter a planning task for the attachments.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请填写附件对应的规划任务。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 配置已变化，请重新确认后发送。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent configuration changed. Review it before sending.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 配置已变化，请重新确认后发送。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "规划操作结果尚未确认，请刷新状态。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The planning action outcome is unconfirmed. Refresh the state.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "规划操作结果尚未确认，请刷新状态。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "新会话将使用计划模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The new session will use plan mode",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "新会话将使用计划模式",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "确认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Confirm",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "确认",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Please select",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请选择",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "规划模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Plan mode",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "规划模式",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "计划执行已开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Plan execution started",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "计划执行已开始",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "计划已同意，执行尚未启动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Plan approved; execution has not started",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "计划已同意，执行尚未启动",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "执行结果待核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Execution outcome needs verification",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "执行结果待核对",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "计划 · 版本 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Plan · Version %lld",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "计划 · 版本 %lld",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "打开计划": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Open plan",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "打开计划",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "展开全文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Expand full text",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "展开全文",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "正在撰写计划": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Writing plan",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "正在撰写计划",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "计划草稿已中断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Plan draft interrupted",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "计划草稿已中断",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "复制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Copy",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "复制",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "导出 Markdown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Export Markdown",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "导出 Markdown",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "分享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Share",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "分享",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "是否执行这个计划？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Execute this plan?",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "是否执行这个计划？",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "版本 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Version %lld",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "版本 %lld",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "说明需要如何调整计划": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Describe how the plan should change",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "说明需要如何调整计划",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "提交修改意见": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Submit feedback",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "提交修改意见",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "暂不执行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Not now",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "暂不执行",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "修改计划": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Revise plan",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "修改计划",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "同意并执行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Approve and execute",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "同意并执行",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "待确认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Awaiting confirmation",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "待确认",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "正在确认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Confirming",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "正在确认",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已同意": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Approved",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已同意",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已执行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Executed",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已执行",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已同意，执行未启动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Approved; execution not started",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已同意，执行未启动",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已请求修改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Revision requested",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已请求修改",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "未执行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Not executed",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "未执行",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已撤回": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Withdrawn",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已撤回",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "结果待核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Needs verification",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "结果待核对",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "已修改为版本 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Revised as version %lld",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "已修改为版本 %lld",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "[任务 | off]": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "[task | off]",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "[任务 | off]",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "压缩会话上下文。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Compact the session context.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "压缩会话上下文。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "退出 ChatGPT / Codex 桌面应用，让它的会话改由 Connector 自己的 app-server 运行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Stop the ChatGPT / Codex desktop app so its threads can run in the connector's own app-server.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "退出 ChatGPT / Codex 桌面应用，让它的会话改由 Connector 自己的 app-server 运行。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "在正在运行的 Codex 桌面应用中打开此会话，并从那里继续跟随。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Open this thread in the running Codex desktop app and follow it from there.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "在正在运行的 Codex 桌面应用中打开此会话，并从那里继续跟随。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 未提供此能力。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent does not provide this capability.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 未提供此能力。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "配置或提交尚未完成，请先查询原操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Configuration or submission has not finished. Check the original operation first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "配置或提交尚未完成，请先查询原操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "当前 Agent 不能满足该会话的恢复保证。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The current agent cannot meet this session's recovery guarantees.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "当前 Agent 不能满足该会话的恢复保证。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 初始化未完成，请先查询原操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Agent initialization has not finished. Check the original operation first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 初始化未完成，请先查询原操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 更新未能可靠保存，需要恢复校准。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "An agent update could not be saved reliably. The session needs to be recovered.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 更新未能可靠保存，需要恢复校准。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "会话执行者需要恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The session's agent needs to be recovered.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "会话执行者需要恢复。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 未提供会话恢复能力。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent does not support resuming sessions.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 未提供会话恢复能力。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "本机附件缓存校验失败。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The local attachment cache failed verification.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "本机附件缓存校验失败。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "附件内容与上传记录不一致。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The attachment content does not match its upload record.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "附件内容与上传记录不一致。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "附件超过上限：每条消息最多 16 个，总大小不超过 32 MiB。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Attachments exceed the limit: up to 16 per message and 32 MiB in total.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "附件超过上限：每条消息最多 16 个，总大小不超过 32 MiB。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "当前执行者不支持首条附件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The current agent does not support attachments on the first message.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "当前执行者不支持首条附件。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "该会话当前不能执行此操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This session cannot perform this action right now.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "该会话当前不能执行此操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "配置选项已不可用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The configuration option is no longer available.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "配置选项已不可用。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "选择之间不一致，请重新选择模型和推理强度。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The selections conflict. Choose the model and reasoning effort again.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "选择之间不一致，请重新选择模型和推理强度。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "该旧选择没有唯一且无损的 Agent 配置映射。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This earlier selection has no exact agent configuration mapping.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "该旧选择没有唯一且无损的 Agent 配置映射。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "待回答请求已达到上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Too many requests are waiting for an answer.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "待回答请求已达到上限。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "交互已结束。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The interaction has ended.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "交互已结束。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "回答不属于该操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The answer does not belong to this operation.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "回答不属于该操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "交互所属执行者或版本已变化。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The interaction's agent or version has changed.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "交互所属执行者或版本已变化。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 配置身份无效或重复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent configuration identity is invalid or duplicated.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 配置身份无效或重复。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 需要已安装的绝对入口路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent needs an absolute path to an installed executable.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 需要已安装的绝对入口路径。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "附件身份无效或重复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "An attachment identity is invalid or duplicated.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "附件身份无效或重复。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "配置值不在当前可用范围。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The configuration value is outside the available range.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "配置值不在当前可用范围。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请选择存在的绝对工作目录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Choose an existing absolute working directory.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请选择存在的绝对工作目录。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "表单操作无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The form action is invalid.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "表单操作无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "表单回答不符合请求要求。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The form answer does not meet the request's requirements.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "表单回答不符合请求要求。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 表单结构无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent's form structure is invalid.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 表单结构无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "权限选项无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The permission option is invalid.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "权限选项无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "审批选项已变化。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The approval options have changed.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "审批选项已变化。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "模型与推理强度选择无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The model and reasoning effort selection is invalid.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "模型与推理强度选择无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "消息需要稳定身份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The message needs a stable identity.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "消息需要稳定身份。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "当前权限或用户审批未允许此消息。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The current permissions or approvals do not allow this message.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "当前权限或用户审批未允许此消息。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "恢复结果尚未确认，请先查询原操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The recovery outcome is unconfirmed. Check the existing operation first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "恢复结果尚未确认，请先查询原操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "未能确认已释放执行，请刷新后再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Releasing execution could not be confirmed. Refresh and try again.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "未能确认已释放执行，请刷新后再试。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "自动安装的 Linux Node 运行环境需要 glibc。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The automatically installed Linux Node runtime requires glibc.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "自动安装的 Linux Node 运行环境需要 glibc。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Node 安装包路径无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Node package contains an invalid path.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Node 安装包路径无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Node 下载超过大小上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Node download exceeds the size limit.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Node 下载超过大小上限。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Node 发布包缺少校验记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Node release has no checksum record.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Node 发布包缺少校验记录。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Node 运行环境校验失败。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Node runtime failed verification.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Node 运行环境校验失败。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "相同操作身份不能用于不同输入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The same operation identity cannot be used for different input.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "相同操作身份不能用于不同输入。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "操作或会话不存在。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The operation or session does not exist.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "操作或会话不存在。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "结果尚不确定，请先查询原操作，不要重复提交。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The outcome is uncertain. Check the original operation instead of submitting again.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "结果尚不确定，请先查询原操作，不要重复提交。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "会话执行者已变化，请刷新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The session's agent has changed. Refresh and try again.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "会话执行者已变化，请刷新。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "当前权限或用户审批未允许此命令。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The current permissions or approvals do not allow this command.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "当前权限或用户审批未允许此命令。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 缓存依赖来源已变化。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The cached Pi ACP dependencies have changed.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 缓存依赖来源已变化。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 依赖目录不存在。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP dependency directory is missing.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 依赖目录不存在。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 适配器版本不匹配。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP adapter version does not match.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 适配器版本不匹配。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 发布包摘要不匹配，未应用兼容补丁。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP package digest does not match, so the compatibility patch was not applied.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 发布包摘要不匹配，未应用兼容补丁。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 模型就绪校验入口已变化。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP model readiness check has changed.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 模型就绪校验入口已变化。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请先退出 CLI 中对应会话，并确认后继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Exit the session in the CLI first, then confirm to continue.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请先退出 CLI 中对应会话，并确认后继续。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "未找到本机 pi，请指定 CLI 路径或明确选择受管环境。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "No local pi was found. Specify the CLI path or choose the managed environment.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "未找到本机 pi，请指定 CLI 路径或明确选择受管环境。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "无法校验本机 Pi 的完整依赖来源。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Could not verify the full dependency source of the local Pi.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "无法校验本机 Pi 的完整依赖来源。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此 Pi 来源的 SDK、依赖或适配器已变化；请保留旧来源，或新建 Pi 实例使用新环境。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The SDK, dependencies or adapter of this Pi source changed. Keep the old source or create a new Pi instance for the new environment.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此 Pi 来源的 SDK、依赖或适配器已变化；请保留旧来源，或新建 Pi 实例使用新环境。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此历史需要格式迁移，当前仅开放浏览，未修改源文件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This history needs a format migration. It is browse-only for now and the source file is unchanged.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此历史需要格式迁移，当前仅开放浏览，未修改源文件。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "历史位置已超出配置的来源目录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The history location is outside the configured source directory.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "历史位置已超出配置的来源目录。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "历史文件超过单文件读取上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The history file exceeds the per-file read limit.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "历史文件超过单文件读取上限。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "发现多个本机 Pi 安装，请在 CLI 路径中指定要使用的一个。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Several local Pi installations were found. Specify the one to use in the CLI path.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "发现多个本机 Pi 安装，请在 CLI 路径中指定要使用的一个。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "无法将此 pi 入口绑定到兼容 SDK；请指定 npm 安装的真实 pi 入口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This pi entry cannot be bound to a compatible SDK. Specify the real pi entry installed with npm.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "无法将此 pi 入口绑定到兼容 SDK；请指定 npm 安装的真实 pi 入口。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请在自定义模型中至少添加一个模型。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Add at least one model under custom models.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请在自定义模型中至少添加一个模型。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "本机 Pi 需要可用的 Node 22.19 或更高版本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The local Pi needs Node 22.19 or later.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "本机 Pi 需要可用的 Node 22.19 或更高版本。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi 审批守卫异常，执行已停止。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi approval guard failed. Execution was stopped.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi 审批守卫异常，执行已停止。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi 工具审批扩展未能加载，已阻止执行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi tool approval extension failed to load. Execution was blocked.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi 工具审批扩展未能加载，已阻止执行。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Connector 重启中断了恢复，请查看最新历史并重新确认继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "A Connector restart interrupted the recovery. Review the latest history and confirm again to continue.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Connector 重启中断了恢复，请查看最新历史并重新确认继续。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此安装的 Pi SDK 版本不受支持，不会使用其他 SDK 替代。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This installation's Pi SDK version is not supported, and no other SDK is used instead.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此安装的 Pi SDK 版本不受支持，不会使用其他 SDK 替代。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此会话已在 AgentPilot 执行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This session is already running in AgentPilot.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此会话已在 AgentPilot 执行。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "多个历史文件具有相同会话身份，请先确认来源。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Several history files share the same session identity. Confirm the source first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "多个历史文件具有相同会话身份，请先确认来源。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "原会话的项目工作目录不存在或无效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The original session's working directory is missing or invalid.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "原会话的项目工作目录不存在或无效。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "项目不属于所选设备。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The project does not belong to the selected device.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "项目不属于所选设备。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "会话需要恢复后才能继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The session needs to be recovered before it can continue.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "会话需要恢复后才能继续。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "回答身份已用于其他内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The answer identity was already used for other content.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "回答身份已用于其他内容。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "并发执行已达到上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Too many runs are in progress.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "并发执行已达到上限。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请先启动 Runtime。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Start the runtime first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请先启动 Runtime。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Runtime 正在关闭。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The runtime is shutting down.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Runtime 正在关闭。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "会话尚未空闲或需要恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The session is not idle yet or needs to be recovered.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "会话尚未空闲或需要恢复。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "同步积压已达到上限，请恢复连接。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Too much sync work is pending. Restore the connection.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "同步积压已达到上限，请恢复连接。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "请先授权工作台控制此会话。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Allow the workbench to control this session first.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "请先授权工作台控制此会话。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "该入口只启用了 ACP v1。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This executable only supports ACP v1.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "该入口只启用了 ACP v1。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 尚未提供此操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The agent does not provide this operation yet.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 尚未提供此操作。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Agent 执行进程已达到上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Too many agent processes are running.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Agent 执行进程已达到上限。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 适配器版本不受支持，需要 0.1.x。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP adapter version is not supported; 0.1.x is required.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 适配器版本不受支持，需要 0.1.x。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi ACP 适配器的兼容入口已变化，暂不支持此版本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The Pi ACP adapter's compatibility entry points changed, so this version is not supported yet.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi ACP 适配器的兼容入口已变化，暂不支持此版本。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "Pi 没有可用的模型或认证：本机模式请先运行 pi 完成登录或模型配置，受管环境请检查模型网关。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Pi has no usable model or credentials. In local mode, run pi to sign in or configure a model first; in the managed environment, check the model gateway.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "Pi 没有可用的模型或认证：本机模式请先运行 pi 完成登录或模型配置，受管环境请检查模型网关。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此 Pi 实例的运行模式或配置目录已变化；请恢复原配置，或新建 Pi 实例。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "The run mode or configuration directory of this Pi instance changed. Restore the previous setting or create a new Pi instance.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此 Pi 实例的运行模式或配置目录已变化；请恢复原配置，或新建 Pi 实例。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "此 Pi 版本不受支持：需要 1.2.0 及之后的 1.x npm 安装，且能加载 AgentPilot 需要的 SDK 接口；不会使用其他 SDK 替代。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "This Pi version is not supported. A Pi 1.x npm installation from 1.2.0 on whose SDK provides the interfaces AgentPilot needs is required; no other SDK is used instead.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "此 Pi 版本不受支持：需要 1.2.0 及之后的 1.x npm 安装，且能加载 AgentPilot 需要的 SDK 接口；不会使用其他 SDK 替代。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Add an Agent to get started",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "添加 Agent 后开始使用",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "You have not added any Agents yet. Add an Agent before starting a session. You can also configure one later on the device page.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "你还没有添加任何 Agent，添加后才能开始会话。也可以稍后在设备页面配置。",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Add Agent",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "添加 Agent",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.later": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Later",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "稍后添加",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.skip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Continue without setup",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "暂不配置，继续",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.skipTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Skip Agent setup?",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "跳过 Agent 配置？",
+            "state": "translated"
+          }
+        }
+      }
+    },
+    "agentReminder.checkFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "value": "Could not check your Agents. You can continue setup or leave and configure them later.",
+            "state": "translated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "value": "暂时无法检查已添加的 Agent。你可以继续配置，也可以先离开，稍后再设置。",
+            "state": "translated"
+          }
+        }
+      }
     }
   },
-  "version": "1.0"
+  "version": "1.1"
 }

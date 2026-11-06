@@ -40,6 +40,97 @@ class SessionDetailController(
     private val optimisticStore = SessionOptimisticMessageStore()
     private val attachmentTransfer = SessionAttachmentTransfer(sessionsApi)
 
+    suspend fun nativeHistoryAction(sessionId: String, body: org.json.JSONObject, close: Boolean): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                val workflow = com.agentpilot.app.api.RuntimeWorkflowApi()
+                if (close) {
+                    val result = workflow.closeSession(auth.serverUrl, auth.accessToken, sessionId, body)
+                    if (!result.optBoolean("closed")) {
+                        throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                            "native_history_release_unconfirmed", "Execution release is unconfirmed.",
+                        )
+                    }
+                } else {
+                    sessionsApi.enableTakeover(auth.serverUrl, auth.accessToken, sessionId)
+                    var completed = false
+                    repeat(360) {
+                        if (!completed) {
+                            val result = workflow.recover(auth.serverUrl, auth.accessToken, sessionId, body)
+                            when (result.optString("phase")) {
+                                "completed" -> completed = true
+                                "running" -> kotlinx.coroutines.delay(1000)
+                                "rejected", "failed" -> {
+                                    val failure = result.optJSONObject("failure")
+                                    throw NativeHistoryRejected(
+                                        failure?.optString("code")?.takeIf(String::isNotBlank)
+                                            ?: "native_history_recovery_failed",
+                                        failure?.optString("message")?.takeIf(String::isNotBlank) ?: "Recovery failed.",
+                                    )
+                                }
+                                else -> throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                                    "native_history_recovery_unconfirmed",
+                                    "Recovery is unconfirmed. Check the existing operation.",
+                                )
+                            }
+                        }
+                    }
+                    if (!completed) {
+                        throw com.agentpilot.app.feature.sessions.RuntimeOperationFailure(
+                            "native_history_recovery_unconfirmed",
+                            "Recovery is unconfirmed. Check the existing operation.",
+                        )
+                    }
+                }
+                Unit
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+        }
+
+    suspend fun loadPlanning(sessionId: String): Result<com.agentpilot.app.api.RemotePlanningState?> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                sessionsApi.planning(auth.serverUrl, auth.accessToken, sessionId)
+            }
+        }
+
+    suspend fun executePlanning(sessionId: String, request: org.json.JSONObject): Result<com.agentpilot.app.api.RemotePlanningState> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val auth = authSession()
+                val response = sessionsApi.executePlanning(auth.serverUrl, auth.accessToken, sessionId, request)
+                if (!response.optBoolean("ok")) {
+                    val message = response.optString("message").takeIf { it.isNotBlank() }
+                    if (message != null) throw IllegalStateException(message)
+                    throw PlanningFailure(PlanningFailure.Reason.OutcomeUnknown)
+                }
+                sessionsApi.planning(auth.serverUrl, auth.accessToken, sessionId)
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+        }
+
+    suspend fun submitPlanning(sessionId: String, command: PlanningCommand, attachments: List<TimelineAttachment>): Result<com.agentpilot.app.api.RemotePlanningState> =
+        executePlanning(sessionId, org.json.JSONObject()
+            .put("command", command.command)
+            .put("content", command.content)
+            .put("operationId", java.util.UUID.randomUUID().toString())
+            .put("attachments", org.json.JSONArray(attachments.map { org.json.JSONObject().put("fileId", it.fileId) })))
+
+
+    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String): Result<com.agentpilot.app.api.RemotePlanningState> =
+        executePlanning(sessionId, org.json.JSONObject()
+            .put("command", action)
+            .put("operationId", java.util.UUID.randomUUID().toString())
+            .put("reviewId", target.review?.reviewId)
+            .put("planId", target.review?.planId)
+            .put("planRevision", target.review?.planRevision)
+            .put("contentHash", target.review?.contentHash)
+            .put("epoch", target.epoch)
+            .put("feedback", feedback))
+
+    fun clearPlanningEntry(sessionId: String) { optimisticStore.clear(sessionId) }
+
+
     suspend fun load(
         sessionId: String,
         devices: List<AgentDevice>,

@@ -16,7 +16,7 @@ import {
 import { dashboardApi } from "@/features/dashboard/api"
 import type { UploadedAttachment } from "@/features/dashboard/types"
 import { cn } from "@/lib/utils"
-import { attachmentMimeAllowed } from "@/components/session/capabilities"
+import { attachmentErrorReasons, attachmentMimeAllowed, attachmentRejection } from "@/components/session/capabilities"
 import { useTranslations } from "next-intl"
 
 const MAX_ATTACHMENT_FILES = 5
@@ -60,6 +60,7 @@ type AttachmentPreviewListProps = {
 type UseAttachmentsOptions = {
   enabled?: boolean
   allowedMimeTypes?: readonly string[]
+  imagesAllowed?: boolean
   sessionId?: string
   token?: string
 }
@@ -131,9 +132,10 @@ function formatBytes(size: number): string {
 }
 
 export function useAttachments(options: UseAttachmentsOptions = {}) {
-  const { sessionId, token, enabled = true, allowedMimeTypes } = options
+  const { sessionId, token, enabled = true, allowedMimeTypes, imagesAllowed = true } = options
   const t = useTranslations("dashboard.new")
   const [rejectedTypes, setRejectedTypes] = useState(false)
+  const [rejectedImages, setRejectedImages] = useState(false)
   const [attachments, setAttachments] = useState<AttachedFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
@@ -191,15 +193,18 @@ export function useAttachments(options: UseAttachmentsOptions = {}) {
   }, [sessionId, token])
 
   const add = useCallback((files: AttachedFile[]) => {
-    const accepted = files.filter((file) => enabled && attachmentMimeAllowed(file.mediaType, allowedMimeTypes))
+    const limits = { enabled, allowedMimeTypes, imagesAllowed }
+    const rejections = files.map((file) => attachmentRejection(file.mediaType, limits))
+    const accepted = files.filter((_file, index) => !rejections[index]!.image && !rejections[index]!.type)
     for (const file of files) if (!accepted.includes(file)) revokePreview(file)
-    setRejectedTypes(accepted.length !== files.length)
+    setRejectedImages(rejections.some((item) => item.image))
+    setRejectedTypes(rejections.some((item) => item.type))
     const uploadImmediately = Boolean(sessionId && token)
     const result = mergeFiles(attachmentsRef.current, accepted, uploadImmediately)
     attachmentsRef.current = result.next
     setAttachments(result.next)
     if (uploadImmediately) result.accepted.forEach(upload)
-  }, [sessionId, token, upload, enabled, allowedMimeTypes])
+  }, [sessionId, token, upload, enabled, allowedMimeTypes, imagesAllowed])
 
   const remove = useCallback((id: string) => {
     setAttachments((prev) => {
@@ -259,12 +264,19 @@ export function useAttachments(options: UseAttachmentsOptions = {}) {
     [add],
   )
 
-  const attachmentsAllowed = attachments.every((file) => enabled && attachmentMimeAllowed(file.mediaType, allowedMimeTypes))
-  const attachmentError = rejectedTypes || !attachmentsAllowed
-    ? !enabled || allowedMimeTypes?.length === 0
+  const attachmentsAllowed = attachments.every((file) => attachmentMimeAllowed(file.mediaType, allowedMimeTypes))
+  const attachmentErrorReasonsList = attachmentErrorReasons(
+    attachments.map((file) => file.mediaType),
+    { image: rejectedImages, type: rejectedTypes || !attachmentsAllowed },
+    { enabled, allowedMimeTypes, imagesAllowed },
+  )
+  const attachmentError = attachmentErrorReasonsList.length === 0
+    ? undefined
+    : attachmentErrorReasonsList.includes("type") && (!enabled || allowedMimeTypes?.length === 0)
       ? t("attachmentsUnsupported")
-      : t("attachmentTypesUnsupported", { types: allowedMimeTypes?.join(", ") ?? "" })
-    : undefined
+      : attachmentErrorReasonsList.map((reason) => reason === "image"
+        ? t("imageInputUnsupported")
+        : t("attachmentTypesUnsupported", { types: allowedMimeTypes?.join(", ") ?? "" })).join("；")
   const uploadsPending = attachments.some((file) => file.uploadStatus === "uploading")
   const uploadFailed = attachments.some((file) => file.uploadStatus === "failed")
   const allUploaded = attachments.every((file) => file.uploadStatus === "uploaded")

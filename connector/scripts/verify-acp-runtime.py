@@ -32,7 +32,7 @@ async def until(predicate, message):
 
 
 async def main():
-    with tempfile.TemporaryDirectory(prefix="aa-acp-runtime-") as directory:
+    with tempfile.TemporaryDirectory(prefix="agentpilot-acp-runtime-") as directory:
         root = Path(directory)
         workspace = root / "workspace"
         workspace.mkdir()
