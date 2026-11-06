@@ -8,7 +8,7 @@ import org.junit.Test
 
 class ApiUrlsTest {
     @Test fun normalizeKeepsExplicitHttpsOrigin() {
-        assertEquals("https://smartcare.aifacex.top", normalizeServerOrigin("https://smartcare.aifacex.top/"))
+        assertEquals("https://server.example.com", normalizeServerOrigin("https://server.example.com/"))
     }
 
     @Test fun normalizeAddsHttpsForPublicHost() {

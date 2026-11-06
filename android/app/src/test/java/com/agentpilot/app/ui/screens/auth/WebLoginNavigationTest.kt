@@ -5,10 +5,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WebLoginNavigationTest {
-    private val origin = "https://smartcare.aifacex.top"
+    private val origin = "https://server.example.com"
 
     @Test fun sameOriginStaysInWebView() {
-        assertTrue(isSameLoginOrigin("https://smartcare.aifacex.top/#/mobile-oauth?state=x", origin))
+        assertTrue(isSameLoginOrigin("https://server.example.com/#/mobile-oauth?state=x", origin))
     }
 
     @Test fun sameOriginWithPortStaysInWebView() {
@@ -20,15 +20,15 @@ class WebLoginNavigationTest {
     }
 
     @Test fun differentPortLeavesWebView() {
-        assertFalse(isSameLoginOrigin("https://smartcare.aifacex.top:8443/x", origin))
+        assertFalse(isSameLoginOrigin("https://server.example.com:8443/x", origin))
     }
 
     @Test fun schemeMismatchLeavesWebView() {
-        assertFalse(isSameLoginOrigin("http://smartcare.aifacex.top/x", origin))
+        assertFalse(isSameLoginOrigin("http://server.example.com/x", origin))
     }
 
     @Test fun hostCaseIsNormalized() {
-        assertTrue(isSameLoginOrigin("HTTPS://SmartCare.AIFACEX.top/x", origin))
+        assertTrue(isSameLoginOrigin("HTTPS://Server.EXAMPLE.com/x", origin))
     }
 
     @Test fun nonHttpSchemeRejected() {
