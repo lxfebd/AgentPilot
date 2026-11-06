@@ -51,6 +51,7 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 ## 跨端修改的规则
 
 - **契约优先**：修改 API 字段、实时事件或 Runtime 协议时，先更新 `contracts/`，再同步修改 Server、Connector 和所有受影响的客户端。Web / Desktop 的 `protocol:check` 用来发现契约偏差。
+- **跨仓库移植**：从上游仓库搬功能时，先读 [PORTING_CHECKLIST.md](PORTING_CHECKLIST.md)（按根因归类的防再犯检查单；typecheck 绿不等于功能通）。
 - **能力驱动**：各 Runtime 支持的功能不同，客户端应当根据有效能力（见 [contracts/dsh-bridge](contracts/dsh-bridge/README.md)）显示或隐藏功能，不要按 provider 名称写死判断。
 - **Server 分层**：`core` 不能导入外层；`services` 不能导入 FastAPI、API 模块或具体的 `Store`。这些规则由 `server/tests/test_architecture_boundaries.py` 强制检查。
 - **数据库**：schema 变化需要新增 Alembic 迁移 `server/migrations/versions/v2_N.py`，编号接着现有最大值递增，不要修改已发布的迁移。
