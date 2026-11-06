@@ -241,6 +241,7 @@ fun SessionDetailScreen(
     var terminalVerticalDragActive by remember(sessionId) { mutableStateOf(false) }
     var composerHeightPx by remember { mutableStateOf(0) }
     var planningBusy by remember(sessionId) { mutableStateOf(false) }
+    var planningCreation by remember(sessionId, preparedSession?.localSessionId) { mutableStateOf(false) }
     var readOnlyComposerTapCount by remember(sessionId) { mutableStateOf(0) }
     var modelCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
     var permissionCatalogRefreshKey by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -1737,6 +1738,28 @@ fun SessionDetailScreen(
         val text = raw.trim()
         if (text.isEmpty() && attachments.isEmpty()) return
         val id = sessionId
+        val planning = if (isPreparedSession) null else com.agentpilot.app.feature.sessiondetail.PlanningCommand.parse(raw)
+        if (planning != null && planning.command != "submit_task") {
+            if (attachments.isNotEmpty()) { showError(context.getString(R.string.planning_attachment_task)); return }
+            planningCreation = planning.command == "enter_plan"
+            clearComposerDraft()
+            return
+        }
+        if (planning != null && id != null) {
+            if (planningBusy) return
+            if (attachments.any { it.remote == null || it.uploadState != AttachmentUploadState.Uploaded }) {
+                showError(context.getString(R.string.planning_upload_pending)); return
+            }
+            val uploaded = attachments.mapNotNull { it.remote }
+            scope.launch {
+                planningBusy = true
+                controller.submitPlanning(id, planning, uploaded)
+                    .onSuccess { if (sessionId == id) { state = state.copy(planning = it); if (draft == raw) clearComposerDraft() } }
+                    .onFailure { showError(runtimeOperationErrorMessage(context, it)) }
+                planningBusy = false
+            }
+            return
+        }
         val intent = if (isPreparedSession) null else SlashIntent.parse(raw)
             ?.takeIf { it.isCommandLike && it.command.isNotEmpty() }
         if (id == null || intent == null || !canUseCommands) {

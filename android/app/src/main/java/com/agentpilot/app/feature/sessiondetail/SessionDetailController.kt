@@ -95,39 +95,38 @@ class SessionDetailController(
             }
         }
 
-    suspend fun submitPlanning(sessionId: String, command: PlanningCommand, attachments: List<TimelineAttachment>) {
-        withContext(Dispatchers.IO) {
-            val auth = authSession()
-            sessionsApi.executePlanning(
-                auth.serverUrl, auth.accessToken, sessionId,
-                JSONObject()
-                    .put("command", command.command)
-                    .put("content", command.content)
-                    .put("operationId", java.util.UUID.randomUUID().toString())
-                    .put("attachments", org.json.JSONArray(attachments.map { JSONObject().put("fileId", it.fileId) })),
-            )
-        }
-    }
-
-    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String): Result<Unit> =
+    suspend fun executePlanning(sessionId: String, request: org.json.JSONObject): Result<com.agentpilot.app.api.RemotePlanningState> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val auth = authSession()
-                sessionsApi.executePlanning(
-                    auth.serverUrl, auth.accessToken, sessionId,
-                    JSONObject()
-                        .put("command", action)
-                        .put("operationId", java.util.UUID.randomUUID().toString())
-                        .put("reviewId", target.review?.reviewId)
-                        .put("planId", target.review?.planId)
-                        .put("planRevision", target.review?.planRevision)
-                        .put("contentHash", target.review?.contentHash)
-                        .put("epoch", target.epoch)
-                        .put("feedback", feedback),
-                )
-                Unit
+                val response = sessionsApi.executePlanning(auth.serverUrl, auth.accessToken, sessionId, request)
+                if (!response.optBoolean("ok")) {
+                    val message = response.optString("message").takeIf { it.isNotBlank() }
+                    if (message != null) throw IllegalStateException(message)
+                    throw PlanningFailure(PlanningFailure.Reason.OutcomeUnknown)
+                }
+                sessionsApi.planning(auth.serverUrl, auth.accessToken, sessionId)
             }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
         }
+
+    suspend fun submitPlanning(sessionId: String, command: PlanningCommand, attachments: List<TimelineAttachment>): Result<com.agentpilot.app.api.RemotePlanningState> =
+        executePlanning(sessionId, org.json.JSONObject()
+            .put("command", command.command)
+            .put("content", command.content)
+            .put("operationId", java.util.UUID.randomUUID().toString())
+            .put("attachments", org.json.JSONArray(attachments.map { org.json.JSONObject().put("fileId", it.fileId) })))
+
+
+    suspend fun respondPlanning(sessionId: String, target: com.agentpilot.app.api.RemotePlanningState, action: String, feedback: String): Result<com.agentpilot.app.api.RemotePlanningState> =
+        executePlanning(sessionId, org.json.JSONObject()
+            .put("command", action)
+            .put("operationId", java.util.UUID.randomUUID().toString())
+            .put("reviewId", target.review?.reviewId)
+            .put("planId", target.review?.planId)
+            .put("planRevision", target.review?.planRevision)
+            .put("contentHash", target.review?.contentHash)
+            .put("epoch", target.epoch)
+            .put("feedback", feedback))
 
     fun clearPlanningEntry(sessionId: String) { optimisticStore.clear(sessionId) }
 
