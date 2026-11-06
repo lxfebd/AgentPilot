@@ -89,6 +89,18 @@ import { stripInjectedAttachmentMentions } from "@/features/dashboard/attachment
 import { sessionRuntimeId, sessionRuntimeType } from "@/features/dashboard/runtime-instances"
 import { useWorkspace } from "@/components/workspace-context"
 
+/**
+ * Session-state diagnostics, development only.
+ *
+ * Each call describes one state transition. In production they are pure I/O on
+ * the session's hottest path (every event, every re-render), so they sit behind
+ * the same NODE_ENV guard the rest of this file already uses.
+ */
+function traceSessionStatus(layer: string, payload: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === "production") return
+  console.info("[session_status_trace]", { layer, ...payload })
+}
+
 type SessionDetailProps = {
   token: string
   sessionId: string
@@ -169,8 +181,7 @@ async function loadInitialSessionState(
     reason,
   })
   const state = sessionStateFromSnapshot(snapshot)
-  console.info("[session_status_trace]", {
-    layer: "frontend-snapshot",
+  traceSessionStatus("frontend-snapshot", {
     reason,
     sessionId,
     sessionStatus: state.session.status,
@@ -457,8 +468,7 @@ export function SessionDetail({
       previous.runtimeStatus !== next.runtimeStatus ||
       previous.effectiveStatus !== next.effectiveStatus
     ) {
-      console.info("[session_status_trace]", {
-        layer: "frontend-render",
+      traceSessionStatus("frontend-render", {
         sessionId: session.id,
         previous,
         next,
@@ -2623,8 +2633,7 @@ function mergeSessionEvent(
       runtimeState.updatedSeq >= (current.state?.updatedSeq ?? 0),
   )
   if (session || runtimeState) {
-    console.info("[session_status_trace]", {
-      layer: "frontend-event",
+    traceSessionStatus("frontend-event", {
       sessionId: event.sessionId,
       eventType: event.type,
       eventId: event.eventId,
