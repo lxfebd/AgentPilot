@@ -16,6 +16,7 @@ struct V2RuntimeCapability: Decodable, Identifiable, Hashable {
     let allowed: Bool
     let unavailableReason: String?
     let parameters: JSONValue
+    var metadata: JSONValue? = nil
 
     var id: V2CapabilityID { capabilityId }
 }

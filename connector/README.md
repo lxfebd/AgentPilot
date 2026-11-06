@@ -13,7 +13,7 @@ back to the backend.
 ```text
 connector/
   runtime_protocol/  AgentRuntime, RuntimeProvider, RuntimeHostClient contracts
-  runtimes/          Codex, Claude and DSH RuntimeProvider/AgentRuntime packages
+  runtimes/          Codex, Claude, DSH, ZCode and ACP/Pi RuntimeProvider/AgentRuntime packages
   server/            Backend auth, ingest, RPC channel, request dispatch, host mapping
   core/              Connector config, JSON-RPC, runtime owner, runtime config storage
   local/             Local filesystem, shell, and terminal backends
@@ -197,3 +197,9 @@ uv run pytest -q
 ```
 
 DSH 插件默认将私有数据存放在 `~/.agent-pilot/dsh-bridge-next/`，其托管 Connector 通过 `AGENT_CONNECTOR_DATA_DIR` 使用其中的 `connector/` 子目录。插件首次启动负责迁移旧 `.agentpilot/dsh-bridge-next/` 数据；通用 Connector 的默认路径和自定义环境变量行为不变。
+
+## Pi Runtime
+
+Pi 通过通用 ACP 适配启动第三方 `@openma/pi-acp` 发布包，并优先绑定本机 Pi 安装提供的 SDK，不依赖 DSH。默认 Provider 为 Codex、Claude、DSH、ZCode、Pi；Pi 的实例、会话和事件保持 `runtimeType=pi`，ACP 是内部对接协议。适配器与依赖由 `agentpilot-cli prepare-pi --root <dir>` 预置（桌面端创建会话前自动执行），首次创建 Pi 会话不再临时下载。
+
+创建 Pi 实例时默认优先复用本机 Pi npm 安装的模型、认证和配置，可指定 CLI 路径、配置目录及额外历史目录。未安装或不兼容时明确报错，用户可选择需要模型网关的受管环境；已有受管配置保持隔离。四端可只读浏览原生历史，退出对应 CLI 会话后使用「继续任务」恢复同一原生会话。不支持两个独立实例同时写入同一历史。

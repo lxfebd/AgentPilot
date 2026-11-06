@@ -805,4 +805,26 @@
     <string name="announcement_published_at">Published %1$s</string>
     <string name="announcement_acknowledge">Got it</string>
     <string name="update_signature_blocked">Update blocked: the downloaded APK was signed by a different certificate and will not be installed.</string>
+    <string name="runtime_operation_failed">Runtime operation failed.</string>
+    <string name="runtime_workflow_target_changed">The target changed. Reopen the session creation.</string>
+    <string name="runtime_workflow_binding">Session creation in progress…</string>
+    <string name="runtime_workflow_creation_missing">The creation record is gone. Start a new session.</string>
+    <string name="runtime_workflow_session_mismatch">This creation belongs to another session.</string>
+    <string name="runtime_workflow_cancel">Cancel creation</string>
+    <string name="runtime_workflow_open_created">Open created session</string>
+    <string name="runtime_workflow_open_later">Later</string>
+    <string name="native_history_rejected">Native history is unavailable.</string>
+    <string name="new_session_connector_required">Select a device first.</string>
+    <string name="new_session_workspace_required">Select a workspace first.</string>
+    <string name="new_session_runtime_type_invalid">This runtime type is unavailable.</string>
+    <string name="native_history_title">Native history</string>
+    <string name="native_history_continue">Continue task</string>
+    <string name="native_history_release">End AgentPilot execution</string>
+    <string name="native_history_releasing">Ending execution…</string>
+    <string name="native_history_preparing">Starting execution…</string>
+    <string name="native_history_check">Check status</string>
+    <string name="native_history_cli_exited">Execution ended unexpectedly.</string>
+    <string name="native_history_release_hint">End the current execution, then start a new one here.</string>
+    <string name="native_history_browse_hint">Continue in the AgentPilot execution shell.</string>
+    <string name="native_history_confirm_hint">Confirm to end the current execution.</string>
 </resources>

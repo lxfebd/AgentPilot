@@ -22,7 +22,8 @@
             "opencode",
             "acp",
             "dsh",
-            "zcode"
+            "zcode",
+            "pi"
           ],
           "title": "Runtime",
           "type": "string"

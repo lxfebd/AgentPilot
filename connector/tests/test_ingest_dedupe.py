@@ -6,6 +6,7 @@ import json
 import httpx
 import pytest
 
+from connector.server import ingest as ingest_module
 from connector.server.errors import ConnectorNetworkError
 from connector.server.ingest import ConnectorIngestClient
 from connector.server.ingest_dedupe import IngestFingerprintGate
@@ -90,9 +91,12 @@ def test_only_changed_notifications_are_sent_again():
 
     asyncio.run(run())
 
-def test_failed_batch_is_not_remembered_and_is_sent_again():
+def test_failed_batch_is_not_remembered_and_is_sent_again(monkeypatch):
+    monkeypatch.setattr(ingest_module, "SYNC_BATCH_RETRY_BACKOFF_SECONDS", 0.001)
     async def run():
-        statuses = [503, 200]
+        # Fail past the retry budget so the caller still sees the error; the
+        # in-call retries themselves must not remember the payload either.
+        statuses = [503] * (ingest_module.SYNC_BATCH_RETRIES + 1) + [200]
         batches: list[list[dict]] = []
 
         async def token(force: bool) -> str:
@@ -109,11 +113,13 @@ def test_failed_batch_is_not_remembered_and_is_sent_again():
             )
             with pytest.raises(ConnectorNetworkError):
                 await ingest.ingest_notifications(_snapshot())
+            exhausted = len(batches)
+            assert exhausted == ingest_module.SYNC_BATCH_RETRIES + 1
             await ingest.ingest_notifications(_snapshot())
-            assert len(batches) == 2
+            assert len(batches) == exhausted + 1
             # A transient failure must not swallow the retry even when the
-            # payload is byte-identical to the failed attempt.
-            assert batches[0] == batches[1]
+            # payload is byte-identical to the failed attempts.
+            assert batches[0] == batches[-1]
 
     asyncio.run(run())
 

@@ -1126,9 +1126,9 @@ def test_unversioned_runtime_schema_is_classified_by_actual_columns(
     )
 
 
-def test_current_schema_version_is_v2_43() -> None:
-    assert CURRENT_SCHEMA_REVISION == "v2_43"
-    assert CURRENT_SCHEMA_VERSION == "2.43"
+def test_current_schema_version_is_v2_46() -> None:
+    assert CURRENT_SCHEMA_REVISION == "v2_46"
+    assert CURRENT_SCHEMA_VERSION == "2.46"
 
 
 def test_v2_43_adds_schedule_failure_columns(tmp_path) -> None:
@@ -2306,6 +2306,12 @@ def _create_legacy_v1_database(path) -> None:
             )
         )
         connection.execute(text("DROP TABLE IF EXISTS notices"))
+        connection.execute(text("DROP TABLE runtime_workflows"))
+        connection.execute(text("DROP TABLE session_runtime_event_receipts"))
+        connection.execute(text("DROP TABLE session_planning"))
+        connection.execute(text("DROP TABLE plan_documents"))
+        connection.execute(text("DROP TABLE planning_operations"))
+        connection.execute(text("DROP TABLE planning_creations"))
         connection.execute(text("DROP TABLE connector_protocol_capabilities"))
         connection.execute(text("DROP TABLE connector_runtime_catalogs"))
         connection.execute(text("DROP TABLE device_runtimes"))

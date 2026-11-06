@@ -2,7 +2,8 @@ import { localRuntimePath } from "./local-runtime";
 import type { OwnershipState } from "./local-runtime";
 import { ConnectorRpcError, CONNECTOR_CONFLICT_MESSAGE } from "./connector-rpc-error";
 import { materializeConnectorProject } from "./connector-project";
-import { bundledPythonExecutable, environmentHome, environmentUsesPython } from "./connector-python";
+import { bundledPythonExecutable, environmentHasConnector, environmentHome, environmentUsesPython } from "./connector-python";
+import { ConnectorEnvironment, type ConnectorEnvironmentState } from "./connector-environment";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -56,6 +57,7 @@ type ConnectorSupervisorOptions = {
   binding: DesktopBindingStore;
   logs: ConnectorLogStore;
   onState: (state: ConnectorState) => void;
+  onEnvironment?: (state: ConnectorEnvironmentState) => void;
   onLog: (entry: ConnectorLogEntry) => void;
 };
 
@@ -78,11 +80,23 @@ export class ConnectorSupervisor {
   private crashCount = 0;
   private restartTimer: NodeJS.Timeout | null = null;
   private suppressProcessRestart = false;
+  private readonly environment: ConnectorEnvironment;
   private shellEnvironment: NodeJS.ProcessEnv;
   private state: ConnectorState;
 
   constructor(private readonly options: ConnectorSupervisorOptions) {
     this.shellEnvironment = options.shellEnvironment;
+    this.environment = new ConnectorEnvironment({
+      dataPath: options.dataPath,
+      resolve: (materialize = false) => {
+        const launcher = this.resolveLauncher(materialize);
+        if (!launcher) throw new Error(`Connector setup is not ready: ${this.state.setupIssue}`);
+        return { project: this.projectDir ?? options.connectorDir, environment: this.projectEnvironmentPath(),
+          uv: launcher.executable, python: this.resolvePythonPath(), env: this.connectorEnvironment(), direct: this.resolveDirectConnectorCli() };
+      },
+      onState: state => this.options.onEnvironment?.(state),
+      log: message => this.log({ level: "INFO", message }),
+    });
     this.state = {
       platform: process.platform,
       status: "stopped",
@@ -105,6 +119,14 @@ export class ConnectorSupervisor {
       ...this.publicSettings(),
     };
     this.refreshLocalState();
+  }
+
+  environmentState(): ConnectorEnvironmentState { return this.environment.getState(); }
+
+  /** Prepare the Desktop-local environment (bundled uv/Python and the Pi ACP adapter). */
+  async prepareEnvironment(): Promise<void> {
+    if (this.rpcProcess) return;
+    await this.environment.prepare();
   }
 
   setShellEnvironment(environment: NodeJS.ProcessEnv): void {

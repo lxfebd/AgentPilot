@@ -25,7 +25,8 @@
           "selectionId": "sel_model_example"
         }
       ],
-      "selectionId": null
+      "selectionId": null,
+      "group": null
     }
   ],
   "revision": 3,

@@ -14,6 +14,12 @@ web-next/out/
 # Node
 node_modules/
 
+# Pi ACP adapter npm runtime cache (connector prepare-pi).
+connector/.pi-npm/
+**/node_modules
+*.desktop-lock/
+*.desktop-lock.lease
+
 # Dependency lockfiles are intentionally not committed in this repo.
 # Cross-platform package managers rewrite them frequently, creating noise.
 uv.lock

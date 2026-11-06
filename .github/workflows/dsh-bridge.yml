@@ -1,17 +1,16 @@
 name: DSH Bridge
 
+# The dsh-bridge/ package is deprecated (dsh-bridge-next replaced it). PR and
+# push verification for the DSH plugin lives in CI's "DSH plugin" job, which
+# covers dsh-bridge-next and the contracts both generations read. This workflow
+# only prepares a package on demand and publishes for the existing
+# dsh-bridge-v* release tags, so a contract change must not resurrect the old
+# package's build.
 on:
-  pull_request:
-    paths:
-      - dsh-bridge/**
-      - contracts/dsh-bridge/1.0/**
-      - .github/workflows/dsh-bridge.yml
-  push:
-    branches:
-      - main
-      - v2
-    paths:
-      - dsh-bridge/**
+  release:
+    types:
+      - published
+  workflow_dispatch:
       - contracts/dsh-bridge/1.0/**
       - .github/workflows/dsh-bridge.yml
   release:

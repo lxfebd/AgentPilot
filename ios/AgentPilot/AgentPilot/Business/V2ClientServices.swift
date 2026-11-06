@@ -25,9 +25,13 @@ final class V2ClientServices {
     let deviceManagement: V2DeviceManagementService
     let workspaceFiles: V2WorkspaceFilesService
     let newSession: NewSessionModel
+    let runtimeWorkflows: V2RuntimeWorkflowAPI
+    let planning: V2PlanningAPI
 
     init(api: V2APIClient, accountID: String) {
         self.api = api
+        runtimeWorkflows = V2RuntimeWorkflowAPI(transport: api.sessions.transport)
+        planning = V2PlanningAPI(transport: api.sessions.transport)
         scope = V2ClientScope(serverURL: api.serverURL, accountID: accountID)
         let cacheDirectory = URL.applicationSupportDirectory.appendingPathComponent("AgentPilot/Offline/v1")
             .appendingPathComponent(V2RestorationStore.scopeKey(scope))

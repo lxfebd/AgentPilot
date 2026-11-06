@@ -34,8 +34,10 @@ from agent_server.api import (
     oauth,
     pairing,
     projects,
+    runtime_workflows,
     schedules,
     service,
+    session_planning,
     sessions,
     sessions_fs,
     sessions_terminal,
@@ -366,6 +368,8 @@ def create_app(
     app.include_router(connector_files.router, prefix=API_V2_PREFIX)
     app.include_router(connector_device.router, prefix=API_V2_PREFIX)
     app.include_router(connector_runtimes.router, prefix=API_V2_PREFIX)
+    app.include_router(runtime_workflows.router, prefix=API_V2_PREFIX)
+    app.include_router(session_planning.router, prefix=API_V2_PREFIX)
     app.include_router(connector_shell.router, prefix=API_V2_PREFIX)
     app.include_router(connector_terminal.router, prefix=API_V2_PREFIX)
     app.include_router(client_ws.router, prefix=API_V2_PREFIX)

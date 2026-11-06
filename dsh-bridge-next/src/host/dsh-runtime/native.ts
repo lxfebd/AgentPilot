@@ -18,6 +18,7 @@ import { UserQuestions } from './questions.js'
 import { RuntimeDiagnostics } from './diagnostics.js'
 import { RuntimeCatalogs } from './catalogs.js'
 import { RuntimeConfiguration } from './configuration.js'
+import { RuntimePlanning } from './planning.js'
 import { RuntimeCommands } from './commands.js'
 import type { Selections } from './selections.js'
 import { capabilities } from './capabilities.js'
@@ -30,7 +31,8 @@ declare module '@deepseek-ai/cordis' {
 export type NativeChange = { type: 'stream', id: string, turn: number, step: number, chunk: StreamChunk, time: number, throughSeq: number }
   | { type: 'event', id: string, event: SessionEvent }
   | { type: 'session', id: string } | { type: 'status', id: string }
-  | { type: 'refresh', id: string }
+  // `resume` recalibrates from the session's committed checkpoint when it still matches.
+  | { type: 'refresh', id: string, interrupted?: boolean, resume?: boolean }
   | { type: 'question', id: string } | { type: 'approval', id: string } | { type: 'capabilities' }
   | { type: 'visibility' } | { type: 'catalogs', catalogType: 'model' | 'permission' } | { type: 'commands' }
 export interface NativeWorkspace { id: string, title: string, path: string, sessionIds: string[] }
@@ -56,6 +58,7 @@ export class NativeRuntime {
   readonly source: NativeSessionSource
   readonly catalogs: RuntimeCatalogs
   readonly configuration: RuntimeConfiguration
+  readonly planning: RuntimePlanning
   readonly commands: RuntimeCommands
   private writes = new Map<string, Promise<unknown>>()
   private closed = false
@@ -69,6 +72,7 @@ export class NativeRuntime {
     this.attachments = new RuntimeAttachments(join(dirname(creationDirectory), 'attachments'))
     this.catalogs = new RuntimeCatalogs(ctx, () => this.emit({ type: 'catalogs', catalogType: 'model' }))
     this.configuration = new RuntimeConfiguration(ctx)
+    this.planning = new RuntimePlanning(ctx, this.configuration)
     this.source = new NativeSessionSource(ctx, diagnostics)
     this.commands = new RuntimeCommands(ctx, this.configuration, this.source, () => this.emit({ type: 'commands' }))
     ctx.on('llm/adapters-updated', () => this.catalogs.invalidate(), { global: true })
@@ -225,8 +229,8 @@ export class NativeRuntime {
 
   async send(id: SessionId, text: string, requestId: string, cwd?: string, create = false,
     selections: Selections = {}, agentPreset?: string, signal = new AbortController().signal,
-    images: readonly StagedAttachment[] = [], platformId?: string): Promise<void> {
-    if ((!text.trim() && !images.length) || text.length > 1_000_000 || !requestId || requestId.length > 512) {
+    images: readonly StagedAttachment[] = [], platformId?: string, planningIntent = false): Promise<void> {
+    if ((!text.trim() && !images.length && !planningIntent) || text.length > 1_000_000 || !requestId || requestId.length > 512) {
       throw new BridgeError('INVALID_PARAMS', 'A text message and stable client message ID are required.')
     }
     await this.write(id, signal, async () => {
@@ -252,7 +256,7 @@ export class NativeRuntime {
           path = await realpath(cwd)
           if (!(await stat(path)).isDirectory()) throw new Error('not a directory')
         } catch { throw new BridgeError('INVALID_PARAMS', 'The workspace must be an accessible directory on the DSH device.') }
-        fingerprint = digest(canonicalJson({ requestId, content: text, cwd: path, agentPreset: agentPreset ?? null,
+        fingerprint = digest(canonicalJson({ requestId, content: text, planningIntent, cwd: path, agentPreset: agentPreset ?? null,
           model: selections.model ?? null, permission: selections.permission ?? null,
           ...(images.length ? { attachments: attachmentReferences(images).map(image => ({ ...image })) } : {}) }))
         if (intent && (intent.requestId !== requestId || intent.fingerprint !== fingerprint)) {

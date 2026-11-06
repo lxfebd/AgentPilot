@@ -11,6 +11,7 @@ export const CAPABILITY = {
   modelCatalog: "catalog.model",
   permissionCatalog: "catalog.permission",
   effortCatalog: "catalog.effort",
+  workspacePrepare: "runtime.workspace.prepare",
 } as const
 
 export type KnownCapabilityId = (typeof CAPABILITY)[keyof typeof CAPABILITY]
@@ -65,4 +66,14 @@ export function attachmentMimeTypes(
 
 export function attachmentMimeAllowed(mediaType: string, allowedMimeTypes: readonly string[] | undefined): boolean {
   return allowedMimeTypes === undefined || allowedMimeTypes.includes(mediaType.split(";", 1)[0]!.trim().toLowerCase())
+}
+
+/** The selected model narrows the Agent's general attachment transport. */
+export function attachmentImagesAllowed(
+  capabilitySet: ProtocolCapabilitySet | null | undefined,
+  runtime?: RuntimeCapabilityScope,
+): boolean {
+  const metadata = findCapability(capabilitySet, CAPABILITY.attachment, runtime)?.metadata
+  const inputs = metadata && typeof metadata === "object" && "inputModalities" in metadata ? metadata.inputModalities : undefined
+  return !Array.isArray(inputs) || inputs.includes("image")
 }

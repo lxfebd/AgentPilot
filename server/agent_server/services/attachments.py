@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import secrets
-from typing import Any
+from pathlib import Path
+from typing import Any, BinaryIO
 
 from agent_server.core.api_namespace import api_v2_path
 from agent_server.core.auth import create_signed_token
@@ -38,6 +40,99 @@ class AttachmentService:
                 media_type=media_type,
                 origin="user",
             )
+
+    async def save_user_upload_stream(
+        self,
+        *,
+        session_id: str,
+        user_id: str,
+        name: str,
+        source: BinaryIO,
+        media_type: str | None = None,
+        max_bytes: int | None = None,
+    ) -> dict[str, Any]:
+        """Stage an upload straight from the request stream onto disk.
+
+        Same contract as :meth:`save_user_upload`, but the bytes are copied in
+        chunks: a batch of 25 MB photos no longer turns into the same number of
+        bytes objects inside the worker process.
+        """
+        async with self._store.attachment_write_fence(session_id, user_id=user_id):
+            file_id = f"file_{secrets.token_urlsafe(12)}"
+            metadata = self._file_metadata(
+                file_id=file_id,
+                session_id=session_id,
+                name=name,
+                media_type=media_type,
+                origin="user",
+            )
+            return await self._files.write_stream(
+                session_id,
+                file_id,
+                source,
+                metadata,
+                max_bytes=max_bytes,
+            )
+
+    async def verify_local_file(self, path: Path, metadata: dict[str, Any]) -> None:
+        """Validate the on-disk blob before handing it to a streaming response.
+
+        The integrity check is chunked and runs in a worker thread so a large
+        upload cannot block the event loop or double peak memory.
+        """
+        expected = str(metadata.get("sha256") or "")
+        if not expected:
+            return
+
+        def digest() -> str:
+            hasher = hashlib.sha256()
+            with path.open("rb") as handle:
+                while True:
+                    chunk = handle.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    hasher.update(chunk)
+            return hasher.hexdigest()
+
+        actual = await asyncio.to_thread(digest)
+        if actual != expected:
+            raise ValueError("stored attachment failed its integrity check")
+
+    async def local_signed_file(
+        self,
+        *,
+        session_id: str,
+        file_id: str,
+    ) -> tuple[Path | None, dict[str, Any]]:
+        """Return (blob path, metadata); path is None for remote backends."""
+        self._validate_file_id(file_id)
+        metadata = await self._files.metadata(session_id, file_id)
+        return await self._files.local_path(session_id, file_id), metadata
+
+    async def local_connector_file(
+        self,
+        *,
+        session_id: str,
+        file_id: str,
+        connector_id: str,
+    ) -> tuple[Path | None, dict[str, Any]]:
+        """Authorize a connector download and return (blob path, metadata)."""
+        self._validate_file_id(file_id)
+        if not await self._store.session_owned_by_connector(session_id, connector_id):
+            raise KeyError(session_id)
+        metadata = await self._files.metadata(session_id, file_id)
+        return await self._files.local_path(session_id, file_id), metadata
+
+    async def local_user_file(
+        self,
+        *,
+        session_id: str,
+        file_id: str,
+        user_id: str,
+    ) -> tuple[Path | None, dict[str, Any]]:
+        """Authorize a user download and return (blob path, metadata)."""
+        await self._store.get_session(session_id, user_id=user_id)
+        return await self.local_signed_file(session_id=session_id, file_id=file_id)
 
     async def read_user_file(
         self,

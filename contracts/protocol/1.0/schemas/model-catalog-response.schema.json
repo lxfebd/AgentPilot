@@ -22,7 +22,8 @@
             "opencode",
             "acp",
             "dsh",
-            "zcode"
+            "zcode",
+            "pi"
           ],
           "title": "Runtime",
           "type": "string"
@@ -34,6 +35,41 @@
         "models"
       ],
       "title": "ProtocolModelCatalog",
+      "type": "object"
+    },
+    "ProtocolModelGroup": {
+      "description": "Where a model is routed from, e.g. a DSH provider or relay.",
+      "properties": {
+        "displayName": {
+          "minLength": 1,
+          "title": "Displayname",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "itemDisplayName": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Itemdisplayname"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "itemDisplayName"
+      ],
+      "title": "ProtocolModelGroup",
       "type": "object"
     },
     "ProtocolModelItem": {
@@ -58,6 +94,17 @@
         "displayName": {
           "title": "Displayname",
           "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProtocolModelGroup"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "id": {
           "title": "Id",
@@ -92,6 +139,7 @@
         "displayName",
         "id",
         "selectionId",
+        "group",
         "description",
         "default",
         "reasoningItems",

@@ -22,6 +22,11 @@ import {
 import { CascadingSelector } from "@/components/cascading-selector"
 import { useSessionToolSidebarStore } from "@/components/session-tool-sidebar-state"
 import { AgentSelectionDrawer } from "@/components/session/agent-selection-drawer"
+import { useWorkspacePreparation } from "@/components/session/use-workspace-preparation"
+import { RuntimeWorkflowPanel } from "@/components/session/runtime-workflow-panel"
+import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
+import { parsePlanningCommand } from "@/features/planning/commands"
+import { useRuntimeErrorText } from "@/lib/runtime-error-text"
 import { SelectionSettingsDrawer } from "@/components/session/selection-settings-drawer"
 import {
   AttachmentButton,
@@ -67,7 +72,7 @@ import {
   selectionIdForModelCatalog,
   selectionIdForPermissionCatalog,
 } from "@/components/session/catalog-selection"
-import { CAPABILITY, capabilityIsUsable, attachmentMimeTypes } from "@/components/session/capabilities"
+import { CAPABILITY, attachmentMimeTypes, capabilityIsUsable, findCapability } from "@/components/session/capabilities"
 import {
   runtimeInstanceName,
   runtimeTypeName,
@@ -175,6 +180,9 @@ export function TaskComposer() {
     updateProject,
   } = useWorkspace()
   const t = useTranslations("dashboard.new")
+  const tPlanning = useTranslations("planning")
+  const tCommon = useTranslations("common")
+  const errorText = useRuntimeErrorText()
   const typewriterTitles = React.useMemo(
     () => {
       const keys = isMobile ? MOBILE_NEW_SESSION_TITLE_KEYS : NEW_SESSION_TITLE_KEYS
@@ -697,6 +705,18 @@ export function TaskComposer() {
     })
   }, [modelCatalog, models, persistTargetPreference, selectedAgent, selectedConnectorId])
 
+  const [planningCreation, setPlanningCreation] = React.useState(false)
+  const needsPreparation = Boolean(findCapability(runtimeCapabilities, CAPABILITY.workspacePrepare, selectedRuntimeScope)?.supported)
+  const prepareRequest = React.useCallback(async () => {
+    if (!workspace?.path) throw new Error(t("directoryRequired"))
+    const project = await resolveProject({ connectorId: selectedConnectorId, workspacePath: workspace.path })
+    return { connectorId: selectedConnectorId, runtimeId: selectedAgent, projectId: project.id }
+  }, [resolveProject, selectedConnectorId, selectedAgent, workspace?.path, t])
+  const preparation = useWorkspacePreparation(
+    authSession?.accessToken,
+    JSON.stringify([selectedConnectorId, selectedAgent, workspace?.path ?? ""]),
+    needsPreparation && !catalogsLoading && workspace?.path && workspace.connectorId === selectedConnectorId ? prepareRequest : undefined,
+  )
   const requiresModelSelection = canUseModelCatalog && models.length > 0
   const requiresPermissionSelection = canUsePermissionCatalog && permissionOptions.length > 0
   const hasSelectionSettings = models.length > 0 || permissionOptions.length > 0
@@ -705,6 +725,7 @@ export function TaskComposer() {
     workspace?.connectorId === selectedConnectorId &&
     !creating &&
     !catalogsLoading &&
+    (!needsPreparation || preparation.operation?.state.phase === "ready") &&
     (!requiresModelSelection || Boolean(selectedModelSelection)) &&
     (!requiresPermissionSelection || Boolean(selectedPermissionSelection)) &&
     (attachments.length === 0 || canUseAttachments) && attachmentsAllowed &&
@@ -717,6 +738,14 @@ export function TaskComposer() {
   const showCollapsedBrand = isMobile || sidebarState === "collapsed"
 
   const handleCreate = async () => {
+    const planIntent = parsePlanningCommand(prompt)
+    if (planIntent && planIntent.command !== "submit_task") {
+      if (attachments.length) { toast.error(tPlanning("attachmentTask")); return }
+      setPlanningCreation(planIntent.command === "enter_plan")
+      setPrompt("")
+      return
+    }
+    const usePlanning = planningCreation || planIntent?.command === "submit_task"
     if (!authSession?.accessToken || !selectedConnector || !selectedRuntime || !workspace?.path || creatingRef.current) return
     if (workspace.connectorId !== selectedConnector.id) return
     if (!prompt.trim() && attachments.length === 0) return
@@ -813,6 +842,7 @@ export function TaskComposer() {
         ...(selectedPermissionSelection ? { permission: selectedPermissionSelection } : {}),
       }
       const createBody = {
+        ...(usePlanning ? { planningIntent: { mode: "plan" as const, operationId: clientMessageId } } : {}),
         connectorId: selectedConnector.id,
         projectId: project.id,
         ...sessionRuntimeRequestIdentity(
@@ -839,7 +869,7 @@ export function TaskComposer() {
       persistPreference(nextPreference)
       const created = await dashboardApi.createAndStartSession(authSession.accessToken, {
         ...createBody,
-        content: messageText,
+        content: planIntent ? planIntent.content ?? "" : usePlanning ? prompt : messageText,
         selections,
         attachments: selectedAttachments.length > 0
           ? await inlineAttachmentsFromFiles(selectedAttachments)
@@ -867,6 +897,20 @@ export function TaskComposer() {
       onDrop={onDrop}
     >
       <DragOverlay isDragging={isDragging} />
+      <RuntimeCreationStatus />
+      {needsPreparation && (preparation.error || (preparation.operation && preparation.operation.state.phase !== "ready")) ? (
+        <div className="mb-4 w-full max-w-3xl">
+          {preparation.operation ? (
+            <RuntimeWorkflowPanel operation={preparation.operation} pending={preparation.pending} error={preparation.error}
+              onRespond={preparation.respond} onCancel={preparation.cancel} onRefresh={preparation.retry} />
+          ) : (
+            <div role="alert" className="flex items-center gap-2 text-sm">
+              <span>{errorText(preparation.error, tCommon("loadFailed"))}</span>
+              <Button variant="outline" size="sm" disabled={preparation.pending} onClick={preparation.retry}>{tCommon("retry")}</Button>
+            </div>
+          )}
+        </div>
+      ) : null}
       {showCollapsedBrand ? (
         <div className="absolute left-13 top-2.5 flex h-9 items-center">
           <button

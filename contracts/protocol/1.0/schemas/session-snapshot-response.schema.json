@@ -160,7 +160,8 @@
             "opencode",
             "acp",
             "dsh",
-            "zcode"
+            "zcode",
+            "pi"
           ],
           "title": "Runtime",
           "type": "string"
@@ -486,7 +487,8 @@
                 "opencode",
                 "acp",
                 "dsh",
-                "zcode"
+                "zcode",
+                "pi"
               ],
               "type": "string"
             },
@@ -547,7 +549,8 @@
                 "opencode",
                 "acp",
                 "dsh",
-                "zcode"
+                "zcode",
+                "pi"
               ],
               "type": "string"
             },
@@ -710,7 +713,8 @@
             "opencode",
             "acp",
             "dsh",
-            "zcode"
+            "zcode",
+            "pi"
           ],
           "title": "Runtime",
           "type": "string"
@@ -949,7 +953,8 @@
             "opencode",
             "acp",
             "dsh",
-            "zcode"
+            "zcode",
+            "pi"
           ],
           "title": "Runtime",
           "type": "string"
@@ -1271,7 +1276,8 @@
                 "opencode",
                 "acp",
                 "dsh",
-                "zcode"
+                "zcode",
+                "pi"
               ],
               "type": "string"
             },
