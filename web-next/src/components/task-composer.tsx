@@ -801,7 +801,10 @@ export function TaskComposer() {
         nextSeq: 0,
       }),
     }
-    clear()
+    // Hand the previews to the optimistic message instead of revoking them:
+    // the timeline renders attachment.previewUrl, and a revoked blob shows a
+    // broken preview until the server round-trip completes.
+    clear({ revokePreviews: false })
     setPrompt("")
     openSession(localSessionId)
     try {
