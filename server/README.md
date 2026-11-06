@@ -67,16 +67,20 @@ Legacy-only rows and legacy JSON columns are retained in
 `legacy_import_archive`; their superseded source tables and columns are removed
 by `v2_3`.
 
-### v2.24 rollout and downgrade boundary
+### Rollout and downgrade boundary
 
-Do not mix `v2.23` (or older) and `v2.24` writers against one database. Stop every old
+Do not mix writers of different schema generations against one database. Stop every old
 Server and other process that can write sessions or Timeline data, migrate the
-database through `v2_24` to the current head (`v2_43`), and only then start the
+database to the current head (`v2_46`), and only then start the
 new writers. The PostgreSQL advisory
 lock serializes migration processes; it does not fence application writers that
 are already running.
 
-The PostgreSQL migration widens the relevant sequence columns from `int4` to
+The later generations add durable runtime workflows (`v2_45`) and plan documents,
+planning operations and execution attempts (`v2_46`). They are additive and
+downgrade-safe, but the same rule holds: no mixed writers.
+
+The PostgreSQL migration of `v2.24` widens the relevant sequence columns from `int4` to
 `int8`. These type changes can take strong table locks and, depending on the
 PostgreSQL version and table/index shape, may rewrite storage. Rehearse the
 migration on a production-sized copy, verify the lock/runtime profile, take a
@@ -195,6 +199,11 @@ All product API, SSE, and WebSocket endpoints are namespaced under `/api/v2`.
 - `/api/v2/sessions/*`: session lifecycle, runtime settings, events, takeover,
   messages, interaction responses, interrupt, sync, filesystem, shell, terminal,
   and uploads.
+- `/api/v2/sessions/*/planning*`: plan documents, plan drafts, planning
+  operations (approve / request revision / dismiss) and execution attempts.
+- `/api/v2/runtime-workflows/*`: durable runtime workflow drivers - workspace
+  preparation, session creation, recovery and close - with server-side state
+  that survives a working device going offline.
 
 ## Web Frontend
 
