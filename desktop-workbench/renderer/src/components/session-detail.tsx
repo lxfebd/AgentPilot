@@ -55,6 +55,7 @@ import { NativeSessionHandoff } from "@/components/session/native-session-handof
 import { RuntimeCreationStatus } from "@/components/session/runtime-creation-status"
 import { PlanningPanel, PlanningReader, usePlanReader } from "@/components/session/planning-panel"
 import { useSessionPlanning } from "@/features/planning/use-session-planning"
+import { parsePlanningCommand } from "@/features/planning/commands"
 import { latestPlanRevisions, planEchoFilter } from "@/features/planning/timeline"
 import { PlanTimelineEntry } from "@/components/session/planning-panel"
 import { commandResult, commandTransportFailure, type CommandOutcome } from "@/components/session/runtime-command-model"
@@ -334,6 +335,7 @@ export function SessionDetail({
   const tSession = useTranslations("dashboard.session")
   const tNew = useTranslations("dashboard.new")
   const tCommon = useTranslations("common")
+  const tPlanning = useTranslations("planning")
   const {
     addOptimisticMessage,
     clearResolvedOptimisticMessages,
@@ -1187,6 +1189,25 @@ export function SessionDetail({
     selections: { model?: string; permission?: string },
   ): Promise<boolean> => {
     if (!session || (!content.trim() && attachments.length === 0)) return false
+    // /plan is parsed by the client, not sent to the runtime as a message.
+    const planIntent = parsePlanningCommand(content)
+    if (planIntent) {
+      const uploaded = attachments.flatMap((file) => (file.uploaded ? [file.uploaded] : []))
+      if (uploaded.length !== attachments.length) return false
+      if (planIntent.command !== "submit_task" && attachments.length) {
+        toast.error(tPlanning("commandAttachments"))
+        return false
+      }
+      try {
+        // Selections are written when changed; only wait for a pending write.
+        await selectionWritesRef.current.get(session.id)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : tSession("updateSelectionsFailed"))
+        return false
+      }
+      if (planIntent.command === "submit_task") timelineFollowRef.current?.resume()
+      return planning.execute({ ...planIntent, attachments: uploaded })
+    }
     const uploadedAttachments = attachments.flatMap((attachment) =>
       attachment.uploaded ? [attachment.uploaded] : [],
     )
