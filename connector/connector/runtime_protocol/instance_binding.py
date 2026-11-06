@@ -62,7 +62,8 @@ async def with_planning_capabilities(capabilities: RuntimeCapabilitySet, port, e
         return capabilities
     from connector.runtime_protocol.models import RuntimeCapability
     existing = next((item for item in capabilities.capabilities if item.capability_id == "session.planning"), None)
-    native_available = (existing.metadata if existing else {}).get("nativePlanningAvailable")
+    reported = (existing.metadata or {}) if existing else {}
+    native_available = reported.get("nativePlanningAvailable")
     supported = native_available if isinstance(native_available, bool) else await port.available(capabilities.session_id or "", external_session_id)
     names = ("session.planning", "session.plan_document", "session.plan_review")
     items = [item for item in capabilities.capabilities if item.capability_id not in names]
