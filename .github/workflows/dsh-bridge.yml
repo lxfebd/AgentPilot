@@ -11,12 +11,6 @@ on:
     types:
       - published
   workflow_dispatch:
-      - contracts/dsh-bridge/1.0/**
-      - .github/workflows/dsh-bridge.yml
-  release:
-    types:
-      - published
-  workflow_dispatch:
 
 permissions:
   contents: read
