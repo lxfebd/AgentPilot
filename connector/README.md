@@ -87,7 +87,7 @@ settled history needs no history RPC after restart. New turns normally require o
 the earliest changed turn. Prefix item counts preserve timeline ordering.
 
 The index is an optimization, not another data owner: it is opened read-only and
-never repaired or migrated by AA. Unknown schemas, lagging projections, inherited
+never repaired or migrated by the Connector. Unknown schemas, lagging projections, inherited
 histories, compaction, missing sources or invalid checkpoints use the full history
 RPC. Deletion, reordering and source replacement require full calibration. Changes
 during a paginated read abort the checkpoint commit and retry on the next scan.
@@ -105,7 +105,7 @@ this scanner checkpoint, so the latest live items can be safely resent once by
 the next successful scan. Fingerprints scale with the number of timeline items.
 Recovery progress is tracked per session, so one failing session does not force
 all successful sessions to reread their history on every poll. Codex's active-writer
-conflict is reported as a takeover failure before sending the message; AA cannot
+conflict is reported as a takeover failure before sending the message; the Connector cannot
 silently displace another native client holding the writer lock.
 
 ## Local startup ownership
