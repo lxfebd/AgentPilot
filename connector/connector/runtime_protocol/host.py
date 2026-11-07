@@ -20,6 +20,26 @@ from connector.runtime_protocol.models import (
 class RuntimeHostClient(ABC):
     """Runtime -> Connector."""
 
+    async def observe_planning(self, observation) -> None:
+        """Hand a planning observation to the unified planning host, if one is bound.
+
+        The host is installed by the composition root (bind_planning) as
+        `_planning_observer`; without it the observation is dropped rather than
+        failing the runtime, so a legacy host keeps working.
+        """
+        handler = getattr(self, "_planning_observer", None)
+        if handler is not None:
+            await handler(observation)
+
+    async def validate_planning_document(self, session_id: str, text: str) -> bool:
+        """Ask the planning host whether a document is worth accepting.
+
+        Defaults to True: a host that has not bound a validator must not reject
+        a plan the runtime considers valid.
+        """
+        callback = getattr(self, "_planning_validate", None)
+        return callback(session_id, text) if callback else True
+
     async def prepare_runtime_host(self, runtime_id: str) -> RuntimeHostClient:
         """Bind storage before a provider constructs its runtime; legacy hosts are unchanged."""
         return self
