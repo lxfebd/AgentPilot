@@ -9,6 +9,7 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from uuid import uuid4
 
+from connector.paths import connector_data_dir
 from connector.runtime_protocol.models import (
     RuntimeCapability,
     RuntimeCapabilitySet,
@@ -700,7 +701,10 @@ class NativePiRuntime(AcpRuntime):
         return replace(self.launch, environment=tuple(env.items()))
 
     def _acquire(self, session_id, path):
-        directory = Path.home() / ".cache/agents-anywhere/pi-native-locks"
+        # The Connector's own data directory, not a brand-named cache folder:
+        # the old path carried the upstream project's name onto users' disks
+        # and ignored AGENT_CONNECTOR_DATA_DIR.
+        directory = connector_data_dir() / "pi-native-locks"
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         descriptor = os.open(
             directory / fingerprint(str(path.resolve())), os.O_RDWR | os.O_CREAT, 0o600
