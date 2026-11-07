@@ -13,12 +13,7 @@ on:
       - .github/workflows/dsh-bridge-next.yml
   push:
     branches:
-      - main
-      - v2
-      - feat/benson-0905
-      - codex/connector-owned-lifecycle
-      - codex/dsh-before-images
-      - codex/dsh-features-with-sync-fix
+      - master
     paths:
       - dsh-bridge-next/**
       - connector/**
