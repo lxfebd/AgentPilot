@@ -1,6 +1,6 @@
 # 通用 Agent 能力端口与 ACP 增强
 
-这是 ACP 传输之上的 AA 通用协调契约；Pi、Cursor 等 Agent 的原生字段不得进入公共操作参数。新操作的请求模型源为 Server `core/runtime_workflows.py`，Connector 协调入口为 `runtimes/acp/application/agent_operations.py`。此目录仅保留协调约定说明，不提供已发布的 schema/manifest；组合 Agent 专属的旧生成产物已删除。
+这是 ACP 传输之上的通用协调契约（实现上沿用上游的 `_aa/*` 方法命名空间，Pi 等 Agent 只认该命名空间）；Pi、Cursor 等 Agent 的原生字段不得进入公共操作参数。新操作的请求模型源为 Server `core/runtime_workflows.py`，Connector 协调入口为 `runtimes/acp/application/agent_operations.py`。此目录仅保留协调约定说明，不提供已发布的 schema/manifest；组合 Agent 专属的旧生成产物已删除。
 
 ## 身份与结果
 
@@ -20,7 +20,7 @@
 
 ## ACP 边界
 
-标准 session/list、session/load/resume、配置、权限及表单优先使用标准 ACP。AA 业务操作通过 `_aa/operate` 传递；`_aa/read_history` 只读获取原生投影，`_aa/observe` 只调用 Agent 明确开放的观察控制。
+标准 session/list、session/load/resume、配置、权限及表单优先使用标准 ACP。业务操作通过 `_aa/operate` 传递；`_aa/read_history` 只读获取原生投影，`_aa/observe` 只调用 Agent 明确开放的观察控制。（三条 `_aa/*` 是与 Agent 侧约定的既有方法名，不可更名。）
 
 可选 `_meta.aa.unavailableCapabilities` 为能力 ID 到原因的映射；禁止客户端因标准 prompt 方法存在便推定被关闭的写入能力可用。恢复和早期回执为独立协商能力，普通 ACP Agent 不必实现 Pi 的保证清单。
 
