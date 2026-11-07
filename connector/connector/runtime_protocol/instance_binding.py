@@ -218,6 +218,12 @@ class RuntimeInstanceHost(RuntimeHostClient):
     async def validate_planning_document(self, session_id: str, text: str) -> bool:
         return await self.base.validate_planning_document(session_id, text)
 
+    async def prepare_planning_turn(self, session_id: str, external_id: str | None) -> bool:
+        return await self.base.prepare_planning_turn(session_id, external_id)
+
+    async def publish_planning(self, snapshot: dict, durable: bool = False) -> None:
+        await self.base.publish_planning(snapshot, durable)
+
     async def publish_runtime_notifications(
         self, runtime: str, notifications: list[dict[str, Any]], *, runtime_id: str | None = None
     ) -> None:

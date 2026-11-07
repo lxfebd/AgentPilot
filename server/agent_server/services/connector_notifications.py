@@ -75,6 +75,7 @@ class ConnectorNotificationService:
             ConnectorProtocolNotificationHandler(store),
             RuntimeCatalogNotificationHandler(store),
             SessionStateNotificationHandler(store),
+            PlanningNotificationHandler(store),
             SessionTurnEndedNotificationHandler(store, timeline_write_buffer),
             SessionSourceNotificationHandler(store),
             SessionInventoryNotificationHandler(store),
@@ -120,6 +121,27 @@ class ConnectorNotificationService:
             if effect is not None:
                 return effect
         return IngestEffect()
+
+
+class PlanningNotificationHandler:
+    """The planning snapshot the connector publishes; the client's panel depends on it."""
+
+    def __init__(self, store):
+        self._store = store
+
+    async def apply(self, *, connector_id, method, params):
+        if method != "session.planning.updated":
+            return None
+        from agent_server.core.planning.models import PlanningState
+        state = PlanningState.model_validate(params)
+        if not state.runtimeId or not await _session_matches_runtime(self._store, state.sessionId, state.runtime, state.runtimeId, connector_id=connector_id):
+            raise NotificationValidationError("planning_binding_invalid", "Plan session binding is invalid")
+        payload = state.model_dump(mode="json", exclude_unset=True)
+        if state.draft is not None:
+            return IngestEffect(session_id=state.sessionId, planning_state=payload)
+        if not await self._store.save_planning(state.sessionId, payload):
+            return IngestEffect()
+        return IngestEffect(session_id=state.sessionId, planning_state=payload)
 
 
 class ConnectorProtocolNotificationHandler:

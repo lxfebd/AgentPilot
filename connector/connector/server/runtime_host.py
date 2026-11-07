@@ -116,6 +116,21 @@ class ConnectorRuntimeHost(RuntimeHostClient):
         }
         await self._notify_server("session.meta.upsert", _drop_none(payload))
 
+    async def publish_planning(self, snapshot: dict, durable: bool = False) -> None:
+        """Forward one planning snapshot to the Server as a planning notification.
+
+        The durable path reuses the ingest queue so a plan that was written while
+        the connection was down still reaches the Server; the live path notifies
+        immediately, which is what keeps the client's plan panel current.
+        """
+        notification = {"method": "session.planning.updated", "params": snapshot}
+        if durable:
+            if self._ingest_notifications is None:
+                raise RuntimeError("Durable plan ingestion is unavailable")
+            await self._ingest_notifications([notification])
+        else:
+            await self._notify_server(notification["method"], snapshot)
+
     async def session_state_update(
         self,
         session_id: str,
