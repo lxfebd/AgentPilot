@@ -10,6 +10,11 @@ from __future__ import annotations
 
 from test_backend_mvp import create_connector_and_session, make_client
 
+from agent_server.core import capabilities
+from agent_server.services.effective_capabilities import (
+    _INHERITED_RUNTIME_CAPABILITY_IDS,
+)
+
 API = "/api/v2"
 
 
@@ -190,3 +195,20 @@ def test_an_unknown_session_reports_missing_rather_than_an_empty_plan(tmp_path) 
     response = client.get(f"{API}/sessions/sess_missing/planning", headers=headers)
     assert response.status_code == 404
     assert "not found" in response.text.lower(), "a missing session is a 404, not an empty plan"
+
+
+def test_every_declared_capability_is_projected_to_clients() -> None:
+    """A capability nobody projects is a capability no client can gate on.
+
+    The planning API gates on session.planning and session.plan_review, and the
+    Web client gates the plan document on session.plan_document - yet all three
+    were missing from the projection list, so every one of those gates read
+    "unsupported" no matter what the connector reported. Keeping the list and
+    the declarations in step is what stops the next one.
+    """
+    declared = {
+        value for name, value in vars(capabilities).items()
+        if name.isupper() and isinstance(value, str) and "." in value
+    }
+    missing = sorted(declared - set(_INHERITED_RUNTIME_CAPABILITY_IDS))
+    assert not missing, f"these capabilities are declared but never projected: {missing}"
