@@ -638,3 +638,67 @@ async def _exercise_attachment_download() -> None:
     assert content.content == b"data"
     assert content.name == "example.txt"
     assert content.media_type == "text/plain"
+
+
+async def _exercise_planning_publication() -> tuple[list[tuple[str, dict[str, Any]]], list[list[dict[str, Any]]]]:
+    notifications: list[tuple[str, dict[str, Any]]] = []
+    ingested: list[list[dict[str, Any]]] = []
+
+    async def notify(method: str, params: dict[str, Any]) -> None:
+        notifications.append((method, params))
+
+    async def ingest(notifications_batch: list[dict[str, Any]]) -> None:
+        ingested.append(notifications_batch)
+
+    async def download(session_id: str, file_id: str) -> tuple[bytes, str, str]:
+        _ = session_id
+        return b"data", f"{file_id}.txt", "text/plain"
+
+    host = ConnectorRuntimeHost(
+        connector_id="conn_1",
+        notifier=notify,
+        attachment_downloader=download,
+        ingest_notifications=ingest,
+    )
+    snapshot = {"sessionId": "sess_1", "effectiveMode": "plan"}
+    await host.publish_planning(snapshot)
+    await host.publish_planning(snapshot, durable=True)
+    return notifications, ingested
+
+
+def test_planning_snapshots_reach_the_server_on_both_paths() -> None:
+    notifications, ingested = asyncio.run(_exercise_planning_publication())
+
+    # The live path is what keeps the client's panel current while a plan streams.
+    assert notifications == [
+        ("session.planning.updated", {"sessionId": "sess_1", "effectiveMode": "plan"}),
+    ]
+    # The durable path reuses the ingest queue, so a plan written while the
+    # connection was down still arrives - wrapped as a notification, not sent raw.
+    assert len(ingested) == 1
+    batch = ingested[0]
+    assert len(batch) == 1
+    assert batch[0]["method"] == "session.planning.updated"
+    assert batch[0]["params"]["effectiveMode"] == "plan"
+
+
+def test_a_host_without_a_durable_queue_refuses_rather_than_dropping_the_plan() -> None:
+    async def exercise() -> None:
+        async def notify(method: str, params: dict[str, Any]) -> None:
+            _ = method, params
+
+        async def download(session_id: str, file_id: str) -> tuple[bytes, str, str]:
+            _ = session_id
+            return b"data", f"{file_id}.txt", "text/plain"
+
+        host = ConnectorRuntimeHost(
+            connector_id="conn_1", notifier=notify, attachment_downloader=download,
+        )
+        await host.publish_planning({"sessionId": "sess_1"}, durable=True)
+
+    try:
+        asyncio.run(exercise())
+    except RuntimeError as exc:
+        assert "Durable plan ingestion is unavailable" in str(exc)
+    else:
+        raise AssertionError("a durable write with no queue must fail loudly, not vanish")
