@@ -212,6 +212,12 @@ class RuntimeInstanceHost(RuntimeHostClient):
             namespace = f"{namespace}:{_source_key_digest(self.source_key)}"
         return f"{self.connector_id}:{self.instance.runtime_type}:{namespace}"
 
+    async def observe_planning(self, observation) -> None:
+        await self.base.observe_planning(observation)
+
+    async def validate_planning_document(self, session_id: str, text: str) -> bool:
+        return await self.base.validate_planning_document(session_id, text)
+
     async def publish_runtime_notifications(
         self, runtime: str, notifications: list[dict[str, Any]], *, runtime_id: str | None = None
     ) -> None:
