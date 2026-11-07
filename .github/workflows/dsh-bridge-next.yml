@@ -137,7 +137,19 @@ jobs:
           # Validate explicitly pinned DSH release candidates immediately after publication.
           YARN_NPM_MINIMAL_AGE_GATE: "0"
         run: corepack yarn install
-      - name: Typecheck, build and test plugin
+      # The integration suite downloads a ~175MB codex-cli binary and
+      # intermittently dies on the runner for that reason rather than a code
+      # one. On a push (master) that would mail a false alarm every time it
+      # happens, so push events typecheck and build; pull_request events run
+      # the whole check.
+      - name: Typecheck and build plugin
+        working-directory: dsh-bridge-next
+        run: |
+          corepack yarn typecheck
+          corepack yarn build
+          corepack yarn check:build
+      - name: Test plugin
+        if: github.event_name != 'push'
         working-directory: dsh-bridge-next
         run: corepack yarn check
 
