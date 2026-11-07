@@ -42,7 +42,9 @@ class AgentClient:
                                 "session": {"configOptions": {"boolean": {}}},
                             }
                         ),
-                        client_info=Implementation(name="agents-anywhere", version="1"),
+                        # Our own identity, not the upstream project's: this is
+                        # what the Agent sees in the ACP handshake.
+                        client_info=Implementation(name="agent-pilot-connector", version="1"),
                     ),
                     20,
                 )
