@@ -40,6 +40,23 @@ class RuntimeHostClient(ABC):
         callback = getattr(self, "_planning_validate", None)
         return callback(session_id, text) if callback else True
 
+    async def prepare_planning_turn(self, session_id: str, external_id: str | None) -> bool:
+        """Ask the planning host to arm a turn before the runtime starts it.
+
+        False when no host is bound: a runtime without planning support must not
+        be told a plan was demanded.
+        """
+        callback = getattr(self, "_planning_prepare", None)
+        return await callback(session_id, external_id) if callback else False
+
+    async def publish_planning(self, snapshot: dict, durable: bool = False) -> None:
+        """Publish one planning snapshot. Real hosts forward this to the Server.
+
+        The default raises because a host that cannot publish must not swallow
+        the state: bind_planning checks for this method before binding anything.
+        """
+        raise NotImplementedError("Planning publication is unavailable")
+
     async def prepare_runtime_host(self, runtime_id: str) -> RuntimeHostClient:
         """Bind storage before a provider constructs its runtime; legacy hosts are unchanged."""
         return self

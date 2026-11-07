@@ -249,6 +249,7 @@ class ConnectorIngestService:
                     {
                         "items": [],
                         "runtime_state": None,
+                        "planning_state": None,
                         "timeline_reset": False,
                         "session": False,
                         "capability_changed": False,
@@ -290,6 +291,8 @@ class ConnectorIngestService:
                                 bucket["items"].extend(effect.items)
                     if effect.runtime_state is not None:
                         bucket["runtime_state"] = effect.runtime_state
+                    if effect.planning_state is not None:
+                        bucket["planning_state"] = effect.planning_state
                     bucket["session"] = bucket["session"] or effect.session_changed
                     bucket["capability_changed"] = (
                         bucket["capability_changed"] or effect.protocol_changed
@@ -382,6 +385,10 @@ class ConnectorIngestService:
                     await self._runtime_state_cache.put(runtime_state)
                     envelope["runtimeState"] = runtime_state.model_dump(mode="json")
                     bucket["session"] = True
+            if bucket["planning_state"] is not None:
+                # Rides the same envelope so the plan event and the timeline it
+                # belongs to are published together.
+                envelope["planningState"] = bucket["planning_state"]
             if bucket["session"]:
                 try:
                     session = await self._store.get_session(session_id)
