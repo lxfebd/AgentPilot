@@ -12,14 +12,18 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 | --- | --- | --- |
 | `server/` | API、实时通道、存储；分层规则见 [server/README.md](server/README.md) | Python 3.12、FastAPI、PostgreSQL、Redis、Alembic、uv |
 | `connector/` | 工作设备侧进程，连接 Server 并驱动 Runtime | Python、uv |
+| `connector/connector/planning/` | 统一 Planning 应用（domain/application/infrastructure 三层，由各 provider 的 `create_runtime` 绑定） | Python |
 | `web-next/` | Web 客户端（另有自己的 [AGENTS.md](web-next/AGENTS.md)） | Next.js、TypeScript、Yarn |
 | `desktop-workbench/` | **当前**桌面客户端，内含受管理的本机 Connector | Electron、TypeScript、Yarn |
 | `android/` | Android 客户端，见 `android/ARCHITECTURE.md` | Kotlin、Gradle、JDK 17 |
-| `ios/` | iOS / iPadOS 客户端，见 `ios/ARCHITECTURE.md` | Swift、Xcode |
+| `ios/` | iOS / iPadOS 客户端，见 `ios/ARCHITECTURE.md`；单测在 `ios/AgentPilot/AgentPilotTests/`（尚未加入任何 Xcode target） | Swift、Xcode |
 | `dsh-bridge-next/` | **当前** DSH 插件（npm 包，也随 DSH Desktop 分发） | TypeScript、Yarn |
 | `contracts/` | 跨端契约与 fixtures，按 `<name>/<version>/` 组织 | JSON Schema / 文档 |
 | `packages/ui-core/` | Web 与桌面渲染器共享的无依赖 TS 助手（经 `portal:` 依赖引入） | TypeScript |
 | `docker/` | 自托管部署与本地数据库 compose | Docker Compose |
+| `PORTING_CHECKLIST.md` | 跨仓库移植防再犯检查单（按根因归类，接上文"跨仓库移植"规则） | 文档 |
+| `MAC_VERIFICATION.md` | Mac / 设备侧命令级验证手册（iOS target、四端联调、设备联调） | 文档 |
+| `PROJECT_STATUS.md` | 项目进度：各端版本、已交付能力、验证状态、云端发布状态、环境备忘 | 文档 |
 
 不在当前主线上开发的目录：
 
@@ -60,6 +64,17 @@ AgentPilot 是一个跨设备的 Agent 工作台。工作设备上的 **Connecto
 ## 版本号
 
 `2.0.x` 是各端独立的小版本更新，`2.x.0` 是接口更新，`x.0.0` 是架构变更。只有 PATCH 允许各端不同；修改跨端接口时不能只升 PATCH，并且升 MINOR 或 MAJOR 时要更新**所有端**的版本号。
+
+## 发布链（改完代码不等于用户能拿到）
+
+客户端判断"有无新版本"的依据是 **Server `/api/v2/health` 返回的版本号**，与**打包时记录进构建信息的 `serverVersion`** 比较（见 `desktop-workbench/electron/desktop-updates.ts`）；真要下载时取 `<server origin>/desktop-installer/latest.exe`，Android 取 `<server origin>/apk/latest.apk`。因此：
+
+1. **只更新客户端安装包、不动 Server，是无效发布**——提示的版本来自 Server，不升 Server 就没有提示；
+2. 发布 = **Server 版本 + 安装包 + APK 三件套同步**，缺一即断；
+3. 发布后必须**实测 URL**（`Content-Length`、`Last-Modified`、`version.json`），不能只看文件已上传；
+4. 发布用的 APK 需要 release 签名；仓库里 `android` 的签名是按机器 opt-in 的，**别用未签名产物覆盖线上**，那会让所有人都装不上。
+
+具体到当前线上站点的目录、容器与待办，见 [PROJECT_STATUS.md](PROJECT_STATUS.md) 第四节。
 
 ## 提交与 PR
 
