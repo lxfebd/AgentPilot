@@ -444,12 +444,12 @@ internal fun HomeListSectionHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(52.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
-            modifier = Modifier.weight(1f).height(44.dp).clickable(
+            modifier = Modifier.weight(1f).height(52.dp).clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {

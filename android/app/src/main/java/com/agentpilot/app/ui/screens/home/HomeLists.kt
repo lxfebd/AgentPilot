@@ -524,7 +524,7 @@ private fun HomeAllAgentsHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(52.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -582,7 +582,7 @@ private fun HomeAgentGroupHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(52.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

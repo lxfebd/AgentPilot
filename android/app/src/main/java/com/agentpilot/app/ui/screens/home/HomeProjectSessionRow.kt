@@ -38,7 +38,7 @@ internal fun HomeProjectSessionRow(
     val haptic = LocalHapticFeedback.current
     var bounds by remember { mutableStateOf(Rect.Zero) }
     Row(
-        modifier = Modifier.fillMaxWidth().height(44.dp)
+        modifier = Modifier.fillMaxWidth().height(52.dp)
             .onGloballyPositioned { bounds = it.boundsInRoot() }
             .pointerInput(onClick, onLongPress, bounds) {
                 detectTapGestures(
