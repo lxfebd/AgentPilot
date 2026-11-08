@@ -164,7 +164,7 @@ private fun FilesHeader(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(52.dp)
                     .clip(AAShapes.smallShape)
                     .background(surface)
                     .border(1.dp, border, AAShapes.smallShape)

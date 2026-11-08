@@ -583,7 +583,7 @@ private fun RailProjects(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(52.dp)
                     .clickable { onProjectExpandedChange(project.id, !expanded) }
                     .padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
