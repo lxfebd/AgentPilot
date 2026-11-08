@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -462,7 +463,10 @@ private fun RailChips(
     ) {
         Box(
             modifier = Modifier
+                // 视觉上仍是 32dp 的小胶囊，但触控区保底 48dp——chip 不该为了命中率被拉高。
                 .height(32.dp)
+                // 视觉仍是 32dp 胶囊；触控区兜底 48dp，chip 不该为命中率被拉高。
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.secondaryContainer)
                 .clickable(onClick = onSessions),
@@ -480,6 +484,7 @@ private fun RailChips(
         Row(
             modifier = Modifier
                 .height(32.dp)
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .clip(CircleShape)
                 .clickable(onClick = onNew),
             verticalAlignment = Alignment.CenterVertically,
