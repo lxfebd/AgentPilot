@@ -486,7 +486,7 @@ private fun HomeSectionHeader(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             },
         verticalAlignment = Alignment.CenterVertically,
@@ -818,7 +818,7 @@ private fun HomeSessionRowShell(
                     detectTapGestures(
                         onTap = { onClick() },
                         onLongPress = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onLongPress(bounds)
                         },
                     )

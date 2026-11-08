@@ -937,7 +937,7 @@ private fun ToolRunGroup(
     var lockedTop by remember(messages.identityKey()) { mutableStateOf<Float?>(null) }
 
     fun toggleExpanded() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         lockedTop = cardTop
         expanded = !expanded
     }
@@ -1792,7 +1792,7 @@ private fun ToolActivityCard(
     var cardTop by remember(message.id) { mutableStateOf<Float?>(null) }
     var lockedTop by remember(message.id) { mutableStateOf<Float?>(null) }
     fun toggleExpanded() {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         lockedTop = cardTop
         expanded = !expanded
     }

@@ -812,7 +812,7 @@ private fun QuickEntryCard(
                 interactionSource = interactionSource,
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
             .padding(horizontal = 12.dp, vertical = 13.dp),
@@ -878,7 +878,7 @@ private fun HomeTabPill(label: String, selected: Boolean, onClick: () -> Unit) {
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
             .padding(horizontal = 14.dp),
@@ -957,7 +957,7 @@ private fun FloatingHomeButton(
                 interactionSource = interactionSource,
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             },
         contentAlignment = Alignment.Center,

@@ -129,7 +129,7 @@ fun SectionLabel(
         modifier = Modifier
             .height(24.dp)
             .noRippleClickable {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
             .padding(start = 0.dp, end = 10.dp),
