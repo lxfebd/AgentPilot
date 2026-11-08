@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
@@ -876,6 +877,8 @@ private fun HomeTabPill(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(34.dp)
+            // 34dp 的 tab 药丸：视觉不变，触控区兜底 48dp（修饰顺序：height 决定视觉）。
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .clip(shape)
             .background(background)
             .clickable(
