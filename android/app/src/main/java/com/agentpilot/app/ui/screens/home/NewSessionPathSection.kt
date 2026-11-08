@@ -116,17 +116,17 @@ internal fun ChoosePathSection(
                 {
                     selectCurrent()
                     expanded = false
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
             },
             enabled = enabled,
             listExpanded = listExpanded,
             onToggleList = if (collapsible) ({
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 expanded = !expanded
             }) else null,
             onOpenList = if (!collapsible && !expanded) ({
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 expanded = true
             }) else null,
         )

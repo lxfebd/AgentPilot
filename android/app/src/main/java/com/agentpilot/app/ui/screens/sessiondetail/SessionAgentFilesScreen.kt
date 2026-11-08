@@ -1225,7 +1225,7 @@ private fun TerminalShortcutRow(
                     .clip(AAShapes.tinyShape)
                     .background(if (active) activeBackground else Color.Transparent)
                     .noRippleClickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onShortcut(shortcut)
                     },
                 contentAlignment = Alignment.Center,
@@ -1955,7 +1955,7 @@ private fun PathBar(
                         delay(1100)
                         copied = false
                     }
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 },
             contentAlignment = Alignment.Center,
         ) {
@@ -2079,12 +2079,12 @@ private fun FileListRow(
                             delay(180)
                             flash = false
                         }
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onClick()
                     },
                     onLongClick = {
                         onOpenMenu()
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     },
                 )
                 .padding(horizontal = 10.dp),
@@ -2122,7 +2122,7 @@ private fun FileListRow(
                     darkMode = darkMode,
                     onCopyPath = {
                         clipboard.setText(AnnotatedString(copyPath))
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onDismissMenu()
                     },
                 )

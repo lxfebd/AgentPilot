@@ -306,7 +306,7 @@ private fun AddDeviceRow(
                 interactionSource = interactionSource,
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
             .padding(start = 12.dp, end = 8.dp),
@@ -382,7 +382,7 @@ internal fun DeviceRow(
                 interactionSource = interactionSource,
                 indication = null,
             ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
             .padding(start = 12.dp, end = 8.dp),

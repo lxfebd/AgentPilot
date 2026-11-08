@@ -363,11 +363,11 @@ private fun HomeProjectRow(
             .pointerInput(onClick, onMenu, bounds, expanded) {
                 detectTapGestures(
                     onTap = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onClick()
                     },
                     onLongPress = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onMenu(HomeProjectActionMenu(project, bounds, expanded = expanded))
                     },
                 )
@@ -453,7 +453,7 @@ internal fun HomeListSectionHeader(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onClick()
                 },
             ),

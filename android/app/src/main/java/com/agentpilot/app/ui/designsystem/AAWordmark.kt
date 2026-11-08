@@ -9,12 +9,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import com.agentpilot.app.R
 
-private val AAWordmarkFontFamily = FontFamily(
-    Font(R.font.caveat_wght, weight = FontWeight.Medium),
-)
-
+/**
+ * The product wordmark.
+ *
+ * It used to be set in Caveat, a handwriting face, which read as a personal
+ * project rather than a tool people run agents in. There is no display sans in
+ * the font assets (only JetBrains Mono), so the wordmark is set in the system
+ * face with tight tracking instead of shipping a typeface for one line.
+ */
 @Composable
 fun AAWordmark(
     modifier: Modifier = Modifier,
@@ -28,10 +33,9 @@ fun AAWordmark(
         modifier = modifier,
         color = color,
         fontSize = fontSize,
-        fontFamily = AAWordmarkFontFamily,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         lineHeight = lineHeight,
-        letterSpacing = TextUnit.Unspecified,
+        letterSpacing = (-0.5).sp,
         textAlign = textAlign,
         maxLines = 1,
     )

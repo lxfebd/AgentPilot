@@ -873,7 +873,7 @@ fun SessionDetailScreen(
             val clientMessageId = retryClientMessageId ?: "opt_${UUID.randomUUID()}"
             val localSessionId = pending.localSessionId
             preparedSessionCreating = true
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             unfocusComposer()
             forceLatestRequest += 1
             scope.launch {
@@ -962,7 +962,7 @@ fun SessionDetailScreen(
         val steer = canSteer && state.effectiveRuntimeStatus() == SessionRuntimeStatus.Running
         val clientMessageId = retryClientMessageId ?: "opt_${UUID.randomUUID()}"
         val pendingAttachments = attachments
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         scope.launch {
             if (pendingAttachments.any { it.uploadState != AttachmentUploadState.Uploaded || it.remote == null }) {
                 showError(context.getString(R.string.session_wait_uploads))
@@ -1087,7 +1087,7 @@ fun SessionDetailScreen(
     fun interrupt() {
         val id = sessionId ?: return
         if (state.interrupting) return
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         state = state.copy(interrupting = true, actionError = null)
         scope.launch {
             controller.interrupt(id)
