@@ -872,9 +872,11 @@ private fun RailSessionStatusChip(session: AgentSession) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 8dp/11sp 在深色底上偏弱：点放大到 10dp，状态文字 12sp。
+        // 文字仍用语义色——颜色本身就是状态编码，加粗会抢标题的层级。
         Box(
             modifier = Modifier
-                .size(8.dp)
+                .size(10.dp)
                 .clip(CircleShape)
                 .background(dotColor),
         )
@@ -883,7 +885,7 @@ private fun RailSessionStatusChip(session: AgentSession) {
             Text(
                 text = stringResource(status.labelRes),
                 color = dotColor,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 maxLines = 1,
             )
         }
