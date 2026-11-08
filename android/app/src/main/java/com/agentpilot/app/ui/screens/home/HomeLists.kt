@@ -481,7 +481,7 @@ private fun HomeSectionHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(41.dp)
+            .height(52.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

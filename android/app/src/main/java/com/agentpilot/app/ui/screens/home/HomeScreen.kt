@@ -7,6 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -757,7 +760,7 @@ private fun QuickEntries(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(76.dp),
+            .height(56.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         QuickEntryCard(
@@ -798,7 +801,7 @@ private fun QuickEntryCard(
     val surface = colors.raisedSurface
     val border = if (darkMode) Color.Transparent else Color(0xFFE7E6E2)
 
-    Column(
+    Row(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer {
@@ -815,21 +818,22 @@ private fun QuickEntryCard(
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(horizontal = 12.dp, vertical = 13.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (darkMode) Color(0xFF9A9A9A) else Color(0xFF8E8E8E),
-            modifier = Modifier.size(22.dp),
+            tint = if (darkMode) colors.ink else Color(0xFF4A4A4A),
+            modifier = Modifier.size(20.dp),
         )
+        Spacer(Modifier.width(10.dp))
         Text(
             text = title,
             color = colors.ink,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 17.sp,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 18.sp,
             maxLines = 1,
         )
     }

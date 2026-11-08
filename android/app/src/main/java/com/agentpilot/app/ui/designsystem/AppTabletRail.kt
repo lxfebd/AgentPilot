@@ -685,7 +685,7 @@ private fun RailSessionRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(52.dp)
             .padding(start = 44.dp, end = 12.dp),
     ) {
         // 背景操作层
