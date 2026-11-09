@@ -2000,8 +2000,15 @@ fun SessionDetailScreen(
                             }
                             state.messages.isEmpty() && openInteractions.isEmpty() && !hasOpenNotifications ->
                                 SessionWelcomeMessage()
-                            else -> MessageList(
-                                messages = state.messages,
+                            // 刷新失败但已有消息时，错误过去被这个条件吞掉：用户只看到旧内容、
+                            // 没有任何提示，于是以为还在转圈。现在消息上方给一条可见的失败提示。
+                            else -> Column(modifier = Modifier.fillMaxSize()) {
+                                TimelineRefreshErrorBanner(
+                                    message = state.timeline.errorMessage,
+                                    isLoading = state.timeline.isLoading,
+                                )
+                                MessageList(
+                                    messages = state.messages,
                                 darkMode = darkMode,
                                 sessionId = sessionId.orEmpty(),
                                 workspaceRoot = state.session?.cwd,
@@ -2029,6 +2036,7 @@ fun SessionDetailScreen(
                                     if (pendingScrollMessageId == consumed) pendingScrollMessageId = null
                                 },
                             )
+                            }
                         }
                         ComposerVeil(
                             height = timelineBottomPadding + 16.dp,
