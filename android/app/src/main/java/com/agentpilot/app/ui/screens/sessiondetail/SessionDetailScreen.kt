@@ -104,7 +104,9 @@ import com.agentpilot.app.feature.sessiondetail.failSnapshotLoad
 import com.agentpilot.app.feature.sessiondetail.isValidAttachmentMediaType
 import com.agentpilot.app.feature.sessiondetail.isInternalRuntimeError
 import com.agentpilot.app.feature.sessiondetail.isIndeterminateSendFailure
+import com.agentpilot.app.feature.sessiondetail.ReadOnlyComposerTap
 import com.agentpilot.app.feature.sessiondetail.sendErrorResourceId
+import com.agentpilot.app.feature.sessiondetail.readOnlyComposerTap
 import com.agentpilot.app.feature.sessiondetail.hasPendingOptimisticSend
 import com.agentpilot.app.feature.sessiondetail.RuntimeCommand
 import com.agentpilot.app.feature.sessiondetail.RuntimeCommandBlock
@@ -650,15 +652,21 @@ fun SessionDetailScreen(
     }
 
     fun handleReadOnlyComposerClick() {
-        if (takeoverConfirm != null || state.takeoverInFlight) return
-        readOnlyComposerTapCount += 1
-        if (readOnlyComposerTapCount >= 2) {
-            readOnlyComposerTapCount = 0
-            if (state.session?.connectorOnline != true) {
-                showDeviceOffline = true
-            } else if (state.session?.takeover != true) {
-                takeoverConfirm = true
-            }
+        // 逻辑见 readOnlyComposerTap：整张 composer 卡可点，误触不能弹确认框，
+        // 所以双击才算数；第一次点击不再被静默吞掉，改为给出提示。
+        val (action, nextCount) = readOnlyComposerTap(
+            previousTapCount = readOnlyComposerTapCount,
+            dialogOpen = takeoverConfirm != null,
+            takeoverInFlight = state.takeoverInFlight,
+            connectorOnline = state.session?.connectorOnline == true,
+        )
+        readOnlyComposerTapCount = nextCount
+        when (action) {
+            ReadOnlyComposerTap.Ignore -> Unit
+            ReadOnlyComposerTap.ShowHint ->
+                showToast(context.getString(R.string.session_read_only_takeover_hint))
+            ReadOnlyComposerTap.ConfirmTakeover -> takeoverConfirm = true
+            ReadOnlyComposerTap.ReportDeviceOffline -> showDeviceOffline = true
         }
     }
 

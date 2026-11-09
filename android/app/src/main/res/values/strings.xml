@@ -412,6 +412,7 @@
     <string name="session_command_failed">Could not run the command.</string>
     <string name="session_command_busy">The agent is busy. Try again when it is idle.</string>
     <string name="session_command_read_only">Turn on takeover to run commands.</string>
+    <string name="session_read_only_takeover_hint">Tap again to turn on takeover.</string>
     <string name="session_command_offline">Device offline.</string>
     <string name="session_command_unavailable">Commands are not available in this session right now.</string>
     <string name="session_command_runtime_outdated">This runtime version does not support commands yet. Update it to use them.</string>
