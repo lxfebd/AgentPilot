@@ -164,7 +164,11 @@ export class NativeRuntime {
     // The Bridge reports native facts; only a Connector with the unified
     // Planning application may advertise the end-to-end capability.
     const planning = Boolean(this.planning.service())
-    Object.assign(result.capabilities.find(item => item.capabilityId === 'session.planning')!, { capabilityId: 'session.planning', scope: platformId ? 'session' : 'runtime',
+    // The planning capability is only present when the host reported it; the non-null
+    // assertion here assumed it always was, so a response without it threw a TypeError
+    // out of capabilities() instead of simply skipping the override.
+    const planningCapability = result.capabilities.find(item => item.capabilityId === 'session.planning')
+    if (planningCapability) Object.assign(planningCapability, { capabilityId: 'session.planning', scope: platformId ? 'session' : 'runtime',
       ...(platformId ? { sessionId: platformId } : {}), runtime: 'dsh', version: '1', supported: false,
       available: false, allowed: true, metadata: { nativePlanningAvailable: planning, contentStreaming: 'native_delta' } })
     return { ...result, metadata: { ...result.metadata,
