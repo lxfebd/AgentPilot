@@ -519,6 +519,44 @@ internal fun sendErrorResourceId(error: Throwable): Int? {
     }
 }
 
+/**
+ * What a tap on the read-only composer should do.
+ *
+ * The whole composer card is clickable when input is disabled, so a stray tap - a
+ * scroll gesture landing on it, a brush of the thumb - must not raise the takeover
+ * confirmation. Two taps in a row are required. The first tap alone used to be
+ * swallowed with no feedback, which read as a broken composer; it now reports the
+ * hint so the user learns what the tap is for.
+ */
+internal enum class ReadOnlyComposerTap {
+    /** No effect: a dialog is already up or a takeover request is running. */
+    Ignore,
+    /** First tap: tell the user why nothing happened and what a second tap does. */
+    ShowHint,
+    /** Second tap: this is a deliberate request to take over. */
+    ConfirmTakeover,
+    /** Second tap, but the device is offline - report that instead of a takeover dialog. */
+    ReportDeviceOffline,
+}
+
+internal fun readOnlyComposerTap(
+    previousTapCount: Int,
+    dialogOpen: Boolean,
+    takeoverInFlight: Boolean,
+    connectorOnline: Boolean,
+): Pair<ReadOnlyComposerTap, Int> {
+    if (dialogOpen || takeoverInFlight) {
+        return ReadOnlyComposerTap.Ignore to previousTapCount
+    }
+    val next = previousTapCount + 1
+    return if (next >= 2) {
+        val action = if (connectorOnline) ReadOnlyComposerTap.ConfirmTakeover else ReadOnlyComposerTap.ReportDeviceOffline
+        action to 0
+    } else {
+        ReadOnlyComposerTap.ShowHint to next
+    }
+}
+
 internal fun isInternalRuntimeError(message: String?): Boolean {
     val normalized = message?.trim()?.lowercase().orEmpty()
     if (normalized.isEmpty()) return false

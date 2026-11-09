@@ -411,6 +411,7 @@
     <string name="session_command_failed">无法执行指令。</string>
     <string name="session_command_busy">Agent 忙碌中，暂时不能执行</string>
     <string name="session_command_read_only">开启接管后才能执行指令</string>
+    <string name="session_read_only_takeover_hint">再次点击以开启接管</string>
     <string name="session_command_offline">设备离线</string>
     <string name="session_command_unavailable">此会话暂时无法使用指令</string>
     <string name="session_command_runtime_outdated">当前 Runtime 版本还不支持指令，升级后可用</string>
