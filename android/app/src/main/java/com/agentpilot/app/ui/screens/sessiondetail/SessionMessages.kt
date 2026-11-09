@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.agentpilot.app.R
+import com.agentpilot.app.feature.sessiondetail.shouldShowTimelineRefreshError
 import com.agentpilot.app.feature.sessiondetail.MessageAuthor
 import com.agentpilot.app.feature.sessiondetail.SessionDetailController
 import com.agentpilot.app.feature.sessiondetail.RuntimeNotice
@@ -2422,6 +2423,33 @@ private fun CompactTimelineSeparator(
                 .weight(1f)
                 .height(1.dp)
                 .background(colors.faint.copy(alpha = 0.38f)),
+        )
+    }
+}
+
+/**
+ * A non-blocking notice that the latest timeline refresh failed while messages are
+ * already on screen. Without it the error was only shown when the list was empty, so a
+ * failed refresh over stale messages looked like the app was still loading.
+ */
+@Composable
+internal fun TimelineRefreshErrorBanner(
+    message: String?,
+    isLoading: Boolean = false,
+) {
+    val text = message?.takeIf { shouldShowTimelineRefreshError(it, isLoading) } ?: return
+    val colors = LocalAAColors.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.errorSurface)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = text,
+            color = colors.errorText,
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
         )
     }
 }

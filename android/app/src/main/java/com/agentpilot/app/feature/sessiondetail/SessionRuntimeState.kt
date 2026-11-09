@@ -557,6 +557,18 @@ internal fun readOnlyComposerTap(
     }
 }
 
+/**
+ * Whether the timeline-refresh failure notice should be shown.
+ *
+ * The failure used to surface only when the list was empty, so a refresh that
+ * failed over already-loaded messages was invisible: the user saw stale content
+ * with no indication anything had gone wrong, which reads as "still loading".
+ */
+internal fun shouldShowTimelineRefreshError(
+    errorMessage: String?,
+    isLoading: Boolean,
+): Boolean = !errorMessage.isNullOrBlank() && !isLoading
+
 internal fun isInternalRuntimeError(message: String?): Boolean {
     val normalized = message?.trim()?.lowercase().orEmpty()
     if (normalized.isEmpty()) return false
