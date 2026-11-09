@@ -30,6 +30,21 @@ dsh plugin --profile desktop add @agent-pilot/dsh-bridge-next
 ```
 
 安装完成后重启对应的 DSH 实例，从左侧边栏打开“远程控制”，按提示登录并连接。若你的 Profile 不是 `desktop`，请替换命令中的 Profile 名称。
+安装完成后重启对应的 DSH 实例，从左侧边栏打开“远程控制”，按提示登录并连接。若你的 Profile 不是 `desktop`，请替换命令中的 Profile 名称。
+
+### 手写 profile patch 时的 id 陷阱
+
+在 `~/.dsh/profiles/<profile>/cordis.patch.yml` 里手动启用本插件时，**必须用本插件 bundle 自己声明的 id：`agent-pilot-bridge-next`**（见本目录的 [cordis.patch.yml](cordis.patch.yml)，它是 `insert` 形式）：
+
+```yaml
+- insert:
+    - id: agent-pilot-bridge-next
+      name: "@agent-pilot/dsh-bridge-next"
+      disabled: false
+      config: {}
+```
+
+历史上出现过写作 `agents-anywhere-bridge-next` 的条目。**那个 id 不存在**：loader 不会把它匹配到本插件，于是配置看起来"已启用"、插件却从未加载，server 上的 DSH 运行时一直停在 `starting`，错误信息是"正在等待本地 DSH Bridge"。写成那样不会报错，只会静默无效——排查时先核对 id，不要相信备份文件里的旧写法。
 
 安装命令不锁定插件版本，会获取 npm 当前的默认发布版本。插件包与 DSH 的兼容范围请以所安装版本的 `peerDependencies` 为准；较新的 DSH 不代表旧插件包自动兼容。当前仓库源码声明支持 DSH `0.2.0-rc.1` 及之后的 0.2.x 版本（peer 范围 `>=0.2.0-rc.1 <0.3.0-0`），开发与测试基线为 `0.2.0-rc.2`。DSH 在安装和启动插件时都会按这个范围检查，不满足时拒绝安装或跳过加载；DSH Desktop 使用与自身版本配套的内置构建，不能简单等同于 npm 上的包。需要固定可复现的部署时，再在包名后添加经过验证的版本号。
 
