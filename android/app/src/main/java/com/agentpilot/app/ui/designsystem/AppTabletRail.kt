@@ -95,6 +95,10 @@ fun AppTabletRail(
     role: String,
     onLoadAccount: suspend () -> Result<AuthMeResponse>,
     onOpenSettings: () -> Unit,
+    /** DSH 控制台的接入地址展示（例如 smartcare.aifacex.top/dsh）。 */
+    dshEntryLabel: String = "",
+    /** 侧边栏一键进入内嵌 DSH 控制台；返回即回到本 App。 */
+    onOpenDshRemote: () -> Unit = {},
     projects: List<AgentProject>,
     projectSessionsById: Map<String, List<AgentSession>>,
     expandedProjectIds: Set<String>,
@@ -169,6 +173,12 @@ fun AppTabletRail(
                     label = stringResource(R.string.profile_archived_sessions),
                     selected = currentDestination == AppDestination.ArchivedSessions,
                     onClick = { onNavigate(AppDestination.ArchivedSessions) },
+                )
+                // 直达内嵌 DSH 控制台：一行点进去，副标题给出实际接入地址。
+                RailDshEntryRow(
+                    entryLabel = dshEntryLabel,
+                    selected = currentDestination == AppDestination.DshRemote,
+                    onClick = onOpenDshRemote,
                 )
                 Spacer(Modifier.height(6.dp))
                 RailChips(
@@ -416,6 +426,52 @@ private fun RailAvatar(account: AuthMeResponse?) {
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+/**
+ * 侧边栏的 DSH 快捷入口：一行点进内嵌的真 DSH 控制台，
+ * 副标题显示实际接入地址（服务器 + /dsh 路径），返回即回到本 App。
+ */
+@Composable
+private fun RailDshEntryRow(
+    entryLabel: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAAColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Lucide.Terminal,
+            contentDescription = null,
+            tint = if (selected) colors.ink else colors.muted,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.rail_dsh_console),
+                color = if (selected) colors.ink else colors.inkSoft,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = entryLabel,
+                color = colors.faint,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

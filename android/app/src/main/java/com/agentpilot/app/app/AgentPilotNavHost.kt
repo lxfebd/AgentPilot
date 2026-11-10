@@ -452,6 +452,8 @@ internal fun AgentPilotNavHost(
                 onSetSessionArchived = onSetSessionArchived,
                 onSetProjectPinned = { id, pinned -> onUpdateProject(id, null, pinned) },
                 onSearch = { searchRequestSignal++ },
+                dshEntryLabel = serverEntryLabel(serverUrl),
+                onOpenDshRemote = { navigate(AppDestination.DshRemote) },
                 agentRuntimes = railRuntimes,
                 selectedAgentRuntime = projectPreferences.selectedAgentRuntime,
                 onSelectAgentRuntime = projectPreferences::selectAgent,
@@ -462,6 +464,12 @@ internal fun AgentPilotNavHost(
             pageContent()
         }
     }
+}
+
+/** 侧边栏 DSH 入口显示的实际接入地址：服务器主机 + /dsh 路径。 */
+private fun serverEntryLabel(serverUrl: String): String {
+    val host = serverUrl.trim().removePrefix("https://").removePrefix("http://").trimEnd('/')
+    return if (host.isBlank()) "DSH" else "$host/dsh"
 }
 
 private fun AppDestination.isRailDestination(): Boolean = when (this) {

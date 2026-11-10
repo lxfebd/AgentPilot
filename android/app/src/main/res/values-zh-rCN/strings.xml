@@ -626,6 +626,7 @@
     <string name="rail_default_user">用户</string>
     <string name="rail_edit_profile">编辑资料</string>
     <string name="rail_search_sessions">搜索会话</string>
+    <string name="rail_dsh_console">DSH 控制台</string>
     <string name="rail_chip_sessions">会话</string>
     <string name="rail_chip_new">新建</string>
     <string name="rail_default_device">默认设备</string>

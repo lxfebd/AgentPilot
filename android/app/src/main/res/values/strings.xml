@@ -628,6 +628,7 @@
     <string name="rail_default_user">User</string>
     <string name="rail_edit_profile">Edit profile</string>
     <string name="rail_search_sessions">Search sessions</string>
+    <string name="rail_dsh_console">DSH console</string>
     <string name="rail_chip_sessions">Sessions</string>
     <string name="rail_chip_new">New</string>
     <string name="rail_default_device">Default device</string>
