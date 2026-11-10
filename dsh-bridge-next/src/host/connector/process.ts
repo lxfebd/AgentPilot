@@ -25,6 +25,21 @@ const FIRST_REQUEST_TIMEOUT = 3_600_000
 const UV_READ_TIMEOUT_SECONDS = '60'
 /** Reclaiming the cache is housekeeping, so it may not outlast the failure that asked for it. */
 const CACHE_PRUNE_TIMEOUT = 60_000
+/**
+ * connector 意外退出后的自动重启：有界次数 + 指数退避。
+ * 崩溃一次不该让客户端（手机端）永久停在离线态——凭证仍在本地，
+ * 重启后会自动重连，不需要用户重新登录。auth 失败不重试（那需要重新授权）。
+ */
+const AUTO_RESTART_DEFAULTS = { max: 3, baseMs: 3_000 } as const
+/** 读取时求值，便于测试把退避压到毫秒级；非法值回落到默认。 */
+function autoRestartLimits(): { max: number; baseMs: number } {
+  const max = Number(process.env['AA_CONNECTOR_RESTART_MAX_ATTEMPTS'])
+  const baseMs = Number(process.env['AA_CONNECTOR_RESTART_BASE_MS'])
+  return {
+    max: Number.isFinite(max) && max > 0 ? Math.floor(max) : AUTO_RESTART_DEFAULTS.max,
+    baseMs: Number.isFinite(baseMs) && baseMs > 0 ? baseMs : AUTO_RESTART_DEFAULTS.baseMs,
+  }
+}
 type ConnectorLauncher = (command: string, args: string[], options: SpawnOptionsWithoutStdio) => ChildProcessWithoutNullStreams
 type CachePruner = (command: string) => Promise<unknown>
 
@@ -73,6 +88,13 @@ export class SourceConnector implements ConnectorProcess {
   private state: ConnectorState = { running: false, authFailed: false }
   private listeners = new Set<(state: ConnectorState) => void>()
   private readonly closed = new WeakSet<ChildProcessWithoutNullStreams>()
+  /** 上一次 start() 的身份与重试计数，供意外退出后的自动重启复用；stop() 清空。 */
+  private autoRestart: {
+    binding: BoundDevice
+    apiBaseUrl: string
+    attempts: number
+    timer: ReturnType<typeof setTimeout> | null
+  } | null = null
   private readonly logs: ConnectorLogs
   /** 可写的项目副本；uv 只在这个目录里写 uv.lock，绝不碰插件包目录。 */
   private projectDir: string | null = null
@@ -134,6 +156,8 @@ export class SourceConnector implements ConnectorProcess {
       syncExistingOnConnect: true,
     })
     signal.throwIfAborted()
+    if (this.autoRestart?.timer) clearTimeout(this.autoRestart.timer)
+    this.autoRestart = { binding, apiBaseUrl, attempts: 0, timer: null }
     this.failure = null
     this.buffer = ''
     this.updateState({ running: false, authFailed: false })
@@ -182,7 +206,10 @@ export class SourceConnector implements ConnectorProcess {
       void this.logs.flush().catch(() => undefined)
       if (this.child === child) {
         this.child = null
-        this.fail(new Error(`Connector 已退出（${code ?? '终止'}）。请在日志页切换到 Connector 查看原因。`), !this.stopping)
+        const unexpected = !this.stopping
+        this.fail(new Error(`Connector 已退出（${code ?? '终止'}）。请在日志页切换到 Connector 查看原因。`), unexpected)
+        // 崩溃后不把用户永久留在离线态：凭已保存的凭证有界地自动重启。
+        if (unexpected) this.scheduleAutoRestart()
       }
     })
     const abort = () => { void this.stop() }
@@ -213,8 +240,41 @@ export class SourceConnector implements ConnectorProcess {
     if (!state.running) throw new Error('Connector 尚未运行，请返回插件重试。')
   }
 
+  /** 有界自动重启：指数退避；auth 失败不重试，那需要用户重新授权。 */
+  private scheduleAutoRestart(): void {
+    const context = this.autoRestart
+    if (!context || context.timer || this.state.authFailed) return
+    const { max, baseMs } = autoRestartLimits()
+    if (context.attempts >= max) {
+      this.logs.record('auto_restart_giving_up')
+      return
+    }
+    const waitMs = baseMs * 3 ** context.attempts
+    context.attempts += 1
+    this.logs.record(`auto_restart attempt ${context.attempts} in ${waitMs}ms`)
+    context.timer = setTimeout(() => {
+      if (!this.autoRestart) return
+      this.autoRestart.timer = null
+      void this.restart().catch(() => undefined)
+    }, waitMs)
+    context.timer.unref?.()
+  }
+
+  private async restart(): Promise<void> {
+    const context = this.autoRestart
+    if (!context || this.stopping || this.alive) return
+    try {
+      await this.start(context.binding, context.apiBaseUrl, new AbortController().signal)
+    } catch (error) {
+      this.fail(error instanceof Error ? error : new Error(String(error)))
+      this.scheduleAutoRestart()
+    }
+  }
+
   stop(): Promise<void> {
     if (this.stopping) return this.stopping
+    if (this.autoRestart?.timer) { clearTimeout(this.autoRestart.timer); this.autoRestart.timer = null }
+    this.autoRestart = null
     this.stopping = this.stopChild().finally(async () => { await this.logs.flush(); this.failure = null; this.stopping = null })
     return this.stopping
   }
