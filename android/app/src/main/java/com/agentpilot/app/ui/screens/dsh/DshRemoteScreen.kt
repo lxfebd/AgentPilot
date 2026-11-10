@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.agentpilot.app.BuildConfig
 import com.agentpilot.app.R
 import com.agentpilot.app.ui.designsystem.BackPill
 import com.agentpilot.app.ui.designsystem.LocalAAColors
@@ -59,10 +60,14 @@ import com.composables.icons.lucide.Terminal
 /**
  * 真 DSH Web UI 的服务器侧免登录入口（由服务器 nginx 提供）：
  * 该路径会写入 30 天有效的 DSH 会话 Cookie 并 302 到 /dsh/。
- * 与服务器 /etc/nginx/conf.d/agents-anywhere.conf 中的
- * `location = /__dsh-setup/<token>` 保持一致；换 token 时同步改这里。
+ *
+ * **这是凭据，不是普通路径**：它与服务器 /etc/nginx/conf.d/agents-anywhere.conf 中的
+ * `location = /__dsh-setup/<token>` 一一对应，持有它即可免登录进入 DSH。
+ * 因此它绝不硬编码在源码里，而是由构建时 Gradle 属性注入（见 app/build.gradle.kts 的
+ * `agentPilot.dshSetupPath`，只在 gitignored 的 local.properties / 命令行参数中提供），
+ * release 构建默认留空。换 token 时改的是机器上的构建参数，不需要改仓库代码。
  */
-internal const val DSH_CONSOLE_SETUP_PATH = "/__dsh-setup/REDACTED_IN_HISTORY"
+internal val dshConsoleSetupPath: String get() = BuildConfig.DSH_CONSOLE_SETUP_PATH
 
 /**
  * 旧版 Android WebView（Chrome < 119）缺失的 Web API 垫片。
@@ -153,10 +158,16 @@ internal fun DshRemoteScreen(
     val colors = LocalAAColors.current
     val context = LocalContext.current
     val base = serverUrl.trim().trimEnd('/').ifBlank { "https://smartcare.aifacex.top" }
-    val entryUrl = base + DSH_CONSOLE_SETUP_PATH
+    val setupPath = dshConsoleSetupPath.trim()
+    // 未注入免登录入口时直接展示错误卡：绝不回退到任何硬编码 token。
+    var pageError by remember {
+        mutableStateOf(
+            if (setupPath.isEmpty()) context.getString(R.string.dsh_console_setup_missing) else null,
+        )
+    }
+    val entryUrl = base + setupPath
     val originHost = Uri.parse(base).host ?: ""
-    var pageLoading by remember { mutableStateOf(true) }
-    var pageError by remember { mutableStateOf<String?>(null) }
+    var pageLoading by remember { mutableStateOf(setupPath.isNotEmpty()) }
     var canGoBack by remember { mutableStateOf(false) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var reloadSignal by remember { mutableIntStateOf(0) }

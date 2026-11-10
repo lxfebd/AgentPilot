@@ -838,4 +838,5 @@
     <string name="dsh_console_entry_subtitle">Full DSH interface · live sync</string>
     <string name="dsh_console_error_title">DSH Console unreachable</string>
     <string name="dsh_console_retry">Retry</string>
+    <string name="dsh_console_setup_missing">This build has no DSH console entry configured. Build with -PagentPilot.dshSetupPath=/__dsh-setup/\&lt;token\&gt;.</string>
 </resources>

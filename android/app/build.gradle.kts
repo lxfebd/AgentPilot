@@ -24,6 +24,12 @@ val pinnedServerUrl = providers.gradleProperty("agentPilot.officialServerUrl")
     .orElse("")
     .get()
 
+// 免登录入口路径含服务器端 token，属于凭据：只从 Gradle 属性注入
+// （gitignored 的 local.properties 或命令行 -P），不写进仓库；release 留空。
+val pinnedDshSetupPath = providers.gradleProperty("agentPilot.dshSetupPath")
+    .orElse("")
+    .get()
+
 fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\")
     .replace("\"", "\\\"")
     .replace("\n", "\\n")
@@ -78,6 +84,8 @@ android {
             // workstation's gitignored local.properties can never leak into a
             // shared artifact.
             buildConfigField("String", "OFFICIAL_SERVER_URL", pinnedServerUrl.asBuildConfigString())
+            // 凭据：同样只在私有构建注入，release 一律留空。
+            buildConfigField("String", "DSH_CONSOLE_SETUP_PATH", pinnedDshSetupPath.asBuildConfigString())
         }
         release {
             // Shrink + obfuscate the release APK; proguard-rules.pro keeps what
@@ -94,6 +102,8 @@ android {
             // Public release: no server is bundled. Users enter their own address
             // in the login flow, and the official-cloud entry stays disabled.
             buildConfigField("String", "OFFICIAL_SERVER_URL", "\"\"")
+            // Public release: no bundled credential of any kind.
+            buildConfigField("String", "DSH_CONSOLE_SETUP_PATH", "\"\"")
         }
     }
 

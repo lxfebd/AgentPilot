@@ -836,4 +836,5 @@
     <string name="dsh_console_entry_subtitle">完整 DSH 界面 · 实时同步</string>
     <string name="dsh_console_error_title">无法连接 DSH 控制台</string>
     <string name="dsh_console_retry">重试</string>
+    <string name="dsh_console_setup_missing">此构建未配置 DSH 控制台入口。请用 -PagentPilot.dshSetupPath=/__dsh-setup/\&lt;token\&gt; 构建。</string>
 </resources>
