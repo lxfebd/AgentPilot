@@ -46,7 +46,15 @@
 | nginx | 宿主 nginx，`/apk/`→`/opt/aa/apk/`、`/desktop-installer/`→`/opt/aa/desktop/`（静态 alias） |
 | 容器 | `agents-anywhere-server-next-1`（镜像 `agents-anywhere-server:postgres`，`:5174`）、`agents-anywhere-redis-next-1`、`agents-anywhere-postgres-next-1`；`/data` 为 docker volume |
 
+**2026-11-10：宿主 nginx 为手机端 DSH 控制台做了两处改动**（`/etc/nginx/conf.d/agents-anywhere.conf`，改前备份 `.bak-dshui4` = gzip 前、`.bak-dshui5` = 代理前）：
+
+1. 开 gzip（`text/css`、`text/javascript`、`application/json`、`image/svg+xml`、`application/wasm` 等）：DSH 插件包 10.5MB → 3.0MB（-71%）。
+2. 新增 `location ~ ^/dsh-` 通配代理（含 `Upgrade`/`Connection` 映射以支持 WebSocket）。原因：DSH 插件用**绝对路径**引用自己的静态资源（`/dsh-claude-style/assets/*.js`、`/dsh-whale/widget.js`、`*.woff2`），此前只有 `/dsh/` 和 `/plugins/` 被代理，这些请求落到站点首页返回 **200 HTML**，浏览器 parse 即 `SyntaxError: Unexpected token '<'`（插件报 chunk "ran without handing back a factory"）。
+
+> 同文件里的免登录入口 `location = /__dsh-setup/<token>` 含令牌，**不要**把这份配置原样提交进仓库。
+
 **桌面端"有无更新"的判定依据是 server `/health` 的版本号**（`desktop-workbench/electron/desktop-updates.ts`），且与打包时记录的 `serverVersion` 比较；所以 server 不升级，桌面端永远收不到正确的更新提示。
+
 
 ### 待办（发布链）
 
