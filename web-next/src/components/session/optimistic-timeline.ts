@@ -89,6 +89,13 @@ function orderPendingLast(items: TimelineItem[]): TimelineItem[] {
   return [...rest.slice(0, insertAt), ...pending, ...rest.slice(insertAt)]
 }
 
+/**
+ * 契约 timeline-item 的 status 枚举含 done/failed/cancelled/interrupted。
+ * 轮次一旦终结（无论成败），先前的瞬态 assistant_activity 行（例如"压缩中…"）
+ * 就该退场；否则失败轮次会把活动行永久留在时间线上，表现为刷屏不消失。
+ */
+const TERMINAL_DSH_ASSISTANT_STATUSES = new Set(["done", "failed", "cancelled", "interrupted"])
+
 function reconcileDshAssistantActivity(items: TimelineItem[]): TimelineItem[] {
   const itemIds = new Set(items.map((item) => item.id))
   const supersededIds = new Set<string>()
@@ -101,13 +108,13 @@ function reconcileDshAssistantActivity(items: TimelineItem[]): TimelineItem[] {
   for (let finalIndex = 0; finalIndex < items.length; finalIndex += 1) {
     const finalItem = items[finalIndex]
     if (!finalItem) continue
-    if (!isDshAssistantMessage(finalItem) || finalItem.status !== "done") continue
+    if (!isDshAssistantMessage(finalItem) || !TERMINAL_DSH_ASSISTANT_STATUSES.has(finalItem.status)) continue
 
     for (let candidateIndex = finalIndex - 1; candidateIndex >= 0; candidateIndex -= 1) {
       const candidate = items[candidateIndex]
       if (!candidate) continue
       if (candidate.type === "message" && candidate.role === "user") break
-      if (!isDshAssistantMessage(candidate) || candidate.status !== "done") continue
+      if (!isDshAssistantMessage(candidate) || !TERMINAL_DSH_ASSISTANT_STATUSES.has(candidate.status)) continue
       if (candidate.contentHash !== finalItem.contentHash) continue
 
       const candidateItemType = sourceString(candidate, "itemType")
