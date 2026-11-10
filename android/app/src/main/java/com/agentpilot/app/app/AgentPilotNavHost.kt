@@ -60,6 +60,7 @@ import com.agentpilot.app.ui.screens.devices.DeviceDetailScreen
 import com.agentpilot.app.ui.screens.devices.DevicesScreen
 import com.agentpilot.app.ui.screens.devices.rememberDeviceAgentPreviews
 import com.agentpilot.app.ui.screens.files.FilesScreen
+import com.agentpilot.app.ui.screens.dsh.DshRemoteScreen
 import com.agentpilot.app.ui.screens.home.ArchivedSessionsScreen
 import com.agentpilot.app.ui.screens.home.HomeScreen
 import com.agentpilot.app.ui.screens.home.HomeTab
@@ -413,6 +414,10 @@ internal fun AgentPilotNavHost(
                     onDeleteSchedule = onDeleteSchedule,
                     onSetScheduleEnabled = onSetScheduleEnabled,
                 )
+                AppDestination.DshRemote -> DshRemoteScreen(
+                    serverUrl = serverUrl,
+                    onBack = { navigate(AppDestination.Devices) },
+                )
             }
         }
     }
@@ -471,6 +476,7 @@ private fun AppDestination.isRailDestination(): Boolean = when (this) {
     AppDestination.NewSession,
     AppDestination.NewProject,
     AppDestination.DeviceSetup,
+    AppDestination.DshRemote,
     -> true
 
     AppDestination.LoginMethods,

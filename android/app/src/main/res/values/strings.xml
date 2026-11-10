@@ -831,4 +831,10 @@
     <string name="agent_reminder_description">You have not added any Agents yet. Add an Agent before starting a session. You can also configure one later on the device page.</string>
     <string name="agent_reminder_skip">Continue without setup</string>
     <string name="agent_reminder_title">Add an Agent to get started</string>
+    <string name="dsh_console_title">DSH Console</string>
+    <string name="dsh_console_refresh">Refresh</string>
+    <string name="dsh_console_entry_title">Open DSH Console</string>
+    <string name="dsh_console_entry_subtitle">Full DSH interface · live sync</string>
+    <string name="dsh_console_error_title">DSH Console unreachable</string>
+    <string name="dsh_console_retry">Retry</string>
 </resources>

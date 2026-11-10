@@ -16,4 +16,5 @@ enum class AppDestination(val title: String) {
     ArchivedSessions("Archived Sessions"),
     DeviceSetup("Device Setup"),
     Schedules("Schedules"),
+    DshRemote("DSH Console"),
 }

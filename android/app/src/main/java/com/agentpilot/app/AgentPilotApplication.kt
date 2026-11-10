@@ -1,6 +1,8 @@
 package com.agentpilot.app
 
 import android.app.Application
+import android.webkit.WebView
+import com.agentpilot.app.BuildConfig
 import com.agentpilot.app.feature.auth.AuthSessionStore
 
 /**
@@ -16,6 +18,10 @@ import com.agentpilot.app.feature.auth.AuthSessionStore
 class AgentPilotApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) {
+            // Lets chrome://inspect read the DSH console WebView's console while debugging.
+            runCatching { WebView.setWebContentsDebuggingEnabled(true) }
+        }
         Thread {
             Thread.currentThread().name = "auth-session-prewarm"
             try {

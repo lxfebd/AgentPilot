@@ -829,4 +829,10 @@
     <string name="agent_reminder_description">你还没有添加任何 Agent，添加后才能开始会话。也可以稍后在设备页面配置。</string>
     <string name="agent_reminder_skip">暂不配置，继续</string>
     <string name="agent_reminder_title">添加 Agent 后开始使用</string>
+    <string name="dsh_console_title">DSH 控制台</string>
+    <string name="dsh_console_refresh">刷新</string>
+    <string name="dsh_console_entry_title">打开 DSH 控制台</string>
+    <string name="dsh_console_entry_subtitle">完整 DSH 界面 · 实时同步</string>
+    <string name="dsh_console_error_title">无法连接 DSH 控制台</string>
+    <string name="dsh_console_retry">重试</string>
 </resources>

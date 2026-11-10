@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -28,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,13 +63,16 @@ import com.agentpilot.app.feature.devices.DeviceSetupCredential
 import com.agentpilot.app.feature.sessions.SessionsState
 import com.agentpilot.app.feature.sessions.SessionBatchUpdate
 import com.agentpilot.app.model.AgentDevice
+import com.agentpilot.app.model.AgentRuntimeKey
 import com.agentpilot.app.model.AgentSession
+import com.agentpilot.app.model.resolveAgentRuntimeKey
 import com.agentpilot.app.navigation.AppDestination
 import com.agentpilot.app.ui.designsystem.LocalAAColors
 import com.agentpilot.app.ui.designsystem.AAFont
 import com.agentpilot.app.ui.designsystem.AAToastHost
 import com.agentpilot.app.ui.designsystem.AAToastVisuals
 import com.agentpilot.app.ui.designsystem.ScreenScaffold
+import com.agentpilot.app.ui.screens.dsh.DshConsoleEntryCard
 import com.agentpilot.app.ui.designsystem.noRippleClickable
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Check
@@ -288,19 +293,41 @@ fun DeviceDetailScreen(
             val agentsController = detail.device?.let { device ->
                 rememberDeviceAgentsController(device.id, device.online, agentOperations)
             }
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                contentPadding = PaddingValues(top = if (detail.device == null) 24.dp else 8.dp, bottom = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                if (detail.device == null) {
-                    item("missing") {
-                        MissingDevice()
-                    }
-                } else {
-                    agentsController?.let { controller ->
+            // The console gate reads the Agents snapshot too: DSH is a type-level
+            // runtime the Connector reports through discovery, so the device page's
+            // own plain runtime list can miss it entirely while the Agent panel —
+            // which retries and follows status — already shows it running.
+            val agentsInventory = agentsController?.state?.collectAsState()?.value?.inventory
+            val hasDshRuntime =
+                runtimeState.runtimes.any { resolveAgentRuntimeKey(it.type) == AgentRuntimeKey.DeepSeek } ||
+                    agentsInventory?.runtimes?.any { resolveAgentRuntimeKey(it.type) == AgentRuntimeKey.DeepSeek } == true ||
+                    agentsInventory?.knownTypes?.any {
+                        resolveAgentRuntimeKey(it.type) == AgentRuntimeKey.DeepSeek && it.present
+                    } == true
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (detail.device != null && hasDshRuntime) {
+                    DshConsoleEntryCard(
+                        onOpen = { navigate(AppDestination.DshRemote) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 8.dp, bottom = 18.dp),
+                    )
+                }
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 24.dp),
+                    contentPadding = PaddingValues(top = if (detail.device == null) 24.dp else 0.dp, bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    if (detail.device == null) {
+                        item("missing") {
+                            MissingDevice()
+                        }
+                    } else {
+                        agentsController?.let { controller ->
                         item("agents") {
                             DeviceAgentsPanel(
                                 controller = controller,
@@ -321,7 +348,7 @@ fun DeviceDetailScreen(
                             )
                         }
                     }
-                    item("agents") {
+                    item("agents-section") {
                         AgentsSection(
                             state = runtimeState,
                             onRetry = ::reloadRuntimes,
@@ -407,6 +434,7 @@ fun DeviceDetailScreen(
                         )
                     }
                 }
+            }
             }
             AAToastHost(
                 hostState = snackbarHostState,
