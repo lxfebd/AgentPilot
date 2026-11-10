@@ -95,7 +95,7 @@ fun AppTabletRail(
     role: String,
     onLoadAccount: suspend () -> Result<AuthMeResponse>,
     onOpenSettings: () -> Unit,
-    /** DSH 控制台的接入地址展示（例如 smartcare.aifacex.top/dsh）。 */
+    /** DSH 控制台的接入地址展示（由服务器地址推导，例如 your-host.example/dsh）。 */
     dshEntryLabel: String = "",
     /** 侧边栏一键进入内嵌 DSH 控制台；返回即回到本 App。 */
     onOpenDshRemote: () -> Unit = {},

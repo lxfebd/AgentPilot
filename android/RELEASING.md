@@ -31,7 +31,7 @@
 
 ## 4. 发布到更新服务器
 
-1. 上传 APK 到服务端更新目录（AppConfig.updateDownloadUrl 指向的地址，现网为 smartcare 服务）。
+1. 上传 APK 到服务端更新目录（AppConfig.updateDownloadUrl 指向的地址，按你的部署填写）。
 2. 服务端更新清单追加一条：versionCode 28 / versionName 2.4.1 / downloadUrl / sha256。
 3. 验证：设备进入设置 > 检查更新应看到 2.4.1；下载后签名校验通过才会进入安装。
 

@@ -157,12 +157,16 @@ internal fun DshRemoteScreen(
 ) {
     val colors = LocalAAColors.current
     val context = LocalContext.current
-    val base = serverUrl.trim().trimEnd('/').ifBlank { "https://smartcare.aifacex.top" }
+    // 没有可用服务器地址时走错误卡：绝不回退到任何写死的地址。
+    val base = serverUrl.trim().trimEnd('/')
     val setupPath = dshConsoleSetupPath.trim()
-    // 未注入免登录入口时直接展示错误卡：绝不回退到任何硬编码 token。
     var pageError by remember {
         mutableStateOf(
-            if (setupPath.isEmpty()) context.getString(R.string.dsh_console_setup_missing) else null,
+            when {
+                base.isEmpty() -> context.getString(R.string.dsh_console_setup_missing)
+                setupPath.isEmpty() -> context.getString(R.string.dsh_console_setup_missing)
+                else -> null
+            },
         )
     }
     val entryUrl = base + setupPath
