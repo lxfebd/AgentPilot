@@ -445,6 +445,7 @@ internal fun AgentPilotNavHost(
                 currentSessionId = selectedSessionId,
                 onSetSessionPinned = onSetSessionPinned,
                 onSetSessionArchived = onSetSessionArchived,
+                onSetProjectPinned = { id, pinned -> onUpdateProject(id, null, pinned) },
                 onSearch = { searchRequestSignal++ },
                 agentRuntimes = railRuntimes,
                 selectedAgentRuntime = projectPreferences.selectedAgentRuntime,

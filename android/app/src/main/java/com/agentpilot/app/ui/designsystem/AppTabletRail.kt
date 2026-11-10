@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -102,6 +103,9 @@ fun AppTabletRail(
     currentSessionId: String? = null,
     onSetSessionPinned: suspend (String, Boolean) -> Result<AgentSession> = { _, _ -> Result.failure(Exception("unsupported")) },
     onSetSessionArchived: suspend (String, Boolean) -> Result<AgentSession> = { _, _ -> Result.failure(Exception("unsupported")) },
+    /** 项目置顶/取消置顶。侧栏此前只提供会话置顶，项目置顶藏在一级页面的弹卡里，
+     *  平板/手机侧栏里根本没有入口——用户反馈"置顶按钮失效"的真实原因。 */
+    onSetProjectPinned: suspend (String, Boolean) -> Result<AgentProject> = { _, _ -> Result.failure(Exception("unsupported")) },
     onSearch: () -> Unit = {},
     agentRuntimes: List<String> = emptyList(),
     selectedAgentRuntime: String? = null,
@@ -190,6 +194,7 @@ fun AppTabletRail(
                     currentSessionId = currentSessionId,
                     onSetSessionPinned = onSetSessionPinned,
                     onSetSessionArchived = onSetSessionArchived,
+                    onSetProjectPinned = onSetProjectPinned,
                 )
                 RailAssistantRow(onDevices = { onNavigate(AppDestination.Devices) })
                 Spacer(Modifier.height(6.dp))
@@ -535,6 +540,35 @@ private fun RailAssistantRow(onDevices: () -> Unit) {
     }
 }
 
+/** 侧栏项目行的行内置顶按钮（此前该处没有任何项目置顶入口）。 */
+@Composable
+private fun RailProjectPinButton(
+    pinned: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = LocalAAColors.current
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Lucide.Pin,
+            contentDescription = stringResource(
+                if (pinned) R.string.home_project_unpin else R.string.home_project_pin,
+            ),
+            tint = if (pinned) colors.inkSoft else colors.faint,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
 @Composable
 private fun RailProjects(
     modifier: Modifier,
@@ -547,6 +581,7 @@ private fun RailProjects(
     currentSessionId: String?,
     onSetSessionPinned: suspend (String, Boolean) -> Result<AgentSession>,
     onSetSessionArchived: suspend (String, Boolean) -> Result<AgentSession>,
+    onSetProjectPinned: suspend (String, Boolean) -> Result<AgentProject>,
 ) {
     val colors = LocalAAColors.current
     val scope = rememberCoroutineScope()
@@ -611,6 +646,12 @@ private fun RailProjects(
                 )
                 val attentionCount = sessions.count { railSessionStatus(it).attention }
                 val runningCount = sessions.count { it.status == SessionStatus.Running }
+                // 行内置顶按钮：此前项目置顶只存在于一级页面的弹卡，侧栏里点不到，
+                // 表现为"点了没反应"。置顶状态用实心/描边区分。
+                RailProjectPinButton(
+                    pinned = project.pinned,
+                    onClick = { scope.launch { onSetProjectPinned(project.id, !project.pinned) } },
+                )
                 when {
                     attentionCount > 0 -> {
                         Text(
