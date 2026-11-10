@@ -29,6 +29,8 @@ lines.on('line', line => {
   if (request.method === 'connector.stop') running = false;
   const result = { running, authFailed: false };
   process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, result }) + '\\n');
+  // 启动成功后立刻异常退出：验证管理器会自动重启，而不是把用户留在离线态。
+  if (request.method === 'connector.start' && process.argv[2] === 'crash-after-start') setTimeout(() => process.exit(3), 10);
   if (request.method === 'connector.start' && process.argv[2] === 'auth-failed') setTimeout(() => {
     running = false;
     const frame = JSON.stringify({ jsonrpc: '2.0', method: 'connector/state', params: { running, authFailed: true, lastError: 'PRIVATE', configPath: '/PRIVATE' } }) + '\\n';
@@ -259,4 +261,38 @@ test('startup exit 2 preserves uv diagnostics in the Connector journal', async (
     assert.match(logs, /Python download failed: connection reset/)
     assert.match(logs, /exited \(2\)/)
   } finally { await h.close() }
+})
+test('an unexpected Connector exit relaunches itself with the saved credentials', { timeout: 20000 }, async () => {
+  // 手机端"连接稳定性"缺陷曾有一条真实根因：connector 崩了没人重拉，用户被永久留在离线态。
+  // 这里压消退避后验证自愈确实发生，且重启仍用已保存的凭证（无需重新登录/扫码）。
+  process.env['AA_CONNECTOR_RESTART_BASE_MS'] = '60'
+  process.env['AA_CONNECTOR_RESTART_MAX_ATTEMPTS'] = '5'
+  let launches = 0
+  const h = await fixture('crash-after-start', DEFAULT_CONNECTOR_SETTINGS, undefined, undefined, () => { launches += 1 })
+  try {
+    await h.connector.start(binding, 'https://api.example.test', new AbortController().signal)
+    assert.equal(h.connector.running, true)
+    await new Promise(resolve => setTimeout(resolve, 900))
+    assert.ok(launches >= 2, `expected an automatic relaunch, saw ${launches} launch(es)`)
+    const config = await readJson<{ connectorId: string; serverUrl: string }>(join(h.root, 'data', 'connector', 'connector.json'))
+    assert.equal(config?.connectorId, binding.connectorId)
+    assert.equal(config?.serverUrl, 'https://api.example.test')
+  } finally {
+    await h.close()
+    delete process.env['AA_CONNECTOR_RESTART_BASE_MS']
+    delete process.env['AA_CONNECTOR_RESTART_MAX_ATTEMPTS']
+  }
+})
+
+test('an auth failure is not auto-retried, because re-authorization needs the user', { timeout: 20000 }, async () => {
+  process.env['AA_CONNECTOR_RESTART_BASE_MS'] = '60'
+  let launches = 0
+  const h = await fixture('auth-failed', DEFAULT_CONNECTOR_SETTINGS, undefined, undefined, () => { launches += 1 })
+  try {
+    const failed = new Promise<unknown>(resolve => { h.connector.onState(state => { if (state.authFailed) resolve(state) }) })
+    await h.connector.start(binding, 'https://api.example.test', new AbortController().signal)
+    await failed
+    await new Promise(resolve => setTimeout(resolve, 500))
+    assert.equal(launches, 1, `auth failure must not relaunch, saw ${launches}`)
+  } finally { await h.close(); delete process.env['AA_CONNECTOR_RESTART_BASE_MS'] }
 })
