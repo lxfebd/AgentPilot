@@ -660,7 +660,7 @@ internal fun mergeTimelineMessages(
     }.let { reconcileDshAssistantActivity(sortTimelineMessages(it, orderingItems)) }
 }
 
-private fun reconcileDshAssistantActivity(messages: List<TimelineMessage>): List<TimelineMessage> {
+internal fun reconcileDshAssistantActivity(messages: List<TimelineMessage>): List<TimelineMessage> {
     val sourceItemIds = messages.mapTo(mutableSetOf()) { it.sourceItemId }
     val supersededSourceIds = messages.mapNotNullTo(mutableSetOf()) { message ->
         message.sourceReplacedBy
@@ -681,7 +681,7 @@ private fun reconcileDshAssistantActivity(messages: List<TimelineMessage>): List
             lastEligibleCandidateByHash.clear()
             return@forEachIndexed
         }
-        if (!finalMessage.isCompletedDshAssistantMessage()) return@forEachIndexed
+        if (!finalMessage.isTerminalDshAssistantMessage()) return@forEachIndexed
         val hash = finalMessage.contentHash
         if (hash.isBlank()) return@forEachIndexed
 
@@ -720,6 +720,20 @@ private fun TimelineMessage.isCompletedDshAssistantMessage(): Boolean =
         author == MessageAuthor.Agent &&
         sourceRuntime == "dsh" &&
         status == "done"
+
+/**
+ * 轮次已终结（无论成败）的 DSH 助手消息。契约 timeline-item 的 status 枚举含
+ * done/failed/cancelled/interrupted；只要轮次结束，先前的瞬态 assistant_activity
+ * 行（例如"压缩中…"）就该退场，否则失败轮次会把活动行永久留在时间线上，
+ * 表现为「压缩中」刷屏不消失。
+ */
+private fun TimelineMessage.isTerminalDshAssistantMessage(): Boolean =
+    type == "message" &&
+        author == MessageAuthor.Agent &&
+        sourceRuntime == "dsh" &&
+        status in TERMINAL_DSH_ASSISTANT_STATUSES
+
+private val TERMINAL_DSH_ASSISTANT_STATUSES = setOf("done", "failed", "cancelled", "interrupted")
 
 internal data class OptimisticTimelineMerge(
     val messages: List<TimelineMessage>,
